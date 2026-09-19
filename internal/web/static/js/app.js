@@ -1666,18 +1666,18 @@ const searchScreen = {
     return path ? [path] : [];
   },
   header: () => `
-    <div class=”px-2 pt-2 pb-2 flex items-center gap-1”>
-      <a href=”#/” class=”w-10 h-10 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]”>
+    <div style=”display: flex; align-items: center; gap: 0.25rem; padding: 0.5rem; background: var(--canvas);”>
+      <a href=”#/” style=”width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border-radius: 0.5rem; color: var(--ink-soft); flex-shrink: 0;”>
         ${icon('back', 'w-5 h-5')}
       </a>
-      <div class=”flex-1 relative”>
-        <span class=”absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-faint)]”>${icon('search', 'w-4.5 h-4.5')}</span>
+      <div style=”display: flex; align-items: center; gap: 0.5rem; flex: 1; height: 2.75rem; padding: 0 0.75rem; border-radius: 0.5rem; background: var(--sunken); border: 1px solid transparent;”>
+        <span style=”color: var(--ink-faint); flex-shrink: 0;”>${icon('search', 'w-4.5 h-4.5')}</span>
         <input id=”search-input” type=”search” autocomplete=”off” enterkeyhint=”search”
           placeholder=”Search items and tags”
-          class=”w-full h-11 pl-10 pr-3 rounded-lg bg-[var(--sunken)] border border-transparent outline-none focus:border-[var(--color-accent)] focus:bg-[var(--paper)] transition-colors”>
+          style=”flex: 1; background: transparent; outline: none; border: none; color: var(--ink); font: inherit;”>
       </div>
       <button id=”search-filters” type=”button” aria-label=”Filters”
-        class=”w-10 h-10 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]”>
+        style=”width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border-radius: 0.5rem; color: var(--ink-soft); border: none; background: transparent; cursor: pointer; flex-shrink: 0;”>
         ${icon('settings', 'w-5 h-5')}
       </button>
     </div>`,
