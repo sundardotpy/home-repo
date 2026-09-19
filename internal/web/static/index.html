@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"
+    />
+    <meta name="theme-color" content="#dc4c3e" />
+    <meta name="description" content="Know what you own and where it is." />
+    <title>Home Sweet Home</title>
+    <link rel="stylesheet" href="/static/css/app.css" />
+    <!-- app.js imports these; without preloading, the browser finds them one
+         request deep at a time. -->
+    <link rel="modulepreload" href="/static/js/store.js" />
+    <link rel="modulepreload" href="/static/js/ui.js" />
+    <link rel="modulepreload" href="/static/js/api.js" />
+    <link rel="modulepreload" href="/static/js/cache.js" />
+    <link rel="modulepreload" href="/static/js/components.js" />
+    <link rel="modulepreload" href="/static/js/item-icons.js" />
+    <link rel="modulepreload" href="/static/js/labels.js" />
+    <link rel="modulepreload" href="/static/js/photos.js" />
+    <link rel="modulepreload" href="/static/js/theme.js" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23dc4c3e'/><path d='M7 16l9-7 9 7' stroke='white' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/><path d='M10 15v9h12v-9' stroke='white' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>"
+    />
+    <script>
+      try {
+        var a = localStorage.getItem('hsh.accent');
+        if (a) {
+          document.documentElement.style.setProperty('--color-accent', a);
+          document.querySelector('meta[name=theme-color]').setAttribute('content', a);
+        }
+        var m = localStorage.getItem('hsh.theme') || 'system';
+        var dark = m === 'dark' || (m === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
+  </head>
+  <body class="min-h-dvh">
+    <!-- Desktop rail. Collapses to icons; the same markup is reused by the
+         mobile drawer below. -->
+    <aside
+      id="sidebar"
+      class="no-print hidden lg:flex fixed inset-y-0 left-0 flex-col border-r border-[var(--line)] bg-[var(--canvas)] z-30"
+    >
+      <div class="px-4 pt-5 pb-3 flex items-center gap-2">
+        <span id="sidebar-brand" class="flex items-center gap-2 min-w-0">
+          <span class="w-7 h-7 rounded-lg bg-[var(--color-accent)] grid place-items-center shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M4 12l8-7 8 7"/><path d="M7 11v9h10v-9"/></svg>
+          </span>
+          <span class="font-semibold truncate sidebar-label">Home Sweet Home</span>
+        </span>
+        <button
+          id="sidebar-collapse"
+          type="button"
+          aria-label="Collapse sidebar"
+          class="ml-auto w-8 h-8 shrink-0 grid place-items-center rounded-lg text-[var(--ink-faint)] hover:bg-[var(--sunken)] transition-colors"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M15 5v14"/><path d="M10 9l-3 3 3 3"/></svg>
+        </button>
+      </div>
+      <div id="sidebar-body" class="flex-1 overflow-y-auto px-2 pb-4"></div>
+    </aside>
+
+    <!-- The same navigation as a drawer, for phones. -->
+    <div id="drawer" class="no-print fixed inset-0 z-50 hidden lg:hidden">
+      <div id="drawer-backdrop" class="absolute inset-0 bg-black/35 fade-in"></div>
+      <aside
+        class="drawer-panel absolute inset-y-0 left-0 w-[17rem] max-w-[85vw] flex flex-col bg-[var(--canvas)] border-r border-[var(--line)]"
+        role="dialog"
+        aria-label="Menu"
+      >
+        <div class="px-4 pt-5 pb-3 flex items-center gap-2" style="padding-top: max(1.25rem, env(safe-area-inset-top))">
+          <span class="w-7 h-7 rounded-lg bg-[var(--color-accent)] grid place-items-center shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M4 12l8-7 8 7"/><path d="M7 11v9h10v-9"/></svg>
+          </span>
+          <span class="font-semibold truncate">Home Sweet Home</span>
+          <button id="drawer-close" type="button" aria-label="Close menu"
+            class="ml-auto w-9 h-9 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="w-5 h-5"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+        <div id="drawer-body" class="flex-1 overflow-y-auto px-2 pb-6"></div>
+      </aside>
+    </div>
+
+    <div id="app-shell">
+      <div class="mx-auto w-full max-w-3xl">
+        <header
+          id="header"
+          class="sticky top-0 z-30 bg-[var(--canvas)]/85 backdrop-blur-md border-b border-[var(--line)]"
+          style="padding-top: env(safe-area-inset-top)"
+        >
+          <!-- First paint, before any JS: the shape of the screen, already there. -->
+          <div class="px-4 pt-3 pb-2">
+            <div class="skeleton h-6 w-28"></div>
+            <div class="skeleton h-11 w-full mt-3 rounded-lg"></div>
+          </div>
+        </header>
+
+        <main id="screen" class="pb-28 lg:pb-10">
+          <div class="px-4">
+            <div class="skeleton h-3 w-20 mt-6 mb-2"></div>
+            <div class="surface overflow-hidden">
+              <div class="flex items-center gap-3 px-4 py-3.5">
+                <div class="skeleton w-9 h-9 rounded-lg"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="skeleton h-3.5 w-1/2"></div>
+                  <div class="skeleton h-2.5 w-1/4"></div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 px-4 py-3.5 border-t border-[var(--line)]">
+                <div class="skeleton w-9 h-9 rounded-lg"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="skeleton h-3.5 w-2/3"></div>
+                  <div class="skeleton h-2.5 w-1/3"></div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 px-4 py-3.5 border-t border-[var(--line)]">
+                <div class="skeleton w-9 h-9 rounded-lg"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="skeleton h-3.5 w-2/5"></div>
+                  <div class="skeleton h-2.5 w-1/5"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Toasts sit above the nav bar, out of the thumb's way. -->
+    <div
+      id="toast-root"
+      class="no-print fixed inset-x-0 bottom-20 lg:bottom-6 z-40 mx-auto w-full max-w-md px-4 pointer-events-none"
+    ></div>
+
+    <!-- The add button floats clear of the bar, which now carries four tabs. -->
+    <button
+      id="fab"
+      type="button"
+      aria-label="Add item"
+      class="no-print lg:hidden fixed right-4 z-30 w-14 h-14 rounded-full bg-[var(--color-accent)] text-white grid place-items-center shadow-lg shadow-black/25 active:bg-[var(--color-accent-hover)] active:scale-95 transition-all"
+      style="bottom: calc(5.5rem + env(safe-area-inset-bottom))"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" class="w-6 h-6"><path d="M12 5v14M5 12h14"/></svg>
+      <!-- Lights up while writes are still on their way to the server. -->
+      <span id="sync-pip" class="hidden absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-white border-2 border-[var(--color-accent)] animate-pulse"></span>
+    </button>
+
+    <nav
+      id="app-nav"
+      class="no-print lg:hidden fixed inset-x-0 bottom-0 z-30 bg-[var(--paper)] border-t border-[var(--line)]"
+      style="padding-bottom: env(safe-area-inset-bottom)"
+    >
+      <div class="mx-auto max-w-3xl h-16 grid grid-cols-4 items-center">
+        <button
+          type="button"
+          data-nav="#/"
+          class="nav-tab h-full flex flex-col items-center justify-center gap-0.5 text-[var(--ink-soft)] transition-colors"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+          <span class="text-[11px] font-medium">Home</span>
+        </button>
+        <button
+          type="button"
+          data-nav="#/search"
+          class="nav-tab h-full flex flex-col items-center justify-center gap-0.5 text-[var(--ink-soft)] transition-colors"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <span class="text-[11px] font-medium">Search</span>
+        </button>
+        <button
+          type="button"
+          id="nav-scan"
+          class="nav-tab h-full flex flex-col items-center justify-center gap-0.5 text-[var(--ink-soft)] transition-colors"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3"/><path d="M4 12h16"/></svg>
+          <span class="text-[11px] font-medium">Scan</span>
+        </button>
+        <button
+          type="button"
+          id="nav-menu"
+          class="nav-tab h-full flex flex-col items-center justify-center gap-0.5 text-[var(--ink-soft)] transition-colors"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="w-5 h-5"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+          <span class="text-[11px] font-medium">Menu</span>
+        </button>
+      </div>
+    </nav>
+
+    <div id="sheet-root"></div>
+
+    <script type="module" src="/static/js/app.js"></script>
+  </body>
+</html>

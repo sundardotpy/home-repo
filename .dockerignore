@@ -1,0 +1,6 @@
+.git
+tmp
+uploads
+node_modules
+*.md
+!README.md

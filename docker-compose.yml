@@ -1,0 +1,67 @@
+services:
+  # Local Postgres, for working offline. Opt in with:
+  #   docker compose --profile localdb up
+  # Otherwise DATABASE_URL points at Neon (see .env.example) and this never
+  # starts, which keeps a second, silently diverging copy of the data from
+  # existing.
+  db:
+    image: postgres:16-alpine
+    profiles: ["localdb"]
+    environment:
+      POSTGRES_USER: hsh
+      POSTGRES_PASSWORD: hsh
+      POSTGRES_DB: home_sweet_home
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hsh -d home_sweet_home"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      target: dev
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # .env wins; this fallback is the compose-managed database above.
+      DATABASE_URL: ${DATABASE_URL:-postgres://hsh:hsh@db:5432/home_sweet_home?sslmode=disable}
+      PORT: "8080"
+      APP_ENV: dev
+      # db keeps photos in Postgres (works on read-only/serverless hosts);
+      # disk writes them to the volume below.
+      MEDIA_BACKEND: ${MEDIA_BACKEND:-db}
+      UPLOAD_DIR: /data/uploads
+      # Absolute URL encoded into printed QR labels. Unset in dev, so labels
+      # point at whichever host the browser used. Set this before printing
+      # anything you intend to keep.
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - gomodcache:/go/pkg/mod
+      - uploads:/data/uploads
+
+  # Tailwind, on demand only: `docker compose --profile css up css` rebuilds
+  # app.css on every save. The built file is committed, so the app runs without
+  # this service ever starting.
+  css:
+    image: node:22-alpine
+    profiles: ["css"]
+    working_dir: /app
+    command: sh -c "npm install --no-audit --no-fund && npm run watch"
+    volumes:
+      - .:/app
+      - npmcache:/root/.npm
+
+volumes:
+  pgdata:
+  gomodcache:
+  npmcache:
+  uploads:

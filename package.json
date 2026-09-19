@@ -1,0 +1,13 @@
+{
+  "name": "home-sweet-home-css",
+  "private": true,
+  "description": "Tailwind build only. Never installed on the host - see the `css` compose service.",
+  "scripts": {
+    "build": "tailwindcss -i ./internal/web/css/input.css -o ./internal/web/static/css/app.css --minify",
+    "watch": "tailwindcss -i ./internal/web/css/input.css -o ./internal/web/static/css/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0"
+  }
+}

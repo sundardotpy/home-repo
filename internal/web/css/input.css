@@ -1,0 +1,510 @@
+@import "tailwindcss";
+
+@source "../static/**/*.{html,js}";
+
+/* Todoist-flavoured palette: warm off-white paper, one confident red accent,
+   generous type, near-invisible borders. */
+@theme {
+  /* The one colour the user controls. theme.js overrides it at runtime with an
+     inline style on :root, and everything below re-derives automatically. */
+  --color-accent: #dc4c3e;
+
+  --color-paper: #ffffff;
+  --color-canvas: #fcfaf8;
+  --color-sunken: #f5f3f0;
+  --color-line: #eceae7;
+
+  --color-ink: #202020;
+  --color-ink-soft: #666666;
+  --color-ink-faint: #a0a0a0;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  --radius-card: 12px;
+}
+
+@layer base {
+  :root {
+    /* Derived from the accent, so a custom colour needs no extra input. */
+    --color-accent-hover: color-mix(in srgb, var(--color-accent) 86%, #000);
+    --color-accent-soft: color-mix(in srgb, var(--color-accent) 12%, transparent);
+
+    color-scheme: light dark;
+    --paper: #ffffff;
+    --canvas: #fcfaf8;
+    --sunken: #f5f3f0;
+    --line: #eceae7;
+    --ink: #202020;
+    --ink-soft: #666666;
+    --ink-faint: #a0a0a0;
+    --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 0.12);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.05);
+  }
+
+  html.dark {
+    color-scheme: dark;
+    --color-accent-soft: color-mix(in srgb, var(--color-accent) 22%, transparent);
+
+    --paper: #1f1f1f;
+    --canvas: #191919;
+    --sunken: #282828;
+    --line: #303030;
+    --ink: #e8e6e3;
+    --ink-soft: #a0a0a0;
+    --ink-faint: #6f6f6f;
+    --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 0.5);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    /* Mobile browsers need this to keep the sheet above the keyboard. */
+    overscroll-behavior-y: none;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  input,
+  textarea,
+  select {
+    /* 16px minimum stops iOS Safari zooming on focus. */
+    font-size: 16px;
+  }
+}
+
+/* Per-room colour, hue supplied inline as --room-h. Saturation and lightness
+   are fixed here so every room reads at the same weight, and so the palette is
+   independent of the user's accent colour. */
+@layer components {
+  .room-badge,
+  .tag-chip {
+    background: hsl(var(--room-h) 58% 92%);
+    color: hsl(var(--room-h) 55% 32%);
+  }
+  html.dark .room-badge,
+  html.dark .tag-chip {
+    background: hsl(var(--room-h) 30% 22%);
+    color: hsl(var(--room-h) 62% 72%);
+  }
+
+  /* Rooms are a joined list on a phone and a two-column grid of cards from sm
+     up, where a single narrow column of full-width rows looks lost. */
+  .room-grid {
+    display: grid;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+  .room-grid > * + * {
+    border-top: 1px solid var(--line);
+  }
+  @media (min-width: 640px) {
+    .room-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      overflow: visible;
+    }
+    .room-grid > * {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      background: var(--paper);
+      box-shadow: var(--shadow-card);
+    }
+    .room-grid > * + * {
+      border-top: 1px solid var(--line);
+    }
+  }
+
+  /* Keyboard focus needs to be visible, but the browser's default ring sits
+     awkwardly on rounded controls and shows up on mouse clicks too. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Pointer devices get hover affordances; touch devices would keep them stuck
+     on after a tap. */
+  @media (hover: hover) {
+    .row-press:hover {
+      background: color-mix(in srgb, var(--sunken) 60%, transparent);
+    }
+    .room-grid > *:hover {
+      border-color: color-mix(in srgb, var(--ink-faint) 40%, var(--line));
+    }
+  }
+}
+
+@utility surface {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+@utility row-press {
+  transition: background-color 120ms ease, transform 120ms ease;
+  &:active {
+    background: var(--sunken);
+    transform: scale(0.995);
+  }
+}
+
+/* Skeletons: a slow shimmer, deliberately calm so it reads as "loading",
+   not as content. */
+@utility skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--sunken) 25%,
+    color-mix(in srgb, var(--sunken) 60%, var(--paper)) 37%,
+    var(--sunken) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* Rows waiting on the server: present, tappable, visibly provisional. */
+@utility is-pending {
+  opacity: 0.55;
+}
+
+@utility is-failed {
+  opacity: 1;
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility pop-in {
+  animation: pop-in 180ms ease-out both;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@utility sheet-up {
+  animation: sheet-up 220ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@utility fade-in {
+  animation: fade-in 160ms ease both;
+}
+
+/* ---------------------------------------------------------------- motion --
+   House rules: nothing longer than 260ms, nothing that moves more than a few
+   pixels, and everything is switched off under prefers-reduced-motion (below).
+   Motion here is for orientation — where a thing came from — not decoration. */
+
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes popup-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility popup-in {
+  animation: popup-in 140ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+/* Screens slide in the direction you travelled. */
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility screen-in {
+  animation: screen-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Rows arrive in sequence, capped so a long list never feels slow. */
+@layer components {
+  .stagger > * {
+    animation: screen-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger > *:nth-child(2) { animation-delay: 25ms; }
+  .stagger > *:nth-child(3) { animation-delay: 50ms; }
+  .stagger > *:nth-child(4) { animation-delay: 75ms; }
+  .stagger > *:nth-child(5) { animation-delay: 100ms; }
+  .stagger > *:nth-child(6) { animation-delay: 125ms; }
+  .stagger > *:nth-child(n + 7) { animation-delay: 150ms; }
+
+  /* Accordion: grid-template-rows animates to the content's real height,
+     which max-height cannot do without hard-coding a guess. */
+  .acc-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .acc-panel > * {
+    overflow: hidden;
+    min-height: 0;
+  }
+  .acc-panel.is-open {
+    grid-template-rows: 1fr;
+  }
+
+  [data-caret] {
+    transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Sidebar width lives in CSS, not utility classes, so collapsing is a single
+     class on <html> and the main column follows it. */
+  /* Width and padding change instantly, and only the labels animate. A
+     transition on `width` re-lays out the whole page every frame, and worse:
+     if the transition is ever throttled (a backgrounded tab, a device in
+     low-power mode) it holds the old width indefinitely and the sidebar gets
+     stuck half-collapsed. Cheap properties only. */
+  #sidebar {
+    width: 16rem;
+  }
+  .sidebar-label,
+  .sidebar-count {
+    transition: opacity 140ms ease;
+  }
+  @media (min-width: 1024px) {
+    #app-shell {
+      padding-left: 16rem;
+    }
+    html.sidebar-collapsed #sidebar {
+      width: 4.5rem;
+    }
+    html.sidebar-collapsed #app-shell {
+      padding-left: 4.5rem;
+    }
+    /* Collapsed: icons only, centred, with the label read by the title tip. */
+    html.sidebar-collapsed .sidebar-label,
+    html.sidebar-collapsed .sidebar-section-label,
+    html.sidebar-collapsed .sidebar-count {
+      display: none;
+    }
+    html.sidebar-collapsed .sidebar-link {
+      justify-content: center;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    html.sidebar-collapsed #sidebar-collapse svg {
+      transform: rotate(180deg);
+    }
+    /* Collapsed, the brand mark is just a second house glyph above the Home
+       link, so it goes; the toggle centres in its place.
+       !important because the element carries Tailwind's `flex` utility, and
+       utilities are a later layer than components — without it this rule loses
+       the cascade and the mark stays visible. */
+    html.sidebar-collapsed #sidebar-brand {
+      display: none !important;
+    }
+    html.sidebar-collapsed #sidebar > div:first-child {
+      justify-content: center;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    html.sidebar-collapsed #sidebar-collapse {
+      margin-left: 0;
+    }
+  }
+
+  /* Mobile drawer: the same navigation, slid in from the edge. */
+  .drawer-panel {
+    animation: drawer-in 220ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+
+  .nav-tab.is-active {
+    color: var(--color-accent);
+  }
+
+  /* Desktop sidebar, Todoist-style: a quiet rail that never scrolls away. */
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: 0.5rem;
+    font-size: 0.9375rem;
+    transition:
+      background-color 120ms ease,
+      color 120ms ease;
+  }
+  .sidebar-link:hover {
+    background: var(--sunken);
+  }
+  .sidebar-link.is-active {
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+}
+
+/* Printed labels.
+   Sized in millimetres so what is on screen is what comes out of the printer:
+   62mm wide fits both a common sticker sheet and four-up on plain A4. */
+@layer components {
+  .label-sheet {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(62mm, 1fr));
+    gap: 4mm;
+  }
+
+  .label-card {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    padding: 3mm;
+    height: 30mm;
+    background: #fff;
+    color: #000;
+    border: 1px dashed #bbb; /* cut line */
+    border-radius: 2mm;
+    overflow: hidden;
+  }
+
+  .label-qr {
+    width: 24mm;
+    height: 24mm;
+    flex: none;
+  }
+
+  .label-text {
+    min-width: 0;
+    line-height: 1.25;
+  }
+
+  .label-name {
+    font-weight: 700;
+    font-size: 3.6mm;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .label-path {
+    font-size: 2.7mm;
+    color: #555;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .label-code {
+    margin-top: 1mm;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 2.8mm;
+    letter-spacing: 0.08em;
+    color: #333;
+  }
+}
+
+@media print {
+  @page {
+    margin: 10mm;
+  }
+
+  /* App chrome has no business on paper. */
+  .no-print,
+  #header,
+  #app-nav,
+  #toast-root,
+  #sheet-root {
+    display: none !important;
+  }
+
+  main {
+    padding-bottom: 0 !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .label-card {
+    break-inside: avoid;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
