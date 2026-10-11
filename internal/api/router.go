@@ -11,10 +11,11 @@ import (
 )
 
 type Server struct {
-	store   *store.Store
-	media   media.Store
-	web     http.Handler // app shell + assets; everything that is not /api
-	baseURL string       // absolute URL printed onto QR labels; may be empty
+	store    *store.Store
+	media    media.Store
+	web      http.Handler // app shell + assets; everything that is not /api
+	baseURL  string       // absolute URL printed onto QR labels; may be empty
+	passcode string       // shared passcode for the data routes; empty leaves the app open
 }
 
 func NewServer(st *store.Store, ms media.Store, web http.Handler, baseURL string) *Server {
@@ -38,15 +39,19 @@ func (s *Server) Routes() http.Handler {
 	r.Get("/healthz", s.health)
 
 	// Uploaded photos, served from whichever backend is configured.
-	r.Get("/media/*", s.servePhoto)
-	r.Head("/media/*", s.servePhoto)
+	r.With(s.requireAuth).Get("/media/*", s.servePhoto)
+	r.With(s.requireAuth).Head("/media/*", s.servePhoto)
 
 	// The short URL printed on every label. Kept out of /api so it stays
 	// typeable, and so a camera app lands somewhere sensible.
 	r.Get("/q/{slug}", s.scanRedirect)
 
 	r.Route("/api", func(r chi.Router) {
+		r.Use(s.apiGate)
 		r.Get("/healthz", s.health)
+		r.Get("/session", s.session)
+		r.Post("/login", s.login)
+		r.Post("/logout", s.logout)
 
 		r.Route("/rooms", func(r chi.Router) {
 			r.Get("/", s.listRooms)

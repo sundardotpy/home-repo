@@ -50,6 +50,7 @@ func Build(ctx context.Context) (*App, error) {
 		web.Handler(cfg.Env == "dev"),
 		cfg.PublicBaseURL,
 	)
+	srv.SetPasscode(cfg.Passcode)
 	return &App{Config: cfg, Pool: pool, Server: srv}, nil
 }
 

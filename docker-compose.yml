@@ -41,6 +41,8 @@ services:
       # point at whichever host the browser used. Set this before printing
       # anything you intend to keep.
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      # Optional: one shared passcode that locks the app. Unset at home.
+      APP_PASSCODE: ${APP_PASSCODE:-}
     ports:
       - "8080:8080"
     volumes:

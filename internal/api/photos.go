@@ -103,7 +103,12 @@ func (s *Server) servePhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "image/jpeg")
-	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	// Behind a passcode, a shared cache must not hand a photo to someone else.
+	cache := "public"
+	if s.passcode != "" {
+		cache = "private"
+	}
+	w.Header().Set("Cache-Control", cache+", max-age=31536000, immutable")
 	w.Header().Set("ETag", etag)
 	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 	if r.Method == http.MethodHead {

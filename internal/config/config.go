@@ -20,6 +20,10 @@ type Config struct {
 	// home network, wrong once the app is reachable at a stable address.
 	PublicBaseURL string
 
+	// Passcode, when set, gates the whole app behind one shared secret. Left
+	// empty the app is open, which is right for a home network.
+	Passcode string
+
 	// Serverless trims the connection pool and shortens startup retries.
 	// Detected from the platform's own environment variables so a deployment
 	// needs no extra configuration.
@@ -34,6 +38,7 @@ func Load() (Config, error) {
 		MediaBackend:  strings.ToLower(envOr("MEDIA_BACKEND", "db")),
 		UploadDir:     envOr("UPLOAD_DIR", "./uploads"),
 		PublicBaseURL: os.Getenv("PUBLIC_BASE_URL"),
+		Passcode:      os.Getenv("APP_PASSCODE"),
 		Serverless:    detectServerless(),
 	}
 	if c.DatabaseURL == "" {
@@ -41,6 +46,9 @@ func Load() (Config, error) {
 	}
 	if c.MediaBackend != "db" && c.MediaBackend != "disk" {
 		return c, fmt.Errorf("MEDIA_BACKEND must be db or disk, got %q", c.MediaBackend)
+	}
+	if c.Passcode != "" && len(c.Passcode) < 8 {
+		return c, fmt.Errorf("APP_PASSCODE must be at least 8 characters")
 	}
 	// Vercel gives every deployment its URL but no scheme.
 	if c.PublicBaseURL == "" {

@@ -3,6 +3,7 @@
 import { api, get, post, qs } from './api.js';
 import { closeAnyPopup, createSelect, wireAccordions } from './components.js';
 import { BRAND_ICONS, BRAND_KEYS } from './brand-icons.js';
+import { checkSession, lockNow, lockRequired } from './lock.js';
 import { ICON_GROUPS, ICON_KEYS, ITEM_ICONS, iconLabel, isBrandKey, itemIconSVG, suggestIcon } from './item-icons.js';
 import { barcodeCaptureSheet, labelCard, qrSheet, scanSheet } from './labels.js';
 import { ago, currentUI, isRepo, pathText, rupees, rupeesPerDay, setValueLine, slug, t, valueLine } from './look.js';
@@ -1940,6 +1941,20 @@ const settingsScreen = {
           <span class="text-[var(--ink-faint)]">${icon('chevron', 'w-4 h-4')}</span>
         </button>`)}
 
+      ${
+        lockRequired()
+          ? sectionTitle('Passcode') +
+            listCard(`
+        <button type="button" data-lock-now class="row-press w-full flex items-center gap-3 px-4 py-3.5">
+          <span class="flex-1 text-left">
+            <span class="block font-semibold">Lock this device</span>
+            <span class="block text-[13px] text-[var(--ink-soft)]">Ask for the passcode again next time</span>
+          </span>
+          <span class="text-[var(--ink-faint)]">${icon('chevron', 'w-4 h-4')}</span>
+        </button>`)
+          : ''
+      }
+
       <details class="mt-6 group">
         <summary class="cursor-pointer list-none px-1 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[var(--ink-faint)]">
           <span>Advanced: tags, fields, codes</span>
@@ -2041,6 +2056,7 @@ const settingsScreen = {
     body.querySelector('[data-export-all]').addEventListener('click', () => exportDataSheet());
     body.querySelector('[data-import]').addEventListener('click', () => importDataSheet());
     body.querySelector('[data-labels]').addEventListener('click', () => labelRoomSheet());
+    body.querySelector('[data-lock-now]')?.addEventListener('click', () => lockNow());
     const bump = (d) => {
       const next = Math.min(1000, Math.max(1, valueLine() + d));
       setValueLine(next);
@@ -2812,5 +2828,6 @@ onUIChange(() => {
 });
 
 initTheme();
+checkSession();
 store.load('/rooms').catch(() => {});
 render();

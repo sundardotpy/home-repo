@@ -6,7 +6,9 @@ export class ApiError extends Error {
     this.status = status;
     this.detail = body?.detail || '';
     // 4xx means the request itself is wrong — retrying it will never help.
-    this.permanent = status >= 400 && status < 500;
+    // 401 is the exception: it only means "unlock first", so a queued change
+    // should wait for that, not be rolled back.
+    this.permanent = status >= 400 && status < 500 && status !== 401;
   }
 }
 
@@ -41,6 +43,7 @@ export async function api(method, path, body) {
     }
   }
 
+  if (res.status === 401) window.dispatchEvent(new Event('auth-required'));
   if (!res.ok) throw new ApiError(res.status, payload);
   return payload;
 }
