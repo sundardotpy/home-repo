@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>h/repo icons</title>
+    <style>
+      :root { color-scheme: light dark; --ink: #14121f; --bg: #f2f0fa; --card: #fff; --soft: #6b6880; --line: #e1e3ee; }
+      @media (prefers-color-scheme: dark) { :root { --ink: #eef1fa; --bg: #14161d; --card: #1a1d26; --soft: #9aa3b5; --line: #323847; } }
+      body { margin: 0; padding: 24px; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, sans-serif; }
+      h1 { margin: 0 0 4px; font-size: 22px; }
+      h2 { margin: 28px 0 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--soft); }
+      p { margin: 0; color: var(--soft); }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+      .cell { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 6px 8px; text-align: center; }
+      .cell svg { width: var(--s, 32px); height: var(--s, 32px); }
+      .cell span { display: block; margin-top: 6px; font-size: 11px; color: var(--soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .brand svg { fill: currentColor; stroke: none; }
+    </style>
+  </head>
+  <body>
+    <h1>Icons</h1>
+    <p id="count"></p>
+    <div id="out"></div>
+    <script type="module">
+      import { ITEM_ICONS, ICON_GROUPS, itemIconSVG } from '/static/js/item-icons.js';
+      const q = new URLSearchParams(location.search);
+      if (q.get('s')) document.documentElement.style.setProperty('--s', q.get('s') + 'px');
+      const out = document.getElementById('out');
+      const groups = [...ICON_GROUPS, ...new Set(Object.values(ITEM_ICONS).map((d) => d.group))].filter(
+        (g, i, a) => a.indexOf(g) === i,
+      );
+      let n = 0;
+      for (const g of groups) {
+        const keys = Object.keys(ITEM_ICONS).filter((k) => ITEM_ICONS[k].group === g);
+        if (!keys.length) continue;
+        n += keys.length;
+        out.insertAdjacentHTML('beforeend', `<h2>${g} (${keys.length})</h2><div class="grid">${keys
+          .map((k) => `<div class="cell" title="${k}">${itemIconSVG(k, '')}<span>${ITEM_ICONS[k].label}</span></div>`)
+          .join('')}</div>`);
+      }
+      document.getElementById('count').textContent = `${n} icons`;
+    </script>
+  </body>
+</html>

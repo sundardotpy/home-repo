@@ -190,12 +190,14 @@ func NewValue(price *float64, purchasedOn *string, now time.Time) *Value {
 // Move is one entry in an item's location history. Paths are the names as they
 // were at the time, room first, so history survives renames and deletions.
 type Move struct {
-	ID       uuid.UUID `json:"id"`
-	ItemID   uuid.UUID `json:"item_id"`
-	ItemName string    `json:"item_name,omitempty"`
-	ItemIcon string    `json:"item_icon,omitempty"`
-	Kind     string    `json:"kind"` // "added" or "moved"
-	FromPath []string  `json:"from_path"`
-	ToPath   []string  `json:"to_path"`
-	MovedAt  time.Time `json:"moved_at"`
+	ID       uuid.UUID  `json:"id"`
+	ItemID   uuid.UUID  `json:"item_id"`
+	ItemName string     `json:"item_name,omitempty"`
+	ItemIcon string     `json:"item_icon,omitempty"`
+	Kind     string     `json:"kind"` // "added" or "moved"
+	FromPath []string   `json:"from_path"`
+	ToPath   []string   `json:"to_path"`
+	ToRoomID uuid.UUID  `json:"to_room_id"`
+	ToUnitID *uuid.UUID `json:"to_unit_id"`
+	MovedAt  time.Time  `json:"moved_at"`
 }

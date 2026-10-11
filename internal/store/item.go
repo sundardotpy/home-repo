@@ -397,7 +397,8 @@ func (s *Store) RecentMoves(ctx context.Context, limit int) ([]model.Move, error
 
 func (s *Store) moves(ctx context.Context, where string, limit int, args ...any) ([]model.Move, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT m.id, m.item_id, i.name, i.icon, m.kind, m.from_path, m.to_path, m.moved_at
+		SELECT m.id, m.item_id, i.name, i.icon, m.kind, m.from_path, m.to_path,
+		       m.to_room_id, m.to_unit_id, m.moved_at
 		  FROM item_moves m
 		  JOIN items i ON i.id = m.item_id
 		  `+where+`
@@ -412,7 +413,7 @@ func (s *Store) moves(ctx context.Context, where string, limit int, args ...any)
 	for rows.Next() {
 		var m model.Move
 		if err := rows.Scan(&m.ID, &m.ItemID, &m.ItemName, &m.ItemIcon, &m.Kind,
-			&m.FromPath, &m.ToPath, &m.MovedAt); err != nil {
+			&m.FromPath, &m.ToPath, &m.ToRoomID, &m.ToUnitID, &m.MovedAt); err != nil {
 			return nil, mapErr(err)
 		}
 		if m.FromPath == nil {

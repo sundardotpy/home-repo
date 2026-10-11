@@ -1,6 +1,7 @@
 // Presentation helpers: escaping, icons, skeletons, rows, toasts, sheets.
 
 import { itemIconSVG } from './item-icons.js';
+import { ago, pathText, rupeesPerDay, valueLine } from './look.js';
 
 export const esc = (s) =>
   String(s ?? '')
@@ -43,6 +44,13 @@ const ICONS = {
   moon: '<path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/>',
   monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
   upload: '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 5 17 10"/><line x1="12" y1="5" x2="12" y2="15"/>',
+  minus: '<path d="M5 12h14"/>',
+  chart: '<path d="M5 20v-6M12 20V6M19 20v-9"/>',
+  folder: '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  pin: '<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+  file: '<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
 };
 
 export const icon = (name, cls = 'w-5 h-5') =>
@@ -167,9 +175,9 @@ const tagPills = (tags) =>
 
 // Three ways to picture an item, in order of how much the user told us:
 // a photo, a chosen icon, or the quantity badge.
-export const itemAvatar = (item, cls = 'w-9 h-9') => {
+export const itemAvatar = (item, cls = 'w-11 h-11') => {
   if (item.photo_thumb_url) {
-    return `<span class="${cls} rounded-lg overflow-hidden bg-[var(--sunken)] shrink-0 relative">
+    return `<span class="avatar ${cls} overflow-hidden bg-[var(--sunken)] shrink-0 relative">
       <img src="${esc(item.photo_thumb_url)}" alt="" loading="lazy" decoding="async"
            class="w-full h-full object-cover ${item._photo_uploading ? 'opacity-50' : ''}">
       ${
@@ -182,11 +190,11 @@ export const itemAvatar = (item, cls = 'w-9 h-9') => {
     </span>`;
   }
   if (item.icon && itemIconSVG(item.icon)) {
-    return `<span class="${cls} rounded-lg bg-[var(--color-accent-soft)] text-[var(--color-accent)] grid place-items-center shrink-0">
+    return `<span class="avatar ${cls} bg-[var(--color-accent-soft)] text-[var(--ink)] grid place-items-center shrink-0">
       ${itemIconSVG(item.icon, 'w-5 h-5')}
     </span>`;
   }
-  return `<span class="${cls} rounded-lg bg-[var(--sunken)] grid place-items-center shrink-0 text-[var(--ink-soft)] text-[13px] font-medium">
+  return `<span class="avatar ${cls} bg-[var(--sunken)] grid place-items-center shrink-0 text-[var(--ink-soft)] text-[13px] font-medium">
     ${item.quantity > 1 ? `×${esc(item.quantity)}` : icon('tag', 'w-4 h-4')}
   </span>`;
 };
@@ -197,12 +205,12 @@ export const itemRow = (item, { pending = false, showLocation = false } = {}) =>
     ${itemAvatar(item)}
     <span class="flex-1 min-w-0">
       <span class="flex items-center gap-2">
-        <span class="font-medium truncate">${esc(item.name)}</span>
+        <span class="font-semibold truncate t-name">${esc(item.name)}</span>
         ${pending ? pendingDot : ''}
       </span>
       ${
         showLocation && item.location
-          ? `<span class="block text-[13px] text-[var(--ink-soft)] truncate">${esc(item.location.path_string || '')}</span>`
+          ? `<span class="block text-[13px] text-[var(--ink-soft)] truncate t-path">${esc(pathText(item.location.path))}</span>`
           : item.description
             ? `<span class="block text-[13px] text-[var(--ink-soft)] truncate">${esc(item.description)}</span>`
             : ''
@@ -224,25 +232,16 @@ function mergeAttrs(attrs, base) {
   return `${rest} class="${base}${m ? ' ' + m[1] : ''}"`;
 }
 
-const btnBase =
-  'inline-flex items-center justify-center gap-2 h-11 px-4 rounded-lg font-medium transition-colors';
-
 export const primaryButton = (label, attrs = '') =>
-  `<button type="button" ${mergeAttrs(
-    attrs,
-    `${btnBase} bg-[var(--color-accent)] text-white active:bg-[var(--color-accent-hover)]`,
-  )}>${label}</button>`;
+  `<button type="button" ${mergeAttrs(attrs, 'btn btn-primary')}>${label}</button>`;
 
 export const ghostButton = (label, attrs = '') =>
-  `<button type="button" ${mergeAttrs(
-    attrs,
-    `${btnBase} border border-[var(--line)] bg-[var(--paper)] active:bg-[var(--sunken)]`,
-  )}>${label}</button>`;
+  `<button type="button" ${mergeAttrs(attrs, 'btn btn-ghost')}>${label}</button>`;
 
 export const addRow = (label, attrs = '') => `
   <button type="button" ${mergeAttrs(
     attrs,
-    'row-press w-full flex items-center gap-3 px-4 py-3.5 text-[var(--color-accent)] font-medium',
+    'row-press w-full flex items-center gap-3 px-4 py-3.5 text-[var(--ink)] font-semibold',
   )}>
     <span class="w-9 h-9 grid place-items-center shrink-0">${icon('plus', 'w-5 h-5')}</span>
     <span>${esc(label)}</span>
@@ -268,7 +267,7 @@ export function toast(message, { action, onAction, tone = 'neutral', timeout = 4
   }`;
   el.innerHTML = `
     <span class="flex-1">${esc(message)}</span>
-    ${action ? `<button type="button" class="font-medium text-[var(--color-accent)] shrink-0">${esc(action)}</button>` : ''}`;
+    ${action ? `<button type="button" class="font-medium text-[var(--accent-ink)] shrink-0">${esc(action)}</button>` : ''}`;
   if (action) {
     el.querySelector('button').addEventListener('click', () => {
       onAction?.();
@@ -355,4 +354,26 @@ export const field = (label, inner, hint = '') => `
   </label>`;
 
 export const inputCls =
-  'w-full h-11 px-3 rounded-lg bg-[var(--paper)] border border-[var(--line)] outline-none focus:border-[var(--color-accent)] transition-colors';
+  'w-full h-12 px-3.5 rounded-lg bg-[var(--sunken)] border border-transparent outline-none focus:border-[var(--ink)] focus:bg-[var(--paper)] transition-colors';
+
+// ----------------------------------------------------------------- value ----
+
+// What an item has cost per day, as a pill that is green under the user's line
+// and amber over it. Nothing when the item has no price and date.
+export function valuePill(item) {
+  if (!item.value) return '';
+  const good = item.value.per_day < valueLine();
+  return `<span class="pill ${good ? 'pill-good' : 'pill-warn'}">${rupeesPerDay(item.value.per_day)}/day</span>`;
+}
+
+// One line of the "last put away" feed: what, where it went, and how long ago.
+export const moveRow = (m) => `
+  <button type="button" data-move-item="${esc(m.item_id)}"
+     class="row-press w-full text-left flex items-center gap-3 px-4 py-3.5">
+    ${itemAvatar({ icon: m.item_icon })}
+    <span class="flex-1 min-w-0">
+      <span class="block font-semibold truncate t-name">${esc(m.item_name)}</span>
+      <span class="block text-[13px] text-[var(--ink-soft)] truncate t-path">${esc(pathText(m.to_path))}</span>
+    </span>
+    <span class="pill pill-quiet">${ago(m.moved_at)}</span>
+  </button>`;

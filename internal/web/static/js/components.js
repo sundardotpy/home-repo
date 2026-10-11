@@ -33,7 +33,7 @@ export function createSelect(host, { options = [], value = '', placeholder = 'Se
       <button type="button" data-trigger aria-haspopup="listbox" aria-expanded="false"
         class="w-full h-11 px-3 rounded-lg bg-[var(--paper)] border border-[var(--line)]
                flex items-center gap-2 text-left transition-colors
-               hover:border-[var(--ink-faint)] focus:border-[var(--color-accent)] focus:outline-none">
+               hover:border-[var(--ink-faint)] focus:border-[var(--ink)] focus:outline-none">
         ${chosen?.prefix || ''}
         <span class="flex-1 truncate ${chosen ? '' : 'text-[var(--ink-faint)]'}">
           ${esc(chosen ? chosen.label : placeholder)}
@@ -49,7 +49,7 @@ export function createSelect(host, { options = [], value = '', placeholder = 'Se
     <button type="button" role="option" data-value="${esc(o.value)}" data-i="${i}"
       aria-selected="${o.value === current}"
       class="w-full text-left px-3 py-3 sm:py-2.5 flex items-center gap-2.5 transition-colors
-             hover:bg-[var(--sunken)] ${o.value === current ? 'text-[var(--color-accent)]' : ''}"
+             hover:bg-[var(--sunken)] ${o.value === current ? 'text-[var(--accent-ink)]' : ''}"
       style="padding-left:${12 + (o.depth || 0) * 16}px">
       ${o.prefix || ''}
       <span class="flex-1 min-w-0">

@@ -1,10 +1,13 @@
+import { BRAND_ICONS } from './brand-icons.js';
+import { EXTRA_ICONS } from './icon-set.js';
+
 // Pre-built item icons, for the (many) things nobody wants to photograph.
 //
 // Each entry is a stroke-only 24×24 path plus the words that should suggest it.
 // The key is what gets stored on the item, so these names are a stable API —
 // rename one and existing items lose their icon.
 
-export const ITEM_ICONS = {
+const LEGACY_ICONS = {
   box: {
     label: 'Box',
     keywords: ['box', 'carton', 'crate', 'storage', 'container', 'misc'],
@@ -252,9 +255,76 @@ export const ITEM_ICONS = {
   },
 };
 
+// Which picker section each original icon belongs to. The newer icons carry
+// their own group.
+const LEGACY_GROUPS = {
+  Electronics: ['laptop', 'phone', 'camera', 'headphones', 'tv', 'router'],
+  'Power & cables': ['cable', 'battery', 'plug', 'bulb'],
+  Tools: ['tools', 'drill', 'hammer', 'screwdriver', 'fasteners', 'paint'],
+  Clothing: ['shirt', 'jacket', 'shoes', 'hat', 'bag', 'umbrella', 'glasses', 'watch', 'jewellery', 'wallet'],
+  'Vehicle & travel': ['suitcase', 'bike'],
+  'Bedroom & furniture': ['linen'],
+  'Documents & stationery': ['book', 'documents', 'stationery'],
+  Kitchen: ['mug', 'cookware', 'bottle', 'food'],
+  Cleaning: ['cleaning'],
+  Health: ['medicine'],
+  'Kids & toys': ['toys', 'baby'],
+  'Sports & hobbies': ['sports', 'music', 'art'],
+  'Garden & outdoor': ['garden', 'camping'],
+  Pets: ['pet'],
+  Decor: ['gift'],
+  'Storage & misc': ['box', 'key'],
+};
+
+const groupOf = Object.fromEntries(
+  Object.entries(LEGACY_GROUPS).flatMap(([group, keys]) => keys.map((k) => [k, group])),
+);
+
+export const ITEM_ICONS = {
+  ...Object.fromEntries(
+    Object.entries(LEGACY_ICONS).map(([k, v]) => [k, { group: groupOf[k] || 'Storage & misc', ...v }]),
+  ),
+  ...EXTRA_ICONS,
+};
+
+// Picker order. Anything with a group not listed here sorts last.
+export const ICON_GROUPS = [
+  'Electronics',
+  'Power & cables',
+  'Appliances',
+  'Tools',
+  'Kitchen',
+  'Cleaning',
+  'Bathroom',
+  'Clothing',
+  'Bedroom & furniture',
+  'Decor',
+  'Documents & stationery',
+  'Health',
+  'Kids & toys',
+  'Sports & hobbies',
+  'Garden & outdoor',
+  'Vehicle & travel',
+  'Pets',
+  'Storage & misc',
+];
+
 export const ICON_KEYS = Object.keys(ITEM_ICONS);
 
+// Brand marks are stored as "brand:<slug>" and drawn from files, through a CSS
+// mask, so they follow the text colour. Everything else is an inline line icon.
+export const isBrandKey = (key) => typeof key === 'string' && key.startsWith('brand:');
+
+export const iconLabel = (key) =>
+  isBrandKey(key) ? BRAND_ICONS[key.slice(6)] || '' : ITEM_ICONS[key]?.label || '';
+
 export const itemIconSVG = (key, cls = 'w-5 h-5') => {
+  if (isBrandKey(key)) {
+    const slug = key.slice(6);
+    if (!BRAND_ICONS[slug]) return '';
+    return `<span class="brand-glyph ${cls}" role="img" aria-label="${BRAND_ICONS[slug]}"
+      style="--u:url(/static/icons/brands/${slug}.svg)"></span>`;
+  }
   const def = ITEM_ICONS[key];
   if (!def) return '';
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"

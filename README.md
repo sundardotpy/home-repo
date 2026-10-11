@@ -24,7 +24,8 @@ compiles, and its output is committed.
 ## Run it
 
 Copy `.env.example` to `.env` and put your `DATABASE_URL` in it (Neon's **pooled**
-endpoint — the host with `-pooler` in it), then:
+endpoint — the host with `-pooler` in it; renaming a Neon *project* does not change
+the database name or host, so an existing URL keeps working), then:
 
 ```bash
 docker compose up -d --build
@@ -106,12 +107,25 @@ unnecessary because `app.css` is committed.
 
 ## The frontend
 
-Mobile-first: a bottom bar with Home, Search, Scan and Menu, a floating add
-button, bottom sheets for every form, 44px tap targets, safe-area padding.
-The same navigation appears three ways — as a drawer behind *Menu* on phones,
-and from `lg` up as a Todoist-style sidebar that collapses to an icon rail
-(the choice is remembered). Rooms are grouped by floor in all of them. Light
-and dark follow the system.
+Mobile-first, three destinations: **Find** (one question and what you put away
+lately), **Places** (rooms and the boxes inside them) and **Value** (what things
+cost per day). On a phone they sit in a floating bottom bar with the add button
+beside it; from `lg` up the same three live in a top bar. Scan is a button in the
+search box and Settings is behind the gear. 44px tap targets, safe-area padding,
+light and dark follow the system.
+
+**Two interfaces over one set of markup.** *Classic* is the rounded, light look.
+*Repo* borrows from a code host: monospace names, hairline borders, a green
+primary action, rooms and boxes written as paths (`office/desk/small-container/`),
+"commit" and "git mv" for save and move. Choose in Settings; it is stored on the
+device. The skin is almost entirely CSS (`html.ui-repo` swaps the tokens in
+`input.css`); `look.js` holds the few words and the path format that differ.
+
+**Value.** An item can carry a price and a purchase date (both optional). The API
+derives cost per day from them, a thing bought today counts as one day, and the
+Value screen shows which items are under your line (default ₹10/day, changed in
+Settings). **History.** Every placement is logged, so an item's card shows where it
+has been and Move offers the places things went lately as one-tap choices.
 
 **No OS controls.** Dropdowns are drawn by the app, not the platform: a native
 `<select>` renders as an iOS wheel or an Android dialog, and cannot show the
@@ -133,19 +147,33 @@ width changes instantly and only its labels fade, because a throttled
 `width` transition (backgrounded tab, low-power mode) holds its start value and
 leaves the rail stuck half-collapsed.
 
-**Accent colour** — eight presets plus any custom hex, in Appearance (sidebar,
-or the row at the bottom of Home). One CSS variable drives the app; hover and
-tint shades are derived with `color-mix`, so a custom colour needs no extra
-input, and the dark theme mixes its tint stronger to survive a dark ground. The
-choice is stored in `localStorage` and applied by a tiny inline script before
-first paint, so a chosen colour never flashes red on load.
+**Accent colour** — eight presets plus any custom hex, in Settings. One CSS
+variable drives the app; hover and tint shades are derived with `color-mix`, and
+`theme.js` works out whether text on the accent should be dark or light, so a pale
+yellow and a deep blue both stay readable. The choice is stored in `localStorage`
+and applied by a tiny inline script before first paint. Repo has its own accent,
+so the chosen one is kept but not applied while Repo is on.
 
-**Item icons** — 49 built-in icons (`item-icons.js`) for anything you would
-rather not photograph. The picker is filterable by name or keyword, and until
-you choose one yourself the icon follows what you type: "Winter jacket"
-suggests *Coats & jackets*, "power bank" beats "power" because longer and
-whole-word matches score higher. An item shows its photo if it has one, then
-its icon, then the quantity badge.
+**Fonts** are self-hosted (`static/fonts`, OFL): DM Sans, Bricolage Grotesque for
+headings, JetBrains Mono for the Repo interface, which only downloads when used.
+
+**Icons** — nothing here is a photo you have to take. 212 line icons
+(`item-icons.js` holds the original 49, `icon-set.js` the rest, grouped by room
+and purpose: electronics, kitchen, tools, bathroom, clothing, stationery and so on)
+and 56 product-brand marks (`brand-icons.js` is the name index; the marks are SVG
+files in `static/icons/brands/`, drawn through a CSS mask so they follow the text
+colour). The picker has Things and Brands tabs and is filterable by name or keyword;
+until you choose one the icon follows what you type: "Winter jacket" suggests
+*Coats & jackets*. A brand is stored as `brand:<slug>`. An item shows its photo if
+it has one, then its icon, then the quantity badge.
+
+`/static/icons.html` is a gallery of every icon. `scripts/export-icons.mjs` writes
+the line icons out as standalone `.svg` files (`static/icons/home/`), and
+`scripts/gen-brand-icons.mjs` re-vendors the brand marks from
+[Simple Icons](https://simpleicons.org) (CC0; it has dropped some brands such as
+Philips, Canon and Microsoft at their owners' request, so those are absent). The
+app's own `h/` mark, favicon, app icons and wordmark are plain-stroke SVGs in
+`static/brand/`.
 
 Three behaviours do the heavy lifting:
 
@@ -177,25 +205,28 @@ Deletes are optimistic too, with an Undo toast.
 ### Client layout
 
 ```
-internal/web/static/js/cache.js   localStorage cache, debounced writes
-internal/web/static/js/api.js     fetch wrapper, permanent vs transient errors
-internal/web/static/js/store.js   views, revalidation, mutation queue, overlays
-internal/web/static/js/photos.js  photo uploads with instant local preview
-internal/web/static/js/labels.js  QR label sheet, print layout, scanner
+internal/web/static/js/cache.js       localStorage cache, debounced writes
+internal/web/static/js/api.js         fetch wrapper, permanent vs transient errors
+internal/web/static/js/store.js       views, revalidation, mutation queue, overlays
+internal/web/static/js/photos.js      photo uploads with instant local preview
+internal/web/static/js/labels.js      QR label sheet, print layout, scanner
 internal/web/static/js/components.js  app-drawn dropdowns and accordions
-internal/web/static/js/item-icons.js  the icon set + keyword suggestion
-internal/web/static/js/theme.js       accent colour
+internal/web/static/js/item-icons.js  the original icons, grouping, brand-aware renderer
+internal/web/static/js/icon-set.js    the larger set of line icons
+internal/web/static/js/brand-icons.js brand name index (marks live in static/icons/brands)
+internal/web/static/js/look.js        Classic vs Repo wording, path format, dates, ₹
+internal/web/static/js/theme.js       accent, theme mode, interface switch
 internal/web/static/js/taxonomy.js    tag picker, custom-field editor
-internal/web/static/js/ui.js      escaping, icons, skeletons, rows, sheets, toasts
-internal/web/static/js/app.js     screens, hash router, actions
-internal/web/css/input.css        Tailwind source -> static/css/app.css
+internal/web/static/js/ui.js          escaping, icons, skeletons, rows, sheets, toasts
+internal/web/static/js/app.js         screens, hash router, actions
+internal/web/css/input.css            Tailwind source and both skins -> static/css/app.css
 ```
 
-Screens are `#/`, `#/room/<id>`, `#/unit/<id>`, `#/search?q=`,
-`#/labels/<roomId>` and `#/settings`. Each one declares the API paths it
-depends on, which is what the store revalidates after a write. `#/item/<id>`
-has no screen of its own: it sends you to wherever the item lives and opens its
-card on top, which is where a scanned barcode lands.
+Screens are `#/` (Find), `#/places`, `#/value`, `#/room/<id>`, `#/unit/<id>`,
+`#/search?q=`, `#/labels/<roomId>` and `#/settings`. Each one declares the API paths
+it depends on, which is what the store revalidates after a write. `#/item/<id>` has
+no screen of its own: it sends you to wherever the item lives and opens its card on
+top, which is where a scanned barcode lands.
 
 ## Photos
 
@@ -351,7 +382,8 @@ rest of the Homelab is the obvious next thought.
 | `rooms` | `floor` (integer, negative for basements) plus optional `floor_name` for places a number cannot describe ("Attic"). Names are unique **per floor**, so two "Bedroom"s can coexist upstairs and down. Rooms sort bottom-up. |
 | `storage_units` | `room_id` + nullable `parent_id` = arbitrary nesting. Each carries a unique `qr_slug` for phase 4. Sibling names are unique within a parent. |
 | `photos` | Rendered JPEG bytes, keyed by `(key, variant)` where variant is `display` or `thumb`. `bytes` is `STORAGE EXTERNAL` so it never gets read back by a listing query. |
-| `items` | Always has a `room_id`; `storage_unit_id` is null for things sitting loose in a room. `tags text[]`, trigram indexes on name/description for fuzzy search. `icon` holds a key from the frontend's icon set. `barcode` holds a manufacturer's code, indexed but not unique. |
+| `items` | Always has a `room_id`; `storage_unit_id` is null for things sitting loose in a room. `tags text[]`, trigram indexes on name/description for fuzzy search. `icon` holds a key from the frontend's icon set (or `brand:<slug>`). `barcode` holds a manufacturer's code, indexed but not unique. `purchase_price` (numeric) and `purchased_on` (date) are optional and feed the cost-per-day figure. |
+| `item_moves` | Where every item has been: one `added` row, then one `moved` row per relocation. Paths are stored as names and ids are plain columns, so history survives a renamed or deleted box; deleting the item deletes its moves. |
 | `storage_unit_paths` | Recursive view giving every unit its ancestor `path` (`text[]`), `id_path` (`uuid[]`) and depth. Every read joins it, so the API never returns a bare parent pointer. |
 
 Two invariants the store enforces, not the caller:
@@ -392,10 +424,12 @@ All routes are under `/api`. IDs are UUIDs.
 
 | Method | Path | Notes |
 | --- | --- | --- |
-| GET | `/items` | `?q=&room_id=&storage_unit_id=&deep=true&tags=a,b&prop=key:value&barcode=&has_barcode=true&limit=&offset=` |
+| GET | `/items` | `?q=&room_id=&storage_unit_id=&deep=true&tags=a,b&prop=key:value&barcode=&has_barcode=true&has_price=true&limit=&offset=` |
 | POST | `/items` | `{name, room_id?, storage_unit_id?, description?, quantity?, tags?, icon?, barcode?}` — one of `room_id`/`storage_unit_id` required. |
 | GET | `/items/{id}` | |
-| PATCH | `/items/{id}` | Sending `room_id` or `storage_unit_id` relocates it. |
+| PATCH | `/items/{id}` | Sending `room_id` or `storage_unit_id` relocates it. `purchase_price` and `purchased_on` (`YYYY-MM-DD`) can be set, or cleared with `null`. |
+| GET | `/items/{id}/history` | Its moves, newest first. |
+| GET | `/activity` | `?limit=` The latest moves across every item: the "last put away" feed. |
 | POST | `/items/{id}/move` | Relocation-only shortcut — the hook for the future move log. |
 | POST | `/items/{id}/photo` | multipart upload; see [Photos](#photos). |
 | DELETE | `/items/{id}/photo` | |
@@ -407,7 +441,7 @@ All routes are under `/api`. IDs are UUIDs.
 | DELETE | `/tags/{tag}` | Retire, stripping it from every item. |
 | GET | `/properties` | Field names in use, with their values. |
 
-Every item response carries a `location` object:
+Every item response carries a `location` object, and a `value` object (`days`, `per_day`) when it has both a price and a purchase date:
 
 ```json
 {
@@ -444,6 +478,8 @@ internal/media      image decode, EXIF rotation, resize, thumbnails, storage
 internal/qr         QR rendering (SVG for print, PNG fallback)
 internal/web        embedded frontend (see above)
 scripts/smoke.sh    end-to-end API test
+scripts/export-icons.mjs     writes every line icon as a standalone .svg
+scripts/gen-brand-icons.mjs  re-vendors the brand marks from Simple Icons
 ```
 
 Migrations are plain `.sql` files in `internal/db/migrations`, applied in

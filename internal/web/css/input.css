@@ -2,59 +2,205 @@
 
 @source "../static/**/*.{html,js}";
 
-/* Todoist-flavoured palette: warm off-white paper, one confident red accent,
-   generous type, near-invisible borders. */
-@theme {
-  /* The one colour the user controls. theme.js overrides it at runtime with an
-     inline style on :root, and everything below re-derives automatically. */
-  --color-accent: #dc4c3e;
-
-  --color-paper: #ffffff;
-  --color-canvas: #fcfaf8;
-  --color-sunken: #f5f3f0;
-  --color-line: #eceae7;
-
-  --color-ink: #202020;
-  --color-ink-soft: #666666;
-  --color-ink-faint: #a0a0a0;
-
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-
-  --radius-card: 12px;
+/* Self-hosted: the app makes no third-party requests. Variable fonts, latin
+   subset. JetBrains Mono only downloads when something on screen uses it,
+   which in practice means the Repo interface. */
+@font-face {
+  font-family: "DM Sans";
+  src: url("/static/fonts/dm-sans.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/static/fonts/bricolage-grotesque.woff2") format("woff2");
+  font-weight: 600 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/static/fonts/jetbrains-mono.woff2") format("woff2");
+  font-weight: 400 800;
+  font-display: swap;
 }
 
+@theme {
+  /* The one colour the user controls. theme.js overrides it at runtime with an
+     inline style on :root, and everything below re-derives from it. */
+  --color-accent: #efe34a;
+
+  --color-paper: #ffffff;
+  --color-canvas: #f2f0fa;
+  --color-sunken: #eae6f7;
+  --color-line: #e4e0f2;
+
+  --color-ink: #14121f;
+  --color-ink-soft: #5f5b76;
+  --color-ink-faint: #8a86a0;
+
+  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Bricolage Grotesque", "DM Sans", -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Utilities read these at run time, so the Repo interface can tighten every
+     rounded-* in the app by overriding them on <html>. */
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+  --radius-card: 1.25rem;
+}
+
+/* Two skins over the same markup. Classic is the default; Repo (html.ui-repo)
+   borrows the look of a code host: monospace names, hairline borders, tighter
+   corners, a green primary action. Each has a light and a dark ground. */
 @layer base {
   :root {
-    /* Derived from the accent, so a custom colour needs no extra input. */
     --color-accent-hover: color-mix(in srgb, var(--color-accent) 86%, #000);
-    --color-accent-soft: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    --color-accent-soft: color-mix(in srgb, var(--color-accent) 24%, transparent);
+    /* Text on an accent fill, and the accent used as text on a plain ground.
+       theme.js sets --on-accent from the chosen colour's luminance. */
+    --on-accent: #14121f;
+    --accent-ink: color-mix(in srgb, var(--color-accent) 42%, #14121f);
 
     color-scheme: light dark;
     --paper: #ffffff;
-    --canvas: #fcfaf8;
-    --sunken: #f5f3f0;
-    --line: #eceae7;
-    --ink: #202020;
-    --ink-soft: #666666;
-    --ink-faint: #a0a0a0;
-    --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 0.12);
-    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.05);
+    --canvas: #f2f0fa;
+    --sunken: #eae6f7;
+    --line: #e4e0f2;
+    --ink: #14121f;
+    --ink-soft: #5f5b76;
+    --ink-faint: #8a86a0;
+    --shadow-sheet: 0 -8px 30px rgb(20 18 31 / 0.14);
+    --shadow-card: 0 1px 2px rgb(20 18 31 / 0.05);
+
+    --btn-bg: var(--ink);
+    --btn-fg: var(--paper);
+    --btn-radius: 9999px;
+    --fab-bg: var(--color-accent);
+    --fab-fg: var(--on-accent);
+
+    --nav-bg: #14121f;
+    --nav-fg: #a9a5c0;
+    --nav-active-bg: #2b2840;
+    --nav-active-fg: #ffffff;
+
+    --hero-bg: #14121f;
+    --hero-fg: #ffffff;
+    --hero-soft: #a9a5c0;
+
+    --good-bg: #d9f2e3;
+    --good-fg: #146c3f;
+    --warn-bg: #fbe6b8;
+    --warn-fg: #7a4b00;
+    --del: #c0392b;
+    --add: #146c3f;
   }
 
   html.dark {
     color-scheme: dark;
     --color-accent-soft: color-mix(in srgb, var(--color-accent) 22%, transparent);
+    --accent-ink: var(--color-accent);
 
-    --paper: #1f1f1f;
-    --canvas: #191919;
-    --sunken: #282828;
-    --line: #303030;
-    --ink: #e8e6e3;
-    --ink-soft: #a0a0a0;
-    --ink-faint: #6f6f6f;
+    --paper: #1e1b2b;
+    --canvas: #15131f;
+    --sunken: #29253a;
+    --line: #332f45;
+    --ink: #edeaf7;
+    --ink-soft: #a9a5c0;
+    --ink-faint: #77728f;
     --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 0.5);
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
+
+    --nav-bg: #0d0c14;
+    --hero-bg: #0d0c14;
+
+    --good-bg: #1c3a2d;
+    --good-fg: #56d39a;
+    --warn-bg: #3a2e14;
+    --warn-fg: #e0a93b;
+    --del: #e5736b;
+    --add: #56d39a;
+  }
+
+  /* ------------------------------------------------------------ repo skin */
+  html.ui-repo {
+    --color-accent: #3b5bdb;
+    --on-accent: #ffffff;
+    --accent-ink: #3b5bdb;
+    --color-accent-soft: color-mix(in srgb, #3b5bdb 12%, transparent);
+
+    --paper: #ffffff;
+    --canvas: #f6f8fa;
+    --sunken: #eef1f5;
+    --line: #d0d7de;
+    --ink: #1f2328;
+    --ink-soft: #59636e;
+    --ink-faint: #818b98;
+    --shadow-sheet: 0 -8px 30px rgb(31 35 40 / 0.16);
+    --shadow-card: none;
+
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --radius-2xl: 0.75rem;
+    --radius-card: 0.75rem;
+    --font-display: var(--font-mono);
+
+    --btn-bg: #1f883d;
+    --btn-fg: #ffffff;
+    --btn-radius: 0.5rem;
+    --fab-bg: #1f883d;
+    --fab-fg: #ffffff;
+
+    --nav-bg: transparent;
+    --nav-fg: #59636e;
+    --nav-active-bg: #eef1f5;
+    --nav-active-fg: #1f2328;
+
+    --hero-bg: #ffffff;
+    --hero-fg: #1f2328;
+    --hero-soft: #59636e;
+    --good-bg: #dafbe1;
+    --good-fg: #1a7f37;
+    --warn-bg: #fff8c5;
+    --warn-fg: #7d4e00;
+    --del: #cf222e;
+    --add: #1a7f37;
+  }
+
+  html.ui-repo.dark {
+    --color-accent: #7f93f5;
+    --on-accent: #0f1117;
+    --accent-ink: #7f93f5;
+    --color-accent-soft: color-mix(in srgb, #7f93f5 16%, transparent);
+
+    --paper: #1a1d26;
+    --canvas: #14161d;
+    --sunken: #20242f;
+    --line: #323847;
+    --ink: #e6e9f2;
+    --ink-soft: #9aa3b5;
+    --ink-faint: #6f7889;
+    --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 0.55);
+
+    --btn-bg: #3fb27f;
+    --btn-fg: #08150f;
+    --fab-bg: #3fb27f;
+    --fab-fg: #08150f;
+
+    --nav-fg: #9aa3b5;
+    --nav-active-bg: #2b3040;
+    --nav-active-fg: #e6e9f2;
+
+    --hero-bg: #1a1d26;
+    --hero-fg: #e6e9f2;
+    --hero-soft: #9aa3b5;
+    --good-bg: #1c3a2d;
+    --good-fg: #56d39a;
+    --warn-bg: #3a2e14;
+    --warn-fg: #e0a93b;
+    --del: #e5736b;
+    --add: #56d39a;
   }
 
   html {
@@ -136,9 +282,10 @@
   }
 
   /* Keyboard focus needs to be visible, but the browser's default ring sits
-     awkwardly on rounded controls and shows up on mouse clicks too. */
+     awkwardly on rounded controls and shows up on mouse clicks too. The ink
+     colour is used rather than the accent: a pale accent is not a visible ring. */
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--ink);
     outline-offset: 2px;
     border-radius: 0.5rem;
   }
@@ -155,6 +302,159 @@
     .room-grid > *:hover {
       border-color: color-mix(in srgb, var(--ink-faint) 40%, var(--line));
     }
+  }
+
+  /* ------------------------------------------------------------- controls */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 2.75rem;
+    padding: 0 1.25rem;
+    font-weight: 600;
+    border-radius: var(--btn-radius);
+    transition:
+      background-color 120ms ease,
+      filter 120ms ease,
+      transform 120ms ease;
+  }
+  .btn:active {
+    transform: scale(0.98);
+  }
+  .btn-primary {
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+  }
+  .btn-primary:active {
+    filter: brightness(0.92);
+  }
+  .btn-ghost {
+    border: 1px solid var(--line);
+    background: var(--paper);
+  }
+  .btn-ghost:active {
+    background: var(--sunken);
+  }
+
+  /* Small status labels: a tone, not a decoration. */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    height: 1.5rem;
+    padding: 0 0.625rem;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .pill-good {
+    background: var(--good-bg);
+    color: var(--good-fg);
+  }
+  .pill-warn {
+    background: var(--warn-bg);
+    color: var(--warn-fg);
+  }
+  .pill-quiet {
+    background: var(--sunken);
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+
+  .avatar {
+    border-radius: 9999px;
+  }
+  html.ui-repo .avatar {
+    border-radius: var(--radius-lg);
+  }
+
+  /* Names and paths read as code in the Repo interface and as plain text in
+     Classic. One class, two looks. */
+  .t-name,
+  .t-path {
+    overflow-wrap: anywhere;
+  }
+  html.ui-repo .t-name,
+  html.ui-repo .t-path {
+    font-family: var(--font-mono);
+    letter-spacing: -0.01em;
+  }
+  html.ui-repo .t-name {
+    font-size: 0.9em;
+  }
+  html.ui-repo .t-path {
+    font-size: 0.85em;
+  }
+
+  /* The dark summary card on Find, Value and the best search match. */
+  .hero {
+    background: var(--hero-bg);
+    color: var(--hero-fg);
+    border-radius: var(--radius-card);
+  }
+  .hero .hero-soft {
+    color: var(--hero-soft);
+  }
+  html.ui-repo .hero {
+    border: 1px solid var(--line);
+  }
+
+  /* An item's journey: dots on a line, the current place filled. */
+  .journey {
+    position: relative;
+  }
+  .journey::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background: var(--line);
+  }
+  .journey:has(> :only-child)::before {
+    display: none;
+  }
+  .journey-dot {
+    position: relative;
+    width: 14px;
+    height: 14px;
+    border-radius: 9999px;
+    border: 2px solid var(--ink-faint);
+    background: var(--paper);
+    flex-shrink: 0;
+  }
+  .journey-dot.is-here {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    box-shadow: 0 0 0 4px var(--color-accent-soft);
+  }
+  html.ui-repo .journey-dot {
+    border-radius: 3px;
+  }
+
+  /* A line in a move log, in diff colours. */
+  .diff-del {
+    color: var(--del);
+  }
+  .diff-add {
+    color: var(--add);
+  }
+  .diff-del::before {
+    content: "- ";
+  }
+  .diff-add::before {
+    content: "+ ";
+  }
+
+  /* Brand marks are files, tinted through a mask so they follow the text
+     colour in either theme. */
+  .brand-glyph {
+    display: inline-block;
+    background: currentColor;
+    -webkit-mask: var(--u) center / contain no-repeat;
+    mask: var(--u) center / contain no-repeat;
   }
 }
 
@@ -252,15 +552,6 @@
    pixels, and everything is switched off under prefers-reduced-motion (below).
    Motion here is for orientation — where a thing came from — not decoration. */
 
-@keyframes drawer-in {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: none;
-  }
-}
-
 @keyframes popup-in {
   from {
     opacity: 0;
@@ -323,91 +614,189 @@
   [data-caret] {
     transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
+}
 
-  /* Sidebar width lives in CSS, not utility classes, so collapsing is a single
-     class on <html> and the main column follows it. */
-  /* Width and padding change instantly, and only the labels animate. A
-     transition on `width` re-lays out the whole page every frame, and worse:
-     if the transition is ever throttled (a backgrounded tab, a device in
-     low-power mode) it holds the old width indefinitely and the sidebar gets
-     stuck half-collapsed. Cheap properties only. */
-  #sidebar {
-    width: 16rem;
-  }
-  .sidebar-label,
-  .sidebar-count {
-    transition: opacity 140ms ease;
-  }
-  @media (min-width: 1024px) {
-    #app-shell {
-      padding-left: 16rem;
-    }
-    html.sidebar-collapsed #sidebar {
-      width: 4.5rem;
-    }
-    html.sidebar-collapsed #app-shell {
-      padding-left: 4.5rem;
-    }
-    /* Collapsed: icons only, centred, with the label read by the title tip. */
-    html.sidebar-collapsed .sidebar-label,
-    html.sidebar-collapsed .sidebar-section-label,
-    html.sidebar-collapsed .sidebar-count {
-      display: none;
-    }
-    html.sidebar-collapsed .sidebar-link {
-      justify-content: center;
-      padding-left: 0;
-      padding-right: 0;
-    }
-    html.sidebar-collapsed #sidebar-collapse svg {
-      transform: rotate(180deg);
-    }
-    /* Collapsed, the brand mark is just a second house glyph above the Home
-       link, so it goes; the toggle centres in its place.
-       !important because the element carries Tailwind's `flex` utility, and
-       utilities are a later layer than components — without it this rule loses
-       the cascade and the mark stays visible. */
-    html.sidebar-collapsed #sidebar-brand {
-      display: none !important;
-    }
-    html.sidebar-collapsed #sidebar > div:first-child {
-      justify-content: center;
-      padding-left: 0;
-      padding-right: 0;
-    }
-    html.sidebar-collapsed #sidebar-collapse {
-      margin-left: 0;
-    }
-  }
-
-  /* Mobile drawer: the same navigation, slid in from the edge. */
-  .drawer-panel {
-    animation: drawer-in 220ms cubic-bezier(0.32, 0.72, 0, 1) both;
-  }
-
-  .nav-tab.is-active {
-    color: var(--color-accent);
-  }
-
-  /* Desktop sidebar, Todoist-style: a quiet rail that never scrolls away. */
-  .sidebar-link {
+/* ------------------------------------------------------------ navigation --
+   Phones: a floating dark pill with the add button beside it (Classic), or a
+   full-width tab bar (Repo). From lg up the same destinations live in a top bar. */
+@layer components {
+  #app-nav {
+    position: fixed;
+    left: 1rem;
+    right: 5.75rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    height: 4rem;
+    z-index: 30;
     display: flex;
     align-items: center;
-    gap: 0.625rem;
-    padding: 0.5rem 0.625rem;
-    border-radius: 0.5rem;
+    justify-content: space-around;
+    padding: 0 0.5rem;
+    border-radius: 2rem;
+    background: var(--nav-bg);
+    box-shadow: 0 10px 30px rgb(20 18 31 / 0.28);
+  }
+  .nav-tab {
+    width: 4rem;
+    height: 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--nav-fg);
+    transition: color 120ms ease;
+  }
+  .nav-tab.is-active {
+    color: var(--color-accent);
+    font-weight: 700;
+  }
+  #fab {
+    position: fixed;
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    z-index: 30;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 9999px;
+    display: grid;
+    place-items: center;
+    background: var(--fab-bg);
+    color: var(--fab-fg);
+    box-shadow: 0 10px 30px rgb(20 18 31 / 0.28);
+    transition: transform 120ms ease;
+  }
+  #fab:active {
+    transform: scale(0.95);
+  }
+
+  html.ui-repo #app-nav {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(4.75rem + env(safe-area-inset-bottom));
+    padding: 0 0.5rem env(safe-area-inset-bottom);
+    border-radius: 0;
+    background: var(--paper);
+    border-top: 1px solid var(--line);
+    box-shadow: none;
+  }
+  html.ui-repo .nav-tab {
+    flex: 1;
+  }
+  html.ui-repo #fab {
+    bottom: calc(5.75rem + env(safe-area-inset-bottom));
+    border-radius: 1rem;
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  #topbar {
+    display: none;
+  }
+  .logo-dark {
+    display: none;
+  }
+  html.dark .logo-dark {
+    display: block;
+  }
+  html.dark .logo-light {
+    display: none;
+  }
+  .topnav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 3.5rem;
+    padding: 0 6px;
+    border-radius: 1.75rem;
+    background: var(--nav-bg);
+  }
+  .topnav a {
+    height: 2.75rem;
+    padding: 0 1.25rem;
+    border-radius: 1.375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--nav-fg);
     transition:
       background-color 120ms ease,
       color 120ms ease;
   }
-  .sidebar-link:hover {
-    background: var(--sunken);
+  .topnav a.is-active {
+    background: var(--nav-active-bg);
+    color: var(--nav-active-fg);
+    font-weight: 700;
   }
-  .sidebar-link.is-active {
-    background: var(--color-accent-soft);
+  .topnav a.is-active svg {
     color: var(--color-accent);
-    font-weight: 600;
+  }
+  .topround {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    display: grid;
+    place-items: center;
+    background: var(--paper);
+    color: var(--ink);
+    transition: background-color 120ms ease;
+  }
+  .topround.is-active {
+    background: var(--nav-bg);
+    color: var(--color-accent);
+  }
+
+  @media (min-width: 1024px) {
+    #app-nav,
+    #fab {
+      display: none;
+    }
+    #topbar {
+      display: block;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: var(--canvas);
+      padding: 1rem 2rem 0.25rem;
+    }
+    html.ui-repo #topbar {
+      background: var(--paper);
+      border-bottom: 1px solid var(--line);
+      padding: 0 2rem;
+    }
+    html.ui-repo .topnav {
+      height: 4rem;
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+    html.ui-repo .topnav a {
+      height: 2.25rem;
+      padding: 0 0.75rem;
+      border-radius: 0.5rem;
+      color: var(--ink-soft);
+    }
+    html.ui-repo .topnav a.is-active {
+      background: var(--sunken);
+      color: var(--ink);
+    }
+    html.ui-repo .topnav a.is-active svg {
+      color: var(--accent-ink);
+    }
+    html.ui-repo .topround {
+      border-radius: 0.5rem;
+      width: 2.25rem;
+      height: 2.25rem;
+      background: transparent;
+    }
+    html.ui-repo .topround.is-active {
+      background: var(--sunken);
+      color: var(--ink);
+    }
   }
 }
 
@@ -478,7 +867,9 @@
   /* App chrome has no business on paper. */
   .no-print,
   #header,
+  #topbar,
   #app-nav,
+  #fab,
   #toast-root,
   #sheet-root {
     display: none !important;

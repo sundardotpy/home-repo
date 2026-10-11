@@ -215,6 +215,20 @@ printf '        now at: %s\n' "$(field "location.path_string")"
 req POST "/items/$DRILL/move" "{\"storage_unit_id\":\"$BOX\"}"; check "move item back into box" 200
 printf '        now at: %s\n' "$(field "location.path_string")"
 
+echo "== value and history =="
+req PATCH "/items/$DRILL" '{"purchase_price":1000,"purchased_on":"2020-01-01"}'; check "set price and date" 200
+printf '        per day: %s (%s days)\n' "$(field "value.per_day")" "$(field "value.days")"
+req PATCH "/items/$DRILL" '{"purchased_on":"yesterday"}'; check "bad date rejected" 400
+req PATCH "/items/$DRILL" '{"purchase_price":-5}'; check "negative price rejected" 400
+req GET "/items?has_price=true&room_id=$ROOM"; check "has_price filter" 200
+printf '        priced items in the room: %s\n' "$(field "total")"
+req PATCH "/items/$DRILL" '{"purchase_price":null,"purchased_on":null}'; check "clear price and date" 200
+printf '        price now: %s\n' "$(field "purchase_price")"
+req PATCH "/items/$DRILL" '{"quantity":3}'; check "saving without moving adds no history" 200
+req GET "/items/$DRILL/history"; check "item history" 200
+printf '        moves: %s\n' "$(python3 -c "import json,sys; print(len(json.loads(sys.argv[1])['moves']))" "$BODY")"
+req GET "/activity?limit=3"; check "recent activity" 200
+
 echo "== relocating a unit carries its subtree =="
 req PATCH "/storage-units/$SHELF" "{\"room_id\":\"$GARAGE\",\"parent_id\":null}"; check "move shelf to garage" 200
 req GET "/items/$DRILL"; check "item followed the move" 200

@@ -80,7 +80,7 @@ export function tagPickerSheet(selected, onDone) {
           ${
             q && !exact
               ? `<button type="button" data-create
-                   class="w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-2 text-[var(--color-accent)] font-medium hover:bg-[var(--sunken)]">
+                   class="w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-2 text-[var(--accent-ink)] font-medium hover:bg-[var(--sunken)]">
                    ${icon('plus', 'w-4 h-4')} Add “${esc(q)}”
                  </button>`
               : ''
@@ -94,7 +94,7 @@ export function tagPickerSheet(selected, onDone) {
                   class="w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-2.5 hover:bg-[var(--sunken)]">
                   <span class="w-4 h-4 shrink-0 rounded border ${
                     chosen.has(t.name)
-                      ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white grid place-items-center'
+                      ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-[var(--on-accent)] grid place-items-center'
                       : 'border-[var(--line)]'
                   }">${chosen.has(t.name) ? icon('check', 'w-3 h-3') : ''}</span>
                   <span class="flex-1 truncate">${esc(t.name)}</span>
@@ -261,7 +261,7 @@ export function propertyEditor(host, initial = {}, getTags = () => []) {
       }
       <div data-suggest class="flex flex-wrap gap-1.5 mb-2"></div>
       <button type="button" data-add
-        class="text-[13px] font-medium text-[var(--color-accent)] inline-flex items-center gap-1">
+        class="text-[13px] font-medium text-[var(--accent-ink)] inline-flex items-center gap-1">
         ${icon('plus', 'w-4 h-4')} Add a field
       </button>`;
 
@@ -345,7 +345,7 @@ export const propertyList = (props) => {
           ${
             v
               ? `<a href="#/search?q=${encodeURIComponent(v)}"
-                   class="flex-1 font-medium text-right truncate hover:text-[var(--color-accent)] transition-colors">${esc(v)}</a>`
+                   class="flex-1 font-medium text-right truncate hover:text-[var(--accent-ink)] transition-colors">${esc(v)}</a>`
               : `<span class="flex-1 text-right text-[var(--ink-faint)]">—</span>`
           }
         </div>`,
