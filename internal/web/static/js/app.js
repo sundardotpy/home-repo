@@ -1649,6 +1649,7 @@ function codeSheet(unit) {
 let searchQuery = '';
 let searchTimer = null;
 let searchFilters = { room_id: '', tags: '', has_barcode: false };
+let codeMatch = null; // { query, kind, storage_unit? | item? } — a hit from /api/scan
 
 function buildSearchPath() {
   if (!searchQuery) return '';
@@ -1659,6 +1660,51 @@ function buildSearchPath() {
   return `/search${qs(params)}`;
 }
 
+// A label code or barcode is a single compact token — never a phrase with
+// spaces — so this is what filters out ordinary text searches before
+// bothering the network with a lookup that can only ever 404 for them.
+function looksLikeCode(q) {
+  const stripped = q.replace(/[\s-]/g, '');
+  return stripped.length >= 4 && stripped.length <= 24 && /^[A-Za-z0-9]+$/.test(stripped);
+}
+
+// Resolve a query against /api/scan (our QR labels and product barcodes) so a
+// code typed or pasted into search jumps straight to the box it belongs to,
+// the same way the camera scanner does.
+async function lookupCode(query, screen) {
+  if (!looksLikeCode(query)) return;
+  let data;
+  try {
+    data = await get(`/scan${qs({ code: query })}`);
+  } catch {
+    return; // 404 (unknown code) or offline — search results stand on their own
+  }
+  if (query !== searchQuery) return; // superseded by further typing
+  if (data.kind === 'storage_unit' || data.kind === 'item') {
+    codeMatch = { ...data, query };
+    screen.update();
+  }
+}
+
+function codeMatchCard(data) {
+  if (data.kind === 'storage_unit') {
+    const unit = data.storage_unit;
+    const trail = [unit.room_name, ...(unit.path || []).slice(0, -1)].filter(Boolean).join(' › ');
+    return listCard(`
+      <a href="#/unit/${esc(unit.id)}" class="row-press flex items-center gap-3 px-4 py-3.5">
+        <span class="w-9 h-9 rounded-lg bg-[var(--color-accent-soft)] text-[var(--color-accent)] grid place-items-center shrink-0">
+          ${icon('box', 'w-4.5 h-4.5')}
+        </span>
+        <span class="flex-1 min-w-0">
+          <span class="block font-medium truncate">${esc(unit.name)}</span>
+          <span class="block text-[13px] text-[var(--ink-soft)] truncate">${esc(trail || unit.room_name || '')}</span>
+        </span>
+        <span class="text-[var(--ink-faint)]">${icon('chevron', 'w-4 h-4')}</span>
+      </a>`);
+  }
+  return listCard(itemRow(data.item, { showLocation: true }));
+}
+
 const searchScreen = {
   staticHeader: true,
   paths: () => {
@@ -1666,23 +1712,23 @@ const searchScreen = {
     return path ? [path] : [];
   },
   header: () => `
-    <div style=”display: flex; align-items: center; gap: 0.25rem; padding: 0.5rem; background: var(--canvas);”>
-      <a href=”#/” style=”width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border-radius: 0.5rem; color: var(--ink-soft); flex-shrink: 0;”>
+    <div style="display: flex; align-items: center; gap: 0.25rem; padding: 0.5rem; background: var(--canvas);">
+      <a href="#/" style="width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border-radius: 0.5rem; color: var(--ink-soft); flex-shrink: 0;">
         ${icon('back', 'w-5 h-5')}
       </a>
-      <div style=”display: flex; align-items: center; gap: 0.5rem; flex: 1; height: 2.75rem; padding: 0 0.75rem; border-radius: 0.5rem; background: var(--sunken); border: 1px solid transparent;”>
-        <span style=”color: var(--ink-faint); flex-shrink: 0;”>${icon('search', 'w-4.5 h-4.5')}</span>
-        <input id=”search-input” type=”search” autocomplete=”off” enterkeyhint=”search”
-          placeholder=”Search items and tags”
-          style=”flex: 1; background: transparent; outline: none; border: none; color: var(--ink); font: inherit;”>
+      <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; height: 2.75rem; padding: 0 0.75rem; border-radius: 0.5rem; background: var(--sunken); border: 1px solid transparent;">
+        <span style="color: var(--ink-faint); flex-shrink: 0;">${icon('search', 'w-4.5 h-4.5')}</span>
+        <input id="search-input" type="search" autocomplete="off" enterkeyhint="search"
+          placeholder="Search items and tags"
+          style="flex: 1; background: transparent; outline: none; border: none; color: var(--ink); font: inherit;">
       </div>
-      <button id=”search-filters” type=”button” aria-label=”Filters”
-        style=”width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border-radius: 0.5rem; color: var(--ink-soft); border: none; background: transparent; cursor: pointer; flex-shrink: 0;”>
+      <button id="search-filters" type="button" aria-label="Filters"
+        style="width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border-radius: 0.5rem; color: var(--ink-soft); border: none; background: transparent; cursor: pointer; flex-shrink: 0;">
         ${icon('settings', 'w-5 h-5')}
       </button>
     </div>`,
   mount(el) {
-    el.innerHTML = `<div id=”search-body” class=”px-4”></div>`;
+    el.innerHTML = `<div id="search-body" class="px-4"></div>`;
     const input = document.getElementById('search-input');
     const filterBtn = document.getElementById('search-filters');
     input.value = searchQuery;
@@ -1695,6 +1741,7 @@ const searchScreen = {
         if (!searchQuery) return;
         store.setActive(this.paths());
         store.load(this.paths()[0], { maxAge: 10_000 }).catch(() => {});
+        lookupCode(searchQuery, this);
       }, 180);
     });
     filterBtn.addEventListener('click', () => searchFilterSheet(this));
@@ -1708,7 +1755,7 @@ const searchScreen = {
     if (!searchQuery) {
       body.innerHTML = emptyState(
         'Search your home',
-        'Type part of a name or a tag. Results show the full path, right down to the box.',
+        'Type part of a name or a tag, or enter a label code, and results show the full path, right down to the box.',
       );
       return;
     }
@@ -1716,25 +1763,31 @@ const searchScreen = {
     const path = this.paths()[0];
     if (!path) return;
     const { data, cached, loading } = store.peek(path);
-    const results = (data?.results || []).map((r) => r.item || r);
+    const match = codeMatch && codeMatch.query === searchQuery ? codeMatch : null;
+    const results = (data?.results || [])
+      .map((r) => r.item || r)
+      .filter((i) => !(match?.kind === 'item' && i.id === match.item.id));
 
     body.innerHTML = `
+      ${match ? `<div class="mb-4">${sectionTitle('Matches this code')}${codeMatchCard(match)}</div>` : ''}
       ${
         !cached && loading
           ? skeletonList(5)
           : results.length
             ? listCard(results.map((i) => itemRow(i, { showLocation: true, pending: store.isTemp(i.id) })).join(''))
             : cached
-              ? emptyState('No matches', `Nothing here matches “${searchQuery}”.`)
+              ? match
+                ? ''
+                : emptyState('No matches', `Nothing here matches "${searchQuery}".`)
               : skeletonList(5)
       }
       ${
         cached && results.length
-          ? `<p class=”text-[13px] text-[var(--ink-faint)] text-center mt-4”>${data.total} match${data.total === 1 ? '' : 'es'}</p>`
+          ? `<p class="text-[13px] text-[var(--ink-faint)] text-center mt-4">${data.total} match${data.total === 1 ? '' : 'es'}</p>`
           : ''
       }`;
 
-    wireItemRows(body, results);
+    wireItemRows(body, match?.kind === 'item' ? [match.item, ...results] : results);
   },
 };
 
@@ -1743,23 +1796,23 @@ function searchFilterSheet(screen) {
   openSheet({
     title: 'Search filters',
     body: `
-      <div class=”space-y-4”>
+      <div class="space-y-4">
         <div>
-          <label class=”block text-[13px] font-medium text-[var(--ink-soft)] mb-1.5”>Room</label>
-          <select id=”filter-room” class=”${inputCls}”>
-            <option value=””>All rooms</option>
-            ${rooms().map((r) => `<option value=”${r.id}” ${searchFilters.room_id === r.id ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}
+          <label class="block text-[13px] font-medium text-[var(--ink-soft)] mb-1.5">Room</label>
+          <select id="filter-room" class="${inputCls}">
+            <option value="">All rooms</option>
+            ${rooms().map((r) => `<option value="${r.id}" ${searchFilters.room_id === r.id ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label class=”block text-[13px] font-medium text-[var(--ink-soft)] mb-1.5”>Tags</label>
-          <input type=”text” id=”filter-tags” placeholder=”Comma-separated tags” value=”${esc(searchFilters.tags)}”
-            class=”${inputCls}”>
+          <label class="block text-[13px] font-medium text-[var(--ink-soft)] mb-1.5">Tags</label>
+          <input type="text" id="filter-tags" placeholder="Comma-separated tags" value="${esc(searchFilters.tags)}"
+            class="${inputCls}">
         </div>
-        <label class=”flex items-center gap-2 cursor-pointer”>
-          <input type=”checkbox” id=”filter-barcode” ${searchFilters.has_barcode ? 'checked' : ''}
-            class=”w-4 h-4 rounded border-[var(--line)]”>
-          <span class=”text-[13px] text-[var(--ink)]”>Has barcode</span>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="filter-barcode" ${searchFilters.has_barcode ? 'checked' : ''}
+            class="w-4 h-4 rounded border-[var(--line)]">
+          <span class="text-[13px] text-[var(--ink)]">Has barcode</span>
         </label>
       </div>`,
     onMount(body) {
