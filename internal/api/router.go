@@ -80,6 +80,7 @@ func (s *Server) Routes() http.Handler {
 			r.Get("/{itemID}", s.getItem)
 			r.Patch("/{itemID}", s.updateItem)
 			r.Delete("/{itemID}", s.deleteItem)
+			r.Get("/{itemID}/history", s.itemHistory)
 			r.Post("/{itemID}/move", s.moveItem)
 			r.Post("/{itemID}/photo", s.uploadItemPhoto)
 			r.Delete("/{itemID}/photo", s.deleteItemPhoto)
@@ -93,6 +94,8 @@ func (s *Server) Routes() http.Handler {
 		})
 
 		r.Get("/properties", s.listProperties)
+
+		r.Get("/activity", s.recentActivity)
 
 		r.Get("/search", s.search)
 

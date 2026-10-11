@@ -3,8 +3,10 @@ package store
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sundar/home_repo/internal/model"
@@ -13,6 +15,7 @@ import (
 const itemCols = `i.id, i.name, i.description, i.quantity, i.tags, i.icon, i.barcode,
 	i.properties, i.room_id, i.storage_unit_id,
 	i.photo_path, i.created_by, i.updated_by, i.created_at, i.updated_at,
+	i.purchase_price::float8, to_char(i.purchased_on, 'YYYY-MM-DD'),
 	r.name, r.floor, r.floor_name, p.path`
 
 const itemFrom = `FROM items i
@@ -29,10 +32,12 @@ func scanItem(row interface{ Scan(...any) error }) (*model.Item, error) {
 	)
 	err := row.Scan(&it.ID, &it.Name, &it.Description, &it.Quantity, &it.Tags, &it.Icon, &it.Barcode,
 		&it.Properties, &it.RoomID, &it.StorageUnitID, &it.PhotoPath, &it.CreatedBy, &it.UpdatedBy,
-		&it.CreatedAt, &it.UpdatedAt, &roomName, &floor, &floorName, &unitPath)
+		&it.CreatedAt, &it.UpdatedAt, &it.PurchasePrice, &it.PurchasedOn,
+		&roomName, &floor, &floorName, &unitPath)
 	if err != nil {
 		return nil, mapErr(err)
 	}
+	it.Value = model.NewValue(it.PurchasePrice, it.PurchasedOn, time.Now())
 	loc := model.NewLocation(it.RoomID, roomName, floor, floorName, it.StorageUnitID, unitPath)
 	it.Location = &loc
 	it.PhotoURL, it.PhotoThumbURL = model.PhotoURLs(it.PhotoPath)
@@ -84,6 +89,7 @@ type ItemFilter struct {
 	PropKey       string
 	PropValue     string
 	HasBarcode    bool // only items that carry a manufacturer's code
+	HasPrice      bool // only items with a price and a purchase date (the Value screen)
 	RoomID        *uuid.UUID
 	StorageUnitID *uuid.UUID
 	// Deep includes items in every descendant of StorageUnitID, not just the
@@ -114,6 +120,9 @@ func (s *Store) ListItems(ctx context.Context, f ItemFilter) ([]*model.Item, int
 	}
 	if f.HasBarcode {
 		where = append(where, `i.barcode <> ''`)
+	}
+	if f.HasPrice {
+		where = append(where, `i.purchase_price IS NOT NULL AND i.purchased_on IS NOT NULL`)
 	}
 	if key := strings.TrimSpace(f.PropKey); key != "" {
 		if v := strings.TrimSpace(f.PropValue); v != "" {
@@ -194,6 +203,8 @@ type ItemInput struct {
 	RoomID        uuid.UUID
 	StorageUnitID *uuid.UUID
 	PhotoPath     *string
+	PurchasePrice *float64
+	PurchasedOn   *string // YYYY-MM-DD
 	ActorID       *uuid.UUID
 }
 
@@ -216,14 +227,22 @@ func (s *Store) CreateItem(ctx context.Context, in ItemInput) (*model.Item, erro
 	var id uuid.UUID
 	err = s.pool.QueryRow(ctx, `
 		INSERT INTO items (name, description, quantity, tags, icon, barcode, properties,
-		                   room_id, storage_unit_id, photo_path, created_by, updated_by)
-		VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $11) RETURNING id`,
+		                   room_id, storage_unit_id, photo_path, created_by, updated_by,
+		                   purchase_price, purchased_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $11,
+		        $12::numeric, $13::date) RETURNING id`,
 		in.Name, in.Description, in.Quantity, in.Tags, in.Icon, in.Barcode, props,
-		roomID, in.StorageUnitID, in.PhotoPath, in.ActorID).Scan(&id)
+		roomID, in.StorageUnitID, in.PhotoPath, in.ActorID,
+		in.PurchasePrice, in.PurchasedOn).Scan(&id)
 	if err != nil {
 		return nil, mapErr(err)
 	}
-	return s.GetItem(ctx, id)
+	item, err := s.GetItem(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	s.recordMove(ctx, item.ID, "added", nil, item.Location, in.ActorID)
+	return item, nil
 }
 
 // resolveRoom keeps items.room_id honest: when an item is placed inside a unit,
@@ -256,6 +275,13 @@ type ItemPatch struct {
 	Properties  map[string]string // non-nil replaces the whole set
 	PhotoPath   *string
 	ActorID     *uuid.UUID
+
+	// Price and date use the same absent-vs-null handling as the location: the
+	// Set flag says the key was sent, and a nil value then clears the field.
+	SetPrice       bool
+	PurchasePrice  *float64
+	SetPurchasedOn bool
+	PurchasedOn    *string
 
 	// Relocation, same absent-vs-null handling as UnitPatch.
 	SetLocation   bool
@@ -301,17 +327,100 @@ func (s *Store) UpdateItem(ctx context.Context, id uuid.UUID, p ItemPatch) (*mod
 			room_id         = $10,
 			storage_unit_id = $11,
 			updated_by      = COALESCE($12, updated_by),
+			purchase_price  = CASE WHEN $13::boolean THEN $14::numeric ELSE purchase_price END,
+			purchased_on    = CASE WHEN $15::boolean THEN $16::date ELSE purchased_on END,
 			updated_at      = now()
 		WHERE id = $1`,
 		id, p.Name, p.Description, p.Quantity, p.Tags, p.Icon, p.Barcode, props,
-		p.PhotoPath, roomID, unitID, p.ActorID)
+		p.PhotoPath, roomID, unitID, p.ActorID,
+		p.SetPrice, p.PurchasePrice, p.SetPurchasedOn, p.PurchasedOn)
 	if err != nil {
 		return nil, mapErr(err)
 	}
 	if tag.RowsAffected() == 0 {
 		return nil, ErrNotFound
 	}
-	return s.GetItem(ctx, id)
+	next, err := s.GetItem(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	// Only a real change of place is history; saving the form unchanged is not.
+	if cur.RoomID != next.RoomID || !sameUnit(cur.StorageUnitID, next.StorageUnitID) {
+		s.recordMove(ctx, next.ID, "moved", cur.Location, next.Location, p.ActorID)
+	}
+	return next, nil
+}
+
+func sameUnit(a, b *uuid.UUID) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return *a == *b
+}
+
+// recordMove appends to an item's history. A failure here is logged, not
+// returned: losing one history line is better than refusing the move itself.
+func (s *Store) recordMove(ctx context.Context, itemID uuid.UUID, kind string, from, to *model.Location, actor *uuid.UUID) {
+	if to == nil {
+		return
+	}
+	var (
+		fromRoom *uuid.UUID
+		fromUnit *uuid.UUID
+		fromPath []string
+	)
+	if from != nil {
+		fromRoom, fromUnit, fromPath = &from.RoomID, from.StorageUnitID, from.Path
+	}
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO item_moves (item_id, kind, from_room_id, from_unit_id, to_room_id, to_unit_id,
+		                        from_path, to_path, moved_by)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		itemID, kind, fromRoom, fromUnit, to.RoomID, to.StorageUnitID, fromPath, to.Path, actor)
+	if err != nil {
+		slog.Warn("record move", "item", itemID, "err", err)
+	}
+}
+
+// ItemHistory lists where an item has been, newest first.
+func (s *Store) ItemHistory(ctx context.Context, itemID uuid.UUID) ([]model.Move, error) {
+	return s.moves(ctx, `WHERE m.item_id = $1`, 200, itemID)
+}
+
+// RecentMoves is the "last put away" feed across every item.
+func (s *Store) RecentMoves(ctx context.Context, limit int) ([]model.Move, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 10
+	}
+	return s.moves(ctx, `WHERE true`, limit)
+}
+
+func (s *Store) moves(ctx context.Context, where string, limit int, args ...any) ([]model.Move, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT m.id, m.item_id, i.name, i.icon, m.kind, m.from_path, m.to_path, m.moved_at
+		  FROM item_moves m
+		  JOIN items i ON i.id = m.item_id
+		  `+where+`
+		 ORDER BY m.moved_at DESC
+		 LIMIT `+strconv.Itoa(limit), args...)
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	defer rows.Close()
+
+	out := []model.Move{}
+	for rows.Next() {
+		var m model.Move
+		if err := rows.Scan(&m.ID, &m.ItemID, &m.ItemName, &m.ItemIcon, &m.Kind,
+			&m.FromPath, &m.ToPath, &m.MovedAt); err != nil {
+			return nil, mapErr(err)
+		}
+		if m.FromPath == nil {
+			m.FromPath = []string{}
+		}
+		out = append(out, m)
+	}
+	return out, mapErr(rows.Err())
 }
 
 // SetItemPhoto attaches or clears an item's photo key. Callers read the

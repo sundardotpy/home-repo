@@ -153,5 +153,49 @@ type Item struct {
 	CreatedAt     time.Time         `json:"created_at"`
 	UpdatedAt     time.Time         `json:"updated_at"`
 
+	// What it cost and when it was bought; both optional. Value is derived from
+	// them and only present when both are set.
+	PurchasePrice *float64 `json:"purchase_price"`
+	PurchasedOn   *string  `json:"purchased_on"` // YYYY-MM-DD
+	Value         *Value   `json:"value,omitempty"`
+
 	Location *Location `json:"location,omitempty"`
+}
+
+// Value is what an item has cost per day of owning it so far.
+type Value struct {
+	Days   int     `json:"days"`
+	PerDay float64 `json:"per_day"`
+}
+
+// NewValue returns nil unless the item has both a price and a purchase date.
+// A thing bought today counts as one day, so the figure is never a division by
+// zero and never claims a free item.
+func NewValue(price *float64, purchasedOn *string, now time.Time) *Value {
+	if price == nil || purchasedOn == nil {
+		return nil
+	}
+	bought, err := time.Parse("2006-01-02", *purchasedOn)
+	if err != nil {
+		return nil
+	}
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	days := int(today.Sub(bought).Hours() / 24)
+	if days < 1 {
+		days = 1
+	}
+	return &Value{Days: days, PerDay: float64(int64(*price/float64(days)*100+0.5)) / 100}
+}
+
+// Move is one entry in an item's location history. Paths are the names as they
+// were at the time, room first, so history survives renames and deletions.
+type Move struct {
+	ID       uuid.UUID `json:"id"`
+	ItemID   uuid.UUID `json:"item_id"`
+	ItemName string    `json:"item_name,omitempty"`
+	ItemIcon string    `json:"item_icon,omitempty"`
+	Kind     string    `json:"kind"` // "added" or "moved"
+	FromPath []string  `json:"from_path"`
+	ToPath   []string  `json:"to_path"`
+	MovedAt  time.Time `json:"moved_at"`
 }

@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sundar/home_repo/internal/store"
@@ -53,6 +54,7 @@ func (s *Server) itemFilterFromQuery(w http.ResponseWriter, r *http.Request) (st
 		PropValue:     propValue,
 		Barcode:       normaliseBarcode(r.URL.Query().Get("barcode")),
 		HasBarcode:    queryBool(r, "has_barcode"),
+		HasPrice:      queryBool(r, "has_price"),
 		RoomID:        roomID,
 		StorageUnitID: unitID,
 		Deep:          queryBool(r, "deep"),
@@ -86,6 +88,22 @@ type itemBody struct {
 	RoomID        *uuid.UUID        `json:"room_id"`
 	StorageUnitID *uuid.UUID        `json:"storage_unit_id"`
 	PhotoPath     *string           `json:"photo_path"`
+	PurchasePrice *float64          `json:"purchase_price"`
+	PurchasedOn   *string           `json:"purchased_on"` // YYYY-MM-DD
+}
+
+// validPurchase checks the optional price and date a client sent. Either may be
+// absent or null; a present value has to make sense.
+func validPurchase(price *float64, on *string) string {
+	if price != nil && (*price < 0 || *price > 1e9) {
+		return "purchase_price must be between 0 and 1,000,000,000"
+	}
+	if on != nil {
+		if _, err := time.Parse("2006-01-02", *on); err != nil {
+			return "purchased_on must be a date like 2025-01-03"
+		}
+	}
+	return ""
 }
 
 func (s *Server) createItem(w http.ResponseWriter, r *http.Request) {
@@ -122,6 +140,11 @@ func (s *Server) createItem(w http.ResponseWriter, r *http.Request) {
 		in.Barcode = normaliseBarcode(*b.Barcode)
 	}
 	in.Properties = normaliseProperties(b.Properties)
+	if msg := validPurchase(b.PurchasePrice, b.PurchasedOn); msg != "" {
+		writeErr(w, http.StatusBadRequest, msg)
+		return
+	}
+	in.PurchasePrice, in.PurchasedOn = b.PurchasePrice, b.PurchasedOn
 	if b.Quantity != nil {
 		if *b.Quantity < 0 {
 			writeErr(w, http.StatusBadRequest, "quantity cannot be negative")
@@ -178,6 +201,16 @@ func (s *Server) updateItem(w http.ResponseWriter, r *http.Request) {
 	if b.Quantity != nil && *b.Quantity < 0 {
 		writeErr(w, http.StatusBadRequest, "quantity cannot be negative")
 		return
+	}
+	if msg := validPurchase(b.PurchasePrice, b.PurchasedOn); msg != "" {
+		writeErr(w, http.StatusBadRequest, msg)
+		return
+	}
+	if _, ok := raw["purchase_price"]; ok {
+		p.SetPrice, p.PurchasePrice = true, b.PurchasePrice
+	}
+	if _, ok := raw["purchased_on"]; ok {
+		p.SetPurchasedOn, p.PurchasedOn = true, b.PurchasedOn
 	}
 	_, unitPresent := raw["storage_unit_id"]
 	_, roomPresent := raw["room_id"]
