@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/sundar/home_sweet_home/internal/store"
+	"github.com/sundar/home_repo/internal/store"
 )
 
 func (s *Server) listItems(w http.ResponseWriter, r *http.Request) {

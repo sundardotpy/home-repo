@@ -23,7 +23,7 @@ func TestHandlerServesTheApp(t *testing.T) {
 	}{
 		{"/healthz", http.StatusOK, `"status":"ok"`},
 		{"/api/rooms", http.StatusOK, `"rooms"`},
-		{"/", http.StatusOK, "<title>Home Sweet Home</title>"},
+		{"/", http.StatusOK, "<title>Home Repo</title>"},
 		{"/static/js/app.js", http.StatusOK, "import"},
 		{"/api/nope", http.StatusNotFound, ""},
 	}

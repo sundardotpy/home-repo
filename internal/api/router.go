@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/sundar/home_sweet_home/internal/media"
-	"github.com/sundar/home_sweet_home/internal/store"
+	"github.com/sundar/home_repo/internal/media"
+	"github.com/sundar/home_repo/internal/store"
 )
 
 type Server struct {

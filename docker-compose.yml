@@ -10,13 +10,13 @@ services:
     environment:
       POSTGRES_USER: hsh
       POSTGRES_PASSWORD: hsh
-      POSTGRES_DB: home_sweet_home
+      POSTGRES_DB: home_repo
     ports:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hsh -d home_sweet_home"]
+      test: ["CMD-SHELL", "pg_isready -U hsh -d home_repo"]
       interval: 3s
       timeout: 3s
       retries: 20
@@ -30,7 +30,7 @@ services:
         required: false
     environment:
       # .env wins; this fallback is the compose-managed database above.
-      DATABASE_URL: ${DATABASE_URL:-postgres://hsh:hsh@db:5432/home_sweet_home?sslmode=disable}
+      DATABASE_URL: ${DATABASE_URL:-postgres://hsh:hsh@db:5432/home_repo?sslmode=disable}
       PORT: "8080"
       APP_ENV: dev
       # db keeps photos in Postgres (works on read-only/serverless hosts);

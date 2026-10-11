@@ -12,7 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/sundar/home_sweet_home/internal/store"
+	"github.com/sundar/home_repo/internal/store"
 )
 
 type errorBody struct {

@@ -7,12 +7,12 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/sundar/home_sweet_home/internal/api"
-	"github.com/sundar/home_sweet_home/internal/config"
-	"github.com/sundar/home_sweet_home/internal/db"
-	"github.com/sundar/home_sweet_home/internal/media"
-	"github.com/sundar/home_sweet_home/internal/store"
-	"github.com/sundar/home_sweet_home/internal/web"
+	"github.com/sundar/home_repo/internal/api"
+	"github.com/sundar/home_repo/internal/config"
+	"github.com/sundar/home_repo/internal/db"
+	"github.com/sundar/home_repo/internal/media"
+	"github.com/sundar/home_repo/internal/store"
+	"github.com/sundar/home_repo/internal/web"
 )
 
 type App struct {

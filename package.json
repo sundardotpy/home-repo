@@ -1,5 +1,5 @@
 {
-  "name": "home-sweet-home-css",
+  "name": "home-repo-css",
   "private": true,
   "description": "Tailwind build only. Never installed on the host - see the `css` compose service.",
   "scripts": {

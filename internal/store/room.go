@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/sundar/home_sweet_home/internal/model"
+	"github.com/sundar/home_repo/internal/model"
 )
 
 const roomCols = `r.id, r.name, r.description, r.sort_order, r.floor, r.floor_name,

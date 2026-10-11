@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/sundar/home_sweet_home/internal/store"
+	"github.com/sundar/home_repo/internal/store"
 )
 
 func (s *Server) listRooms(w http.ResponseWriter, r *http.Request) {

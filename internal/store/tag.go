@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/sundar/home_sweet_home/internal/model"
+	"github.com/sundar/home_repo/internal/model"
 )
 
 // NormaliseTag is the single definition of what a tag looks like: trimmed,

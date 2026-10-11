@@ -1,4 +1,4 @@
-module github.com/sundar/home_sweet_home
+module github.com/sundar/home_repo
 
 go 1.23.0
 

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/sundar/home_sweet_home/internal/store"
+	"github.com/sundar/home_repo/internal/store"
 )
 
 func (s *Server) listTags(w http.ResponseWriter, r *http.Request) {

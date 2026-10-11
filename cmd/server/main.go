@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sundar/home_sweet_home/internal/app"
+	"github.com/sundar/home_repo/internal/app"
 )
 
 func main() {

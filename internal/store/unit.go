@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/sundar/home_sweet_home/internal/model"
+	"github.com/sundar/home_repo/internal/model"
 )
 
 // Every unit read joins the recursive path view so callers always get the human

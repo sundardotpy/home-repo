@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sundar/home_sweet_home/internal/media"
+	"github.com/sundar/home_repo/internal/media"
 )
 
 // uploadItemPhoto accepts a multipart form with a single `photo` file, writes a

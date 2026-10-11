@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/sundar/home_sweet_home/internal/qr"
-	"github.com/sundar/home_sweet_home/internal/store"
+	"github.com/sundar/home_repo/internal/qr"
+	"github.com/sundar/home_repo/internal/store"
 )
 
 // scanURL is what gets encoded into the label. It has to be absolute — a phone

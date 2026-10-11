@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/sundar/home_sweet_home/internal/model"
+	"github.com/sundar/home_repo/internal/model"
 )
 
 const itemCols = `i.id, i.name, i.description, i.quantity, i.tags, i.icon, i.barcode,
