@@ -157,12 +157,15 @@ so the chosen one is kept but not applied while Repo is on.
 **Fonts** are self-hosted (`static/fonts`, OFL): DM Sans, Bricolage Grotesque for
 headings, JetBrains Mono for the Repo interface, which only downloads when used.
 
-**Icons** — nothing here is a photo you have to take. 212 line icons
+**Icons** — nothing here is a photo you have to take. 235 line icons
 (`item-icons.js` holds the original 49, `icon-set.js` the rest, grouped by room
 and purpose: electronics, kitchen, tools, bathroom, clothing, stationery and so on)
-and 56 product-brand marks (`brand-icons.js` is the name index; the marks are SVG
+and 74 product-brand marks (`brand-icons.js` is the name index; the marks are SVG
 files in `static/icons/brands/`, drawn through a CSS mask so they follow the text
-colour). The picker has Things and Brands tabs and is filterable by name or keyword;
+colour), plus 101 monogram badges for Indian household and FMCG brands whose logos
+there is no licence-clean source for (`brand-monograms.js`; a tile with the brand's
+initials, labelled as such in the picker, never passed off as the logo). The picker
+has Things and Brands tabs and is filterable by name or keyword;
 until you choose one the icon follows what you type: "Winter jacket" suggests
 *Coats & jackets*. A brand is stored as `brand:<slug>`. An item shows its photo if
 it has one, then its icon, then the quantity badge.

@@ -3,6 +3,7 @@
 import { api, get, post, qs } from './api.js';
 import { closeAnyPopup, createSelect, wireAccordions } from './components.js';
 import { BRAND_ICONS, BRAND_KEYS } from './brand-icons.js';
+import { MONOGRAMS, MONOGRAM_KEYS } from './brand-monograms.js';
 import { checkSession, lockNow, lockRequired } from './lock.js';
 import { ICON_GROUPS, ICON_KEYS, ITEM_ICONS, iconLabel, isBrandKey, itemIconSVG, suggestIcon } from './item-icons.js';
 import { barcodeCaptureSheet, labelCard, qrSheet, scanSheet } from './labels.js';
@@ -645,7 +646,7 @@ function iconPickerSheet(selected, onPick) {
 
   const matches = (key) => {
     if (!query) return true;
-    if (isBrandKey(key)) return iconLabel(key).toLowerCase().includes(query);
+    if (isBrandKey(key)) return iconLabel(key).toLowerCase().includes(query) || key.slice(6).includes(query);
     const d = ITEM_ICONS[key];
     return d.label.toLowerCase().includes(query) || d.keywords.some((w) => w.includes(query));
   };
@@ -655,8 +656,24 @@ function iconPickerSheet(selected, onPick) {
 
   const content = () => {
     if (tab === 'brands') {
-      const keys = BRAND_KEYS.map((k) => `brand:${k}`).filter(matches);
-      return keys.length ? grid(keys) : nothing();
+      const real = BRAND_KEYS.map((k) => `brand:${k}`).filter(matches);
+      const note = `<p class="text-[12px] text-[var(--ink-soft)] mt-5 mb-2">No official mark to ship for these, so each is a badge with the brand's initials, not its logo.</p>`;
+      const mono = MONOGRAM_KEYS.filter((k) => !BRAND_ICONS[k]).map((k) => `brand:${k}`).filter(matches);
+      if (!real.length && !mono.length) return nothing();
+      return (
+        (real.length ? grid(real) : '') +
+        (mono.length
+          ? note +
+            ['Food & drink', 'Personal care', 'Home care', 'Kitchen & appliances', 'Lifestyle & other']
+              .map((g) => {
+                const ks = mono.filter((k) => MONOGRAMS[k.slice(6)].group === g);
+                return ks.length
+                  ? `<h3 class="text-[11px] font-bold tracking-[0.08em] uppercase text-[var(--ink-faint)] mt-4 mb-2">${esc(g)}</h3>${grid(ks)}`
+                  : '';
+              })
+              .join('')
+          : '')
+      );
     }
     if (query) {
       const keys = ICON_KEYS.filter(matches);
@@ -1246,7 +1263,7 @@ const findScreen = {
         <a href="#/settings" class="topround" aria-label="Settings">${icon('settings', 'w-5 h-5')}</a>
       </div>
       <h1 class="font-display font-bold tracking-tight leading-[1.04] mt-6 lg:mt-8 ${
-        isRepo() ? 'text-[1.6rem]' : 'text-[2.5rem] lg:text-[3.25rem]'
+        isRepo() ? 'text-[1.6rem]' : 'text-[clamp(2.1rem,9.5vw,2.6rem)] lg:text-[3.25rem]'
       }">${t('Where did I<br>put it?', 'where did I put it?')}</h1>
       <div class="mt-5 flex items-center gap-2 h-14 pl-5 pr-2 bg-[var(--paper)] rounded-[var(--btn-radius)] ${
         isRepo() ? 'border border-[var(--accent-ink)]' : 'shadow-[0_8px_24px_rgb(20_18_31/0.07)]'

@@ -1,4 +1,5 @@
 import { BRAND_ICONS } from './brand-icons.js';
+import { MONOGRAMS } from './brand-monograms.js';
 import { EXTRA_ICONS } from './icon-set.js';
 
 // Pre-built item icons, for the (many) things nobody wants to photograph.
@@ -306,6 +307,7 @@ export const ICON_GROUPS = [
   'Garden & outdoor',
   'Vehicle & travel',
   'Pets',
+  'Pantry & FMCG',
   'Storage & misc',
 ];
 
@@ -316,14 +318,21 @@ export const ICON_KEYS = Object.keys(ITEM_ICONS);
 export const isBrandKey = (key) => typeof key === 'string' && key.startsWith('brand:');
 
 export const iconLabel = (key) =>
-  isBrandKey(key) ? BRAND_ICONS[key.slice(6)] || '' : ITEM_ICONS[key]?.label || '';
+  isBrandKey(key)
+    ? BRAND_ICONS[key.slice(6)] || MONOGRAMS[key.slice(6)]?.label || ''
+    : ITEM_ICONS[key]?.label || '';
 
 export const itemIconSVG = (key, cls = 'w-5 h-5') => {
   if (isBrandKey(key)) {
     const slug = key.slice(6);
-    if (!BRAND_ICONS[slug]) return '';
-    return `<span class="brand-glyph ${cls}" role="img" aria-label="${BRAND_ICONS[slug]}"
-      style="--u:url(/static/icons/brands/${slug}.svg)"></span>`;
+    if (BRAND_ICONS[slug]) {
+      return `<span class="brand-glyph ${cls}" role="img" aria-label="${BRAND_ICONS[slug]}"
+        style="--u:url(/static/icons/brands/${slug}.svg)"></span>`;
+    }
+    const mono = MONOGRAMS[slug];
+    if (!mono) return '';
+    return `<span class="monogram ${cls}" role="img" aria-label="${mono.label}"
+      data-len="${mono.mono.length}">${mono.mono}</span>`;
   }
   const def = ITEM_ICONS[key];
   if (!def) return '';

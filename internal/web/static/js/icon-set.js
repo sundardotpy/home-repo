@@ -879,4 +879,121 @@ export const EXTRA_ICONS = {
       path: '<rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M3 11h18M10 7v4M14 7v4"/>',
     },
   }),
+  ...g('Pantry & FMCG', {
+    biscuits: {
+      label: 'Biscuits',
+      keywords: ['biscuits', 'biscuit', 'cookies', 'parle-g', 'rusk', 'cream biscuits', 'marie'],
+      path: '<rect x="5" y="4" width="14" height="16" rx="1.5"/><path d="M5 8h14M5 16h14"/><circle cx="12" cy="12" r="2.5"/>',
+    },
+    noodles: {
+      label: 'Noodles',
+      keywords: ['noodles', 'maggi', 'pasta', 'instant noodles', 'vermicelli', 'ramen', 'sevai'],
+      path: '<path d="M3 11h18a9 7 0 01-18 0z"/><path d="M8 11c0-2 2-2 2-4M12 11c0-2 2-2 2-4M16 11c0-2 2-2 2-4"/>',
+    },
+    chips: {
+      label: 'Chips & snacks',
+      keywords: ['chips', 'snacks', 'namkeen', 'kurkure', 'bhujia', 'mixture', 'popcorn', 'wafers', 'lays'],
+      path: '<path d="M6 3h12l-1 18H7z"/><path d="M6 3l2 1.5L10 3l2 1.5L14 3l2 1.5L18 3"/><circle cx="12" cy="12" r="2.5"/>',
+    },
+    teabox: {
+      label: 'Tea & coffee',
+      keywords: ['tea', 'chai', 'coffee', 'tea powder', 'green tea', 'tea bags', 'nescafe', 'bru', 'filter coffee'],
+      path: '<rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M6 8h12M10 13c0-2 2-3 4-3 0 2-1 4-4 3z"/>',
+    },
+    ghee: {
+      label: 'Ghee & oil tin',
+      keywords: ['ghee', 'oil tin', 'butter', 'vanaspati', 'cooking oil tin', 'amul', 'dalda', 'paneer'],
+      path: '<rect x="6" y="6" width="12" height="15" rx="2"/><path d="M8 6V4h8v2M9 12h6M9 16h6"/>',
+    },
+    atta: {
+      label: 'Atta & rice sack',
+      keywords: ['atta', 'flour', 'maida', 'besan', 'suji', 'rava', 'rice', 'basmati', 'sugar', 'dal bag', 'grain', 'wheat'],
+      path: '<path d="M7 7c0-2 1-4 5-4s5 2 5 4l2 12a2 2 0 01-2 2H7a2 2 0 01-2-2z"/><path d="M8 7h8M12 12v4"/>',
+    },
+    cookingoil: {
+      label: 'Cooking oil',
+      keywords: ['cooking oil', 'sunflower oil', 'mustard oil', 'groundnut oil', 'coconut oil', 'olive oil', 'fortune', 'saffola', 'refined oil'],
+      path: '<path d="M10 3h4v3l2 3v11a1 1 0 01-1 1H9a1 1 0 01-1-1V9l2-3z"/><path d="M8 13h8M8 17h8"/>',
+    },
+    pouch: {
+      label: 'Pouch & sachet',
+      keywords: ['pouch', 'sachet', 'refill', 'detergent pouch', 'surf', 'powder', 'ketchup', 'sauce'],
+      path: '<path d="M6 4h12v16H6z"/><path d="M6 8h12M10 13a2 2 0 104 0 2 2 0 10-4 0"/>',
+    },
+    toothpaste: {
+      label: 'Toothpaste',
+      keywords: ['toothpaste', 'tube', 'colgate', 'cream tube', 'face wash', 'ointment', 'gel'],
+      path: '<path d="M4 19l2-3 12-5 2 3z"/><path d="M17 8l3-1 .5 2-3 1.5"/>',
+    },
+    shampoo: {
+      label: 'Shampoo & lotion',
+      keywords: ['shampoo', 'conditioner', 'lotion', 'body wash', 'hair oil', 'handwash', 'sanitiser', 'sanitizer'],
+      path: '<rect x="7" y="9" width="10" height="12" rx="2"/><path d="M12 9V5h3M10 14h4"/>',
+    },
+    chocolate: {
+      label: 'Chocolate',
+      keywords: ['chocolate', 'candy', 'sweets', 'dairy milk', 'toffee', 'mithai', 'bar'],
+      path: '<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M5 9h14M5 15h14M12 3v18"/>',
+    },
+    milk: {
+      label: 'Milk carton',
+      keywords: ['milk', 'dairy', 'curd', 'dahi', 'buttermilk', 'lassi', 'cream', 'milk packet', 'amul'],
+      path: '<path d="M7 9l2-5h6l2 5v12H7z"/><path d="M7 9h10M10 13h4"/>',
+    },
+    juice: {
+      label: 'Juice box',
+      keywords: ['juice', 'real', 'frooti', 'maaza', 'tetra pack', 'drink', 'soft drink', 'cola', 'energy drink'],
+      path: '<rect x="6" y="8" width="12" height="13" rx="1.5"/><path d="M12 8V4l3-1M9 14h6"/>',
+    },
+    incense: {
+      label: 'Agarbatti',
+      keywords: ['agarbatti', 'incense', 'incense sticks', 'dhoop', 'cycle', 'pooja', 'puja', 'camphor', 'kapoor'],
+      path: '<path d="M5 20L16 5M9 20L17 8M13 20l5-9"/><path d="M16 5c0-1 1-1 1-2M17 8c0-1 1-1 1-2"/>',
+    },
+    matchbox: {
+      label: 'Matchbox',
+      keywords: ['matchbox', 'matches', 'lighter', 'ship matches'],
+      path: '<rect x="3" y="8" width="18" height="10" rx="1.5"/><path d="M7 4l1 4M11 4l.5 4M3 13h18"/>',
+    },
+    diya: {
+      label: 'Diya',
+      keywords: ['diya', 'deepam', 'oil lamp', 'lamp pooja', 'lantern diwali', 'diwali'],
+      path: '<path d="M3 14h18c0 4-3 6-9 6s-9-2-9-6z"/><path d="M12 14c-2-1.5-2-4 0-6 2 2 2 4.5 0 6z"/>',
+    },
+    thali: {
+      label: 'Thali',
+      keywords: ['thali', 'plate steel', 'katori', 'steel plate', 'pooja thali', 'dinner plate'],
+      path: '<circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="2.2"/><circle cx="14" cy="9" r="2"/><circle cx="12" cy="15" r="2.5"/>',
+    },
+    kadai: {
+      label: 'Kadai',
+      keywords: ['kadai', 'kadhai', 'wok', 'frying pan', 'deep fry', 'patila', 'vessel'],
+      path: '<path d="M3 11h18a9 8 0 01-18 0z"/><path d="M1 11h2M21 11h2"/>',
+    },
+    tawa: {
+      label: 'Tawa',
+      keywords: ['tawa', 'roti tawa', 'griddle', 'dosa tawa', 'skillet'],
+      path: '<circle cx="10" cy="12" r="7"/><path d="M17 12h5"/>',
+    },
+    dabba: {
+      label: 'Steel dabba',
+      keywords: ['dabba', 'steel box', 'masala dabba', 'container steel', 'storage dabba', 'airtight'],
+      path: '<rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M5 9V6h14v3M10 6V4h4v2"/>',
+    },
+    mosquito: {
+      label: 'Mosquito repellent',
+      keywords: ['mosquito', 'repellent', 'good knight', 'all out', 'vaporizer', 'coil', 'mosquito racket', 'odomos'],
+      path: '<rect x="7" y="9" width="10" height="9" rx="1.5"/><path d="M12 9V6M9 21v-3M15 21v-3M9 3c0 2 3 2 3 4"/>',
+    },
+    dryfruits: {
+      label: 'Dry fruits',
+      keywords: ['dry fruits', 'almonds', 'cashew', 'raisins', 'nuts', 'dates', 'walnuts', 'pista', 'badam', 'kaju'],
+      path: '<path d="M4 11h16a8 7 0 01-16 0z"/><circle cx="9" cy="8" r="1.8"/><circle cx="14" cy="8" r="1.8"/><circle cx="12" cy="5" r="1.5"/>',
+    },
+    coconut: {
+      label: 'Coconut',
+      keywords: ['coconut', 'nariyal', 'copra', 'coconut water'],
+      path: '<circle cx="12" cy="13" r="8"/><path d="M9.5 12h.01M14.5 12h.01M12 15.5h.01M8 5c1-1.5 3-2 4-2"/>',
+    },
+  }),
 };

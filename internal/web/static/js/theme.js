@@ -53,8 +53,14 @@ function paintAccent(hex) {
     root.setProperty('--color-accent', hex);
     root.setProperty('--on-accent', onAccent(hex));
   }
-  const shown = getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim() || hex;
-  document.querySelector('meta[name=theme-color]')?.setAttribute('content', shown);
+  syncThemeColor();
+}
+
+// The status bar on a phone takes the app's background, not the accent, so the
+// two read as one surface in every theme and in both interfaces.
+export function syncThemeColor() {
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--canvas').trim();
+  if (bg) document.querySelector('meta[name=theme-color]')?.setAttribute('content', bg);
 }
 
 export function applyAccent(hex) {

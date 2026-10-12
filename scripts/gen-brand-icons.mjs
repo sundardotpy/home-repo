@@ -5,7 +5,7 @@
 import * as si from 'simple-icons';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const slugs = ["apple","samsung","sony","lg","xiaomi","ikea","dell","hp","lenovo","asus","acer","huawei","nokia","motorola","oneplus","oppo","vivo","google","bosch","panasonic","toshiba","tplink","netgear","garmin","fitbit","jbl","bose","sennheiser","beats","sonos","roku","ring","epson","intel","amd","nvidia","razer","corsair","steelseries","seagate","nikon","fujifilm","leica","dji","insta360","audiotechnica","playstation","raspberrypi","arduino","3m","nike","adidas","puma","tata","havells","boat"];
+const slugs = ["apple","samsung","sony","lg","xiaomi","ikea","dell","hp","lenovo","asus","acer","huawei","nokia","motorola","oneplus","oppo","vivo","google","bosch","panasonic","toshiba","tplink","netgear","garmin","fitbit","jbl","bose","sennheiser","beats","sonos","roku","ring","epson","intel","amd","nvidia","razer","corsair","steelseries","seagate","nikon","fujifilm","leica","dji","insta360","audiotechnica","playstation","raspberrypi","arduino","3m","nike","adidas","puma","tata","havells","boat","amul","unilever","vim","tide","wipro","hitachi","jio","airtel","bata","bigbasket","swiggy","zomato","honda","suzuki","hyundai","kia","toyota","mahindra"];
 const by = Object.fromEntries(Object.values(si).filter((x) => x && x.slug).map((x) => [x.slug, x]));
 
 const root = '/repo/internal/web';

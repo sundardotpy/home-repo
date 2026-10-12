@@ -224,6 +224,22 @@
     color: inherit;
   }
 
+  /* No double-tap-to-zoom delay on anything tappable. */
+  button,
+  a,
+  label,
+  summary {
+    touch-action: manipulation;
+  }
+
+  /* Phones with a camera cut-out or rounded corners, held sideways, must not
+     put content under the bezel. The top and bottom insets are handled where
+     the header and nav sit. */
+  #app-shell {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
   input,
   textarea,
   select {
@@ -450,6 +466,20 @@
 
   /* Brand marks are files, tinted through a mask so they follow the text
      colour in either theme. */
+  .monogram {
+    display: inline-grid;
+    place-items: center;
+    border: 1.5px solid currentColor;
+    border-radius: 0.35rem;
+    font-size: 8px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .monogram[data-len="3"] {
+    font-size: 6.5px;
+    letter-spacing: -0.04em;
+  }
   .brand-glyph {
     display: inline-block;
     background: currentColor;
@@ -750,6 +780,22 @@
     color: var(--color-accent);
   }
 
+  /* Lists scroll under the floating bar, so a soft fade behind it keeps rows
+     from running into the pills. The Repo bar is solid and needs none. */
+  @media (max-width: 1023.98px) {
+    html:not(.ui-repo) body::after {
+      content: "";
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: calc(6.75rem + env(safe-area-inset-bottom));
+      background: linear-gradient(to top, var(--canvas) 42%, transparent);
+      pointer-events: none;
+      z-index: 25;
+    }
+  }
+
   @media (min-width: 1024px) {
     #app-nav,
     #fab {
@@ -865,6 +911,9 @@
   }
 
   /* App chrome has no business on paper. */
+  body::after {
+    display: none !important;
+  }
   .no-print,
   #header,
   #topbar,

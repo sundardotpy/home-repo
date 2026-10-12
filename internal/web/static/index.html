@@ -6,11 +6,18 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"
     />
-    <meta name="theme-color" content="#efe34a" />
+    <meta name="theme-color" content="#f2f0fa" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="h/repo" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="description" content="Know what you own and where it is." />
     <title>Home Repo</title>
     <link rel="stylesheet" href="/static/css/app.css" />
     <link rel="icon" href="/static/brand/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/static/manifest.json" />
+    <link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png" />
     <link rel="mask-icon" href="/static/brand/mask-icon.svg" color="#1e2533" />
     <!-- The body font is on the first paint's critical path. -->
     <link rel="preload" href="/static/fonts/dm-sans.woff2" as="font" type="font/woff2" crossorigin />
@@ -37,11 +44,13 @@
         var a = localStorage.getItem('hsh.accent');
         if (a && ui !== 'repo') {
           d.style.setProperty('--color-accent', a);
-          document.querySelector('meta[name=theme-color]').setAttribute('content', a);
         }
         var m = localStorage.getItem('hsh.theme') || 'system';
         var dark = m === 'dark' || (m === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         if (dark) d.classList.add('dark');
+        // The system bar takes the app's own background, so the two read as one.
+        var bg = getComputedStyle(d).getPropertyValue('--canvas').trim();
+        if (bg) document.querySelector('meta[name=theme-color]').setAttribute('content', bg);
       } catch (e) {}
     </script>
   </head>
