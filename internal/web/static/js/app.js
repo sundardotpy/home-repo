@@ -705,7 +705,7 @@ function iconPickerSheet(selected, onPick) {
           .map(
             ([id, label]) => `
           <button type="button" data-tab="${id}"
-            class="flex-1 h-10 rounded-[calc(var(--radius-lg)-2px)] text-[13px] transition-all ${
+            class="flex-1 h-11 rounded-[calc(var(--radius-lg)-2px)] text-[13px] transition-all ${
               tab === id ? 'bg-[var(--ink)] text-[var(--paper)] font-bold' : 'text-[var(--ink-soft)] font-medium'
             }">${label}</button>`,
           )
@@ -762,7 +762,7 @@ const recentChips = (places, activeKey = '') =>
     .map(
       (p, i) => `
     <button type="button" data-recent="${i}"
-      class="h-10 px-3.5 max-w-full truncate rounded-[var(--btn-radius)] text-[13px] t-path ${
+      class="h-11 px-4 max-w-full truncate rounded-[var(--btn-radius)] text-[13px] t-path ${
         `${p.roomId}|${p.unitId}` === activeKey
           ? 'bg-[var(--ink)] text-[var(--paper)] font-semibold'
           : 'bg-[var(--sunken)] hover:bg-[var(--line)]'
@@ -878,7 +878,7 @@ function itemDetailSheet(item) {
         </section>
 
         <div class="flex gap-2">
-          ${primaryButton(t('Move to a new place', 'git mv'), 'data-move class="flex-1"')}
+          ${primaryButton(t('Move it', 'git mv'), 'data-move class="flex-1"')}
           ${ghostButton(icon('pencil', 'w-5 h-5'), 'data-edit aria-label="Edit item"')}
           ${ghostButton(icon('trash', 'w-5 h-5'), 'data-delete aria-label="Delete item"')}
         </div>
@@ -1279,7 +1279,7 @@ const findScreen = {
           }
         </button>
         <button type="button" data-scan aria-label="Scan a code"
-          class="w-10 h-10 shrink-0 rounded-[var(--btn-radius)] bg-[var(--ink)] text-[var(--paper)] grid place-items-center">
+          class="w-11 h-11 shrink-0 rounded-[var(--btn-radius)] bg-[var(--ink)] text-[var(--paper)] grid place-items-center">
           ${icon('scan', 'w-5 h-5')}
         </button>
       </div>
@@ -1351,7 +1351,7 @@ const placesScreen = {
         <h1 class="font-display font-bold tracking-tight leading-none ${isRepo() ? 'text-[1.6rem]' : 'text-[2.5rem]'}">
           ${t('Places', 'places/')}
         </h1>
-        <button type="button" data-add-room class="btn btn-ghost !h-10 !px-4 text-[13px]">
+        <button type="button" data-add-room class="btn btn-ghost !min-h-11 !px-4 text-[13px]">
           ${icon('plus', 'w-4 h-4')} New room
         </button>
       </div>
@@ -1452,7 +1452,7 @@ const valueScreen = {
 
     const chip = (value, label) => `
       <button type="button" data-filter="${esc(value)}"
-        class="h-10 px-4 shrink-0 rounded-[var(--btn-radius)] text-[14px] ${
+        class="h-11 px-4 shrink-0 rounded-[var(--btn-radius)] text-[14px] ${
           this.filter === value
             ? 'bg-[var(--ink)] text-[var(--paper)] font-bold'
             : 'bg-[var(--paper)] border border-[var(--line)] font-medium'
@@ -1536,7 +1536,7 @@ const roomScreen = {
     const room = roomById(this.id) || store.peek(`/rooms/${this.id}/tree`).data?.room;
     return `
       <div class="px-2 pt-2 pb-2 flex items-center gap-1">
-        <a href="#/places" class="w-10 h-10 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)] transition-colors">
+        <a href="#/places" class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)] transition-colors">
           ${icon('back', 'w-5 h-5')}
         </a>
         ${room ? roomBadge(room, 'w-8 h-8 text-[12px] mr-1') : ''}
@@ -1550,10 +1550,10 @@ const roomScreen = {
               : ''
           }
         </div>
-        <button type="button" data-rename class="w-10 h-10 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Rename room">
+        <button type="button" data-rename class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Rename room">
           ${icon('pencil', 'w-5 h-5')}
         </button>
-        <button type="button" data-delete class="w-10 h-10 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Delete room">
+        <button type="button" data-delete class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Delete room">
           ${icon('trash', 'w-5 h-5')}
         </button>
       </div>`;
@@ -1668,7 +1668,7 @@ const unitScreen = {
     const unit = data?.storage_unit;
     return `
       <div class="px-2 pt-2 pb-2 flex items-center gap-1">
-        <button type="button" data-back class="w-10 h-10 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Back">
+        <button type="button" data-back class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Back">
           ${icon('back', 'w-5 h-5')}
         </button>
         <div class="flex-1 min-w-0">
@@ -1684,13 +1684,13 @@ const unitScreen = {
               : '<span class="skeleton inline-block h-2.5 w-40"></span>'
           }
         </div>
-        <button type="button" data-qr class="w-10 h-10 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="QR label">
+        <button type="button" data-qr class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="QR label">
           ${icon('qr', 'w-5 h-5')}
         </button>
-        <button type="button" data-rename class="w-10 h-10 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Rename unit">
+        <button type="button" data-rename class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Rename unit">
           ${icon('pencil', 'w-5 h-5')}
         </button>
-        <button type="button" data-delete class="w-10 h-10 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Delete unit">
+        <button type="button" data-delete class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Delete unit">
           ${icon('trash', 'w-5 h-5')}
         </button>
       </div>`;
@@ -1787,13 +1787,13 @@ const labelsScreen = {
     const room = roomById(this.id) || store.peek(this.paths()[0]).data?.room;
     return `
       <div class="px-2 pt-2 pb-2 flex items-center gap-1 no-print">
-        <button type="button" data-back class="w-10 h-10 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Back">
+        <button type="button" data-back class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Back">
           ${icon('back', 'w-5 h-5')}
         </button>
         <h1 class="flex-1 text-lg font-semibold truncate">
           Labels${room ? ` · ${esc(room.name)}` : ''}
         </h1>
-        <button type="button" data-print class="h-10 px-3 rounded-lg font-medium text-[var(--accent-ink)] active:bg-[var(--sunken)]">
+        <button type="button" data-print class="h-11 px-3 rounded-lg font-medium text-[var(--accent-ink)] active:bg-[var(--sunken)]">
           Print
         </button>
       </div>`;
@@ -1892,7 +1892,7 @@ const settingsScreen = {
           <span class="block font-mono text-[12px] tracking-wider text-[var(--ink-faint)] mt-0.5">${esc(u.qr_slug)}</span>
         </span>
         <button type="button" data-edit-code="${esc(u.id)}"
-          class="h-9 px-3 rounded-lg text-[13px] font-medium text-[var(--accent-ink)] active:bg-[var(--sunken)] transition-colors">
+          class="h-11 px-3 rounded-lg text-[13px] font-medium text-[var(--accent-ink)] active:bg-[var(--sunken)] transition-colors">
           Edit
         </button>
       </div>`;
@@ -1906,7 +1906,7 @@ const settingsScreen = {
           <span class="block font-mono text-[12px] tracking-wider text-[var(--ink-faint)] mt-0.5">${esc(i.barcode)}</span>
         </span>
         <button type="button" data-edit-item="${esc(i.id)}"
-          class="h-9 px-3 rounded-lg text-[13px] font-medium text-[var(--accent-ink)] active:bg-[var(--sunken)] transition-colors">
+          class="h-11 px-3 rounded-lg text-[13px] font-medium text-[var(--accent-ink)] active:bg-[var(--sunken)] transition-colors">
           Edit
         </button>
       </div>`;
@@ -1939,9 +1939,9 @@ const settingsScreen = {
       <div class="surface p-4 flex items-center justify-between gap-4">
         <p class="text-[13px] text-[var(--ink-soft)]">A thing is good value when it costs less than this per day.</p>
         <div class="flex items-center gap-2 shrink-0">
-          <button type="button" data-line-dec aria-label="Lower the line" class="w-9 h-9 rounded-full bg-[var(--sunken)] grid place-items-center">${icon('minus', 'w-4 h-4')}</button>
+          <button type="button" data-line-dec aria-label="Lower the line" class="w-11 h-11 rounded-full bg-[var(--sunken)] grid place-items-center">${icon('minus', 'w-4 h-4')}</button>
           <span class="min-w-[4rem] text-center font-display font-bold text-[1.4rem]" data-line-value>${rupees(valueLine())}</span>
-          <button type="button" data-line-inc aria-label="Raise the line" class="w-9 h-9 rounded-full bg-[var(--sunken)] grid place-items-center">${icon('plus', 'w-4 h-4')}</button>
+          <button type="button" data-line-inc aria-label="Raise the line" class="w-11 h-11 rounded-full bg-[var(--sunken)] grid place-items-center">${icon('plus', 'w-4 h-4')}</button>
         </div>
       </div>
 

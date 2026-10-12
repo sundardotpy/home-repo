@@ -29,14 +29,14 @@
      inline style on :root, and everything below re-derives from it. */
   --color-accent: #efe34a;
 
-  --color-paper: #ffffff;
-  --color-canvas: #f2f0fa;
-  --color-sunken: #eae6f7;
-  --color-line: #e4e0f2;
+  --color-paper: #fffefb;
+  --color-canvas: #f6f2e7;
+  --color-sunken: #ede8da;
+  --color-line: #e5dfce;
 
-  --color-ink: #14121f;
-  --color-ink-soft: #5f5b76;
-  --color-ink-faint: #8a86a0;
+  --color-ink: #1a1812;
+  --color-ink-soft: #5d584a;
+  --color-ink-faint: #8a8473;
 
   --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
@@ -60,19 +60,19 @@
     --color-accent-soft: color-mix(in srgb, var(--color-accent) 24%, transparent);
     /* Text on an accent fill, and the accent used as text on a plain ground.
        theme.js sets --on-accent from the chosen colour's luminance. */
-    --on-accent: #14121f;
-    --accent-ink: color-mix(in srgb, var(--color-accent) 42%, #14121f);
+    --on-accent: #1a1812;
+    --accent-ink: color-mix(in srgb, var(--color-accent) 42%, #1a1812);
 
     color-scheme: light dark;
-    --paper: #ffffff;
-    --canvas: #f2f0fa;
-    --sunken: #eae6f7;
-    --line: #e4e0f2;
-    --ink: #14121f;
-    --ink-soft: #5f5b76;
-    --ink-faint: #8a86a0;
-    --shadow-sheet: 0 -8px 30px rgb(20 18 31 / 0.14);
-    --shadow-card: 0 1px 2px rgb(20 18 31 / 0.05);
+    --paper: #fffefb;
+    --canvas: #f6f2e7;
+    --sunken: #ede8da;
+    --line: #e5dfce;
+    --ink: #1a1812;
+    --ink-soft: #5d584a;
+    --ink-faint: #8a8473;
+    --shadow-sheet: 0 -8px 30px rgb(26 24 18 / 0.14);
+    --shadow-card: 0 1px 2px rgb(26 24 18 / 0.05);
 
     --btn-bg: var(--ink);
     --btn-fg: var(--paper);
@@ -80,14 +80,14 @@
     --fab-bg: var(--color-accent);
     --fab-fg: var(--on-accent);
 
-    --nav-bg: #14121f;
-    --nav-fg: #a9a5c0;
-    --nav-active-bg: #2b2840;
+    --nav-bg: #1a1812;
+    --nav-fg: #b5ae9a;
+    --nav-active-bg: #2f2b20;
     --nav-active-fg: #ffffff;
 
-    --hero-bg: #14121f;
+    --hero-bg: #1a1812;
     --hero-fg: #ffffff;
-    --hero-soft: #a9a5c0;
+    --hero-soft: #b5ae9a;
 
     --good-bg: #d9f2e3;
     --good-fg: #146c3f;
@@ -102,18 +102,19 @@
     --color-accent-soft: color-mix(in srgb, var(--color-accent) 22%, transparent);
     --accent-ink: var(--color-accent);
 
-    --paper: #1e1b2b;
-    --canvas: #15131f;
-    --sunken: #29253a;
-    --line: #332f45;
-    --ink: #edeaf7;
-    --ink-soft: #a9a5c0;
-    --ink-faint: #77728f;
+    --paper: #211f17;
+    --canvas: #171610;
+    --sunken: #2c2a20;
+    --line: #38352a;
+    --ink: #f1ede0;
+    --ink-soft: #b5ae9a;
+    --ink-faint: #837d6b;
     --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 0.5);
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
 
-    --nav-bg: #0d0c14;
-    --hero-bg: #0d0c14;
+    --nav-bg: #0f0e0a;
+    --nav-active-bg: #2f2b20;
+    --hero-bg: #0f0e0a;
 
     --good-bg: #1c3a2d;
     --good-fg: #56d39a;
@@ -326,9 +327,11 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    height: 2.75rem;
+    min-height: 3rem;
     padding: 0 1.25rem;
+    font-size: 15px;
     font-weight: 600;
+    white-space: nowrap;
     border-radius: var(--btn-radius);
     transition:
       background-color 120ms ease,
@@ -337,6 +340,12 @@
   }
   .btn:active {
     transform: scale(0.98);
+  }
+  /* Icon-only: a square 48px target that never shrinks in a flex row. */
+  .btn-icon {
+    width: 3rem;
+    padding: 0;
+    flex-shrink: 0;
   }
   .btn-primary {
     background: var(--btn-bg);
@@ -663,7 +672,7 @@
     padding: 0 0.5rem;
     border-radius: 2rem;
     background: var(--nav-bg);
-    box-shadow: 0 10px 30px rgb(20 18 31 / 0.28);
+    box-shadow: 0 10px 30px rgb(26 24 18 / 0.28);
   }
   .nav-tab {
     width: 4rem;
@@ -694,7 +703,7 @@
     place-items: center;
     background: var(--fab-bg);
     color: var(--fab-fg);
-    box-shadow: 0 10px 30px rgb(20 18 31 / 0.28);
+    box-shadow: 0 10px 30px rgb(26 24 18 / 0.28);
     transition: transform 120ms ease;
   }
   #fab:active {

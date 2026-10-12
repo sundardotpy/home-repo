@@ -31,7 +31,7 @@ export function onAccent(hex) {
     return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   };
   const L = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
-  return L > 0.4 ? '#14121f' : '#ffffff';
+  return L > 0.4 ? '#1a1812' : '#ffffff';
 }
 
 export function currentAccent() {
@@ -60,7 +60,7 @@ function paintAccent(hex) {
 // two read as one surface in every theme and in both interfaces.
 export function syncThemeColor() {
   const bg = getComputedStyle(document.documentElement).getPropertyValue('--canvas').trim();
-  if (bg) document.querySelector('meta[name=theme-color]')?.setAttribute('content', bg);
+  if (bg) document.querySelectorAll('meta[name=theme-color]').forEach((m) => m.setAttribute('content', bg));
 }
 
 export function applyAccent(hex) {
@@ -124,7 +124,7 @@ export function initTheme() {
 
 const segment = (on, label, attrs, extra = '') => `
   <button type="button" ${attrs}
-    class="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-[calc(var(--radius-lg)-2px)] text-[13px] transition-all ${extra}
+    class="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-[calc(var(--radius-lg)-2px)] text-[13px] transition-all ${extra}
            ${on ? 'bg-[var(--ink)] text-[var(--paper)] font-bold' : 'text-[var(--ink-soft)] font-medium hover:text-[var(--ink)]'}">
     ${label}
   </button>`;
@@ -148,8 +148,8 @@ export function interfaceMarkup() {
         'classic',
         'Classic',
         'Rounded and light',
-        `<span class="block h-14 rounded-xl p-2" style="background:#f2f0fa">
-           <span class="block h-2 w-2/5 rounded-full" style="background:#14121f"></span>
+        `<span class="block h-14 rounded-xl p-2" style="background:#f6f2e7">
+           <span class="block h-2 w-2/5 rounded-full" style="background:#1a1812"></span>
            <span class="block h-5 mt-1.5 rounded-full bg-white"></span></span>`,
       )}
       ${tile(
@@ -188,7 +188,7 @@ export function appearanceMarkup() {
       <p class="mt-4 mb-2 text-[13px] text-[var(--ink-soft)]">Accent colour</p>
       <div class="flex flex-wrap items-center gap-3" data-swatches>
         ${ACCENTS.map((a) => swatch(a.hex, a.name, a.hex.toLowerCase() === active.toLowerCase())).join('')}
-        <label class="w-9 h-9 rounded-full border-2 border-dashed border-[var(--ink-faint)] grid place-items-center cursor-pointer text-[var(--ink-soft)]" title="Custom colour">
+        <label class="w-10 h-10 rounded-full border-2 border-dashed border-[var(--ink-faint)] grid place-items-center cursor-pointer text-[var(--ink-soft)]" title="Custom colour">
           ${icon('plus', 'w-4 h-4')}
           <input type="color" data-custom value="${esc(active)}" class="sr-only" aria-label="Custom colour">
         </label>
@@ -199,7 +199,7 @@ export function appearanceMarkup() {
 
 const swatch = (hex, name, selected) => `
   <button type="button" data-accent="${esc(hex)}" title="${esc(name)}" aria-label="${esc(name)}${selected ? ', selected' : ''}"
-    class="w-9 h-9 rounded-full grid place-items-center transition-transform active:scale-95
+    class="w-10 h-10 rounded-full grid place-items-center transition-transform active:scale-95
            ${selected ? 'ring-2 ring-offset-2 ring-[var(--ink)] ring-offset-[var(--paper)]' : ''}"
     style="background:${esc(hex)};color:${onAccent(hex)}">
     ${selected ? icon('check', 'w-4 h-4') : ''}

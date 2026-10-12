@@ -232,11 +232,14 @@ function mergeAttrs(attrs, base) {
   return `${rest} class="${base}${m ? ' ' + m[1] : ''}"`;
 }
 
+// A label that is only an icon gets a square target of its own.
+const iconOnly = (label) => /^\s*<svg[\s\S]*<\/svg>\s*$/.test(label);
+
 export const primaryButton = (label, attrs = '') =>
-  `<button type="button" ${mergeAttrs(attrs, 'btn btn-primary')}>${label}</button>`;
+  `<button type="button" ${mergeAttrs(attrs, `btn btn-primary${iconOnly(label) ? ' btn-icon' : ''}`)}>${label}</button>`;
 
 export const ghostButton = (label, attrs = '') =>
-  `<button type="button" ${mergeAttrs(attrs, 'btn btn-ghost')}>${label}</button>`;
+  `<button type="button" ${mergeAttrs(attrs, `btn btn-ghost${iconOnly(label) ? ' btn-icon' : ''}`)}>${label}</button>`;
 
 export const addRow = (label, attrs = '') => `
   <button type="button" ${mergeAttrs(
@@ -304,7 +307,7 @@ export function openSheet({ title, body, onMount, onClose }) {
         <div class="md:hidden mx-auto mb-2 h-1 w-9 rounded-full bg-[var(--line)]"></div>
         <div class="flex items-center gap-2">
           <h2 class="flex-1 font-semibold">${esc(title)}</h2>
-          <button type="button" data-close class="w-9 h-9 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]">
+          <button type="button" data-close class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]">
             ${icon('close', 'w-5 h-5')}
           </button>
         </div>
