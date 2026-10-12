@@ -11,7 +11,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/sundar/home_repo/internal/app"
+	"github.com/sundar/home_repo/app"
 )
 
 var (

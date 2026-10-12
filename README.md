@@ -473,7 +473,7 @@ internal/db         pool + embedded SQL migration runner
 internal/model      wire types
 internal/store      all SQL, one file per aggregate
 internal/api        chi router, handlers, JSON helpers
-internal/app        wiring shared by the server and the Vercel function
+app                 wiring shared by the server and the Vercel function. Outside internal/ on purpose: Vercel builds api/ outside the module path, so it cannot import internal packages
 internal/media      image decode, EXIF rotation, resize, thumbnails, storage
 internal/qr         QR rendering (SVG for print, PNG fallback)
 internal/web        embedded frontend (see above)
