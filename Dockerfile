@@ -1,30 +1,25 @@
-# ---- base: shared Go toolchain layer -------------------------------------
-FROM golang:1.26-alpine AS base
+FROM node:22-alpine AS dev
 WORKDIR /app
-RUN apk add --no-cache git ca-certificates tzdata
-COPY go.mod go.sum* ./
-RUN go mod download || true
-
-# ---- dev: hot reload via air ---------------------------------------------
-FROM base AS dev
-RUN go install github.com/air-verse/air@latest
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
 EXPOSE 8080
-CMD ["air", "-c", ".air.toml"]
+CMD ["npm", "run", "dev"]
 
-# ---- build ---------------------------------------------------------------
-FROM base AS build
-COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server
-
-# ---- prod: distroless-ish runtime ----------------------------------------
-FROM alpine:3.20 AS prod
-RUN apk add --no-cache ca-certificates tzdata && adduser -D -u 10001 app
+FROM node:22-alpine AS prod
+ENV NODE_ENV=production
+ENV APP_ENV=prod
 WORKDIR /app
-COPY --from=build /out/server /app/server
-RUN mkdir -p /data/uploads && chown -R app /data/uploads
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY api ./api
+COPY lib ./lib
+COPY scripts/dev.js ./scripts/dev.js
+COPY internal/db/migrations ./internal/db/migrations
+COPY internal/web/static ./internal/web/static
+RUN mkdir -p /data/uploads && chown -R node:node /app /data/uploads
 ENV UPLOAD_DIR=/data/uploads
 VOLUME ["/data/uploads"]
-USER app
+USER node
 EXPOSE 8080
-ENTRYPOINT ["/app/server"]
+CMD ["node", "scripts/dev.js"]

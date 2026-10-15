@@ -1,10 +1,22 @@
 {
-  "name": "home-repo-css",
+  "name": "home-repo",
   "private": true,
-  "description": "Tailwind build only. Never installed on the host - see the `css` compose service.",
+  "type": "module",
+  "description": "Home Repo — a house inventory app. Node.js backend, vanilla-JS frontend, Postgres.",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "build": "tailwindcss -i ./internal/web/css/input.css -o ./internal/web/static/css/app.css --minify",
-    "watch": "tailwindcss -i ./internal/web/css/input.css -o ./internal/web/static/css/app.css --watch"
+    "dev": "node scripts/dev.js",
+    "start": "node scripts/dev.js",
+    "css": "tailwindcss -i ./internal/web/css/input.css -o ./internal/web/static/css/app.css --minify",
+    "css:watch": "tailwindcss -i ./internal/web/css/input.css -o ./internal/web/static/css/app.css --watch",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "pg": "^8.16.3",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.34.4"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.0",

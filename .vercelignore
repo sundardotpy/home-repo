@@ -1,18 +1,7 @@
-# Keep the deployment to what the function actually needs.
-#
-# package.json is excluded on purpose: if Vercel sees it, it treats this as a
-# Node project and runs `npm run build`. The Tailwind output is committed, so
-# nothing needs building there — only the Go function.
-package.json
-package-lock.json
 node_modules
-
-Dockerfile
-docker-compose.yml
-.air.toml
-.dockerignore
-scripts
+.git
+.env
 tmp
 uploads
-.env
-README.md
+docs
+test

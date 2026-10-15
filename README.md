@@ -8,18 +8,13 @@ location path: `Bedroom > Wardrobe > Top Shelf > Blue Box`.
 
 ## Stack
 
-Go · chi · Postgres (pgx) · Tailwind v4 · Docker Compose. Nothing is installed
-on the host — Go and Node only ever run inside containers. Runs either as a
-long-lived container or as a single Vercel function; the database is Neon (or
-any Postgres).
+Node.js 20+ · Postgres (`pg`) · Tailwind v4 · Docker Compose. The app runs as a
+long-lived Node.js container or as a single Vercel Function; the database is
+Neon (or any Postgres).
 
-The `go` directive is pinned to 1.23 and every dependency needs 1.21 or older,
-so the same code builds on whatever Go version a host happens to offer.
-
-The frontend is a dependency-free ES-module client served by the same Go binary
-(assets are embedded via `go:embed`, so deployment stays one file). No
-framework, no bundler, no build step for the JavaScript — only Tailwind
-compiles, and its output is committed.
+The frontend is a dependency-free ES-module client served by the same Node.js
+app. No framework or bundler is needed; only Tailwind compiles, and its output
+is committed.
 
 ## Run it
 
@@ -32,8 +27,8 @@ docker compose up -d --build
 ```
 
 The app is on `http://localhost:8080`. Migrations apply automatically at
-startup. `air` rebuilds on save — including `.js`, `.css` and `.html`, since
-assets are embedded.
+startup. The development container runs the Node server with the project files
+mounted into it.
 
 To work offline against a local Postgres instead, drop `DATABASE_URL` from
 `.env` and start the bundled database:
@@ -55,10 +50,10 @@ Exercise every route end to end:
 ./scripts/smoke.sh
 ```
 
-Unit tests (the image pipeline):
+Unit tests:
 
 ```bash
-docker compose run --rm --no-deps app go test ./...
+docker compose run --rm --no-deps app npm test
 ```
 
 Useful:
@@ -73,9 +68,10 @@ docker compose exec app sh -c 'psql "$DATABASE_URL"'
 
 ## Deploying to Vercel
 
-The whole app is one Go function. [api/index.go](api/index.go) builds the same
-handler the container runs, once per instance, behind a `sync.Once`;
-[vercel.json](vercel.json) rewrites every path to it.
+The whole app is one Node.js function. [api/index.js](api/index.js) builds the
+same handler the container runs once per instance;
+[vercel.json](vercel.json) rewrites every path to it and includes the static
+assets and SQL migrations that the app reads at runtime.
 
 ```bash
 vercel env add DATABASE_URL      # Neon's pooled connection string
@@ -92,18 +88,16 @@ table; at household scale that is ~45KB per photo plus a ~4KB thumbnail, and it
 makes a database backup a complete backup. `MEDIA_BACKEND=disk` still exists for
 hosts with a real volume.
 
-**Connections go through the pooler.** Each function instance opens its own
-pool, so the connection count is a function of traffic, not of servers. The app
-detects a `-pooler` host and switches pgx to `QueryExecModeExec` with the
-statement cache off, because a pooled connection is not guaranteed to be the
-same backend twice and cached prepared statements do not survive that.
+**Connections go through the pooler.** Each function instance opens a small
+Postgres pool, so the connection count is a function of traffic, not of servers.
+Use Neon's pooled connection string to keep serverless traffic within the
+database's connection limit.
 
 **Migrations take an advisory lock.** Several cold starts can race on the first
 request after a deploy; the losers wait and then find nothing to do.
 
-`.vercelignore` keeps `package.json` out of the deployment — otherwise Vercel
-treats the repo as a Node project and runs the Tailwind build, which is
-unnecessary because `app.css` is committed.
+Vercel installs the dependencies from `package-lock.json`. Tailwind does not
+need to run during deployment because `app.css` is committed.
 
 ## The frontend
 
@@ -242,8 +236,7 @@ Re-encoding is the point, not a side effect:
 - **Rotation is baked into the pixels.** A phone held sideways records the
   rotation as an EXIF flag rather than rotating the image; re-encoding drops
   that flag, so without this every second photo would appear on its side.
-  `internal/media/exif.go` reads just the orientation tag and applies all eight
-  cases.
+  `sharp` reads the orientation tag and applies it before resizing.
 - **Metadata is stripped**, including the GPS coordinates phones attach — your
   home address does not need to be in a file you might later share.
 - **Size collapses.** A 134KB test photo became 44KB display + 4KB thumbnail.
@@ -469,17 +462,14 @@ Errors are `{"error": "...", "detail": "..."}` with 400 (bad input), 404, 409
 ## Layout
 
 ```
-api/index.go        Vercel entrypoint (same handler, built once per instance)
-cmd/server          entrypoint: config, pool, migrate, serve
-internal/config     env loading
-internal/db         pool + embedded SQL migration runner
-internal/model      wire types
-internal/store      all SQL, one file per aggregate
-internal/api        chi router, handlers, JSON helpers
-app                 wiring shared by the server and the Vercel function. Outside internal/ on purpose: Vercel builds api/ outside the module path, so it cannot import internal packages
-internal/media      image decode, EXIF rotation, resize, thumbnails, storage
-internal/qr         QR rendering (SVG for print, PNG fallback)
-internal/web        embedded frontend (see above)
+api/index.js         Vercel entrypoint (same handler, built once per instance)
+scripts/dev.js       local Node.js server entrypoint
+lib                  config, database, migrations, API, storage and app wiring
+internal/db/migrations  ordered SQL migrations shared by every runtime
+internal/web/static  frontend assets served from disk
+internal/web/css     Tailwind source; generated CSS is committed in static/css
+lib/media            image processing and disk/Postgres photo storage
+lib/qr.js            QR rendering (SVG for print, PNG fallback)
 scripts/smoke.sh    end-to-end API test
 scripts/export-icons.mjs     writes every line icon as a standalone .svg
 scripts/gen-brand-icons.mjs  re-vendors the brand marks from Simple Icons
