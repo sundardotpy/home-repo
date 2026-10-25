@@ -55,6 +55,7 @@ data class ItemRow(
     val path: String,
     val price: Double?,
     val purchasedOn: String?,
+    val parentItemId: String? = null,
 ) {
     val active: Boolean get() = status == "active"
 }
@@ -72,6 +73,7 @@ data class AddItem(
 )
 
 data class MoveRow(
+    val itemId: String,
     val kind: String,
     val itemName: String,
     val fromPath: String,
@@ -287,7 +289,7 @@ object Db {
         val sql = """
             SELECT i.id, i.name, i.icon, i.quantity, i.status, i.room_id, i.storage_unit_id,
                    i.purchase_price::float8, to_char(i.purchased_on, 'YYYY-MM-DD'),
-                   r.name, p.path, ip.path
+                   r.name, p.path, ip.path, i.parent_item_id
               FROM items i
               JOIN rooms r ON r.id = i.room_id
               LEFT JOIN storage_unit_paths p ON p.id = i.storage_unit_id
@@ -318,6 +320,7 @@ object Db {
                                     .joinToString(" > "),
                                 price = rs.getObject(8)?.let { (it as Number).toDouble() },
                                 purchasedOn = rs.getString(9),
+                                parentItemId = rs.getString(13),
                             )
                         )
                     }
@@ -325,6 +328,9 @@ object Db {
             }
         }
     }
+
+    /** One item with its full location, as the lists show it. */
+    fun item(id: String): ItemRow = db { c -> locationOf(c, id) }
 
     private fun locationOf(c: Connection, id: String): ItemRow {
         val rows = selectItems(c, "i.id = ?") { st -> st.setUuid(1, id) }
@@ -758,7 +764,8 @@ object Db {
                       COALESCE(array_to_string(m.from_path, ' > '), ''),
                       array_to_string(m.to_path, ' > '),
                       m.quantity,
-                      EXTRACT(EPOCH FROM m.moved_at)::bigint * 1000
+                      EXTRACT(EPOCH FROM m.moved_at)::bigint * 1000,
+                      m.item_id
                  FROM item_moves m
                  JOIN items i ON i.id = m.item_id
                 ORDER BY m.moved_at DESC
@@ -769,6 +776,7 @@ object Db {
                 buildList {
                     while (rs.next()) add(
                         MoveRow(
+                            itemId = rs.getString(7),
                             kind = rs.getString(1),
                             itemName = rs.getString(2),
                             fromPath = rs.getString(3) ?: "",

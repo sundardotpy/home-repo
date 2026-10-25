@@ -1,6 +1,8 @@
 <resources>
+    <!-- The launch window before Compose draws: the app's own surface, so there is no flash. -->
     <style name="Theme.HomeRepo" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">@color/launch_surface</item>
     </style>
+    <color name="launch_surface">#F4F7F6</color>
+    <color name="launcher_ground">#0E5E58</color>
 </resources>

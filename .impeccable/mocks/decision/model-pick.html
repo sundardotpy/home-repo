@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400;8..144,500;8..144,700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+body{width:390px;height:844px;overflow:hidden;background:#FAFAF8;font-family:'Roboto Flex',sans-serif;color:#121212}
+.bar{height:44px;display:flex;align-items:center;padding:0 20px;font-size:13px;font-weight:500}
+.top{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 0 20px}
+.word{font-size:22px;font-weight:700}
+.search{margin:12px 16px 0;height:56px;border-radius:28px;background:#fff;border:2px solid #121212;display:flex;align-items:center;padding:0 6px 0 20px;gap:8px}
+.search span{flex:1;color:#555;font-size:16px}
+.ic{width:44px;height:44px;border-radius:22px;display:grid;place-items:center;background:#121212;color:#fff}
+.h{font-size:12px;font-weight:700;letter-spacing:1px;color:#555;margin:22px 20px 6px}
+.row{padding:12px 20px;border-bottom:1px solid #E6E6E2}
+.name{font-size:18px;font-weight:500}
+.route{display:flex;align-items:center;margin-top:10px}
+.seg{height:6px;flex:1}
+.st{width:14px;height:14px;border-radius:7px;background:#fff;border:3px solid;flex:none}
+.end{width:16px;height:16px;border-radius:8px;flex:none}
+.labels{display:flex;justify-content:space-between;font-size:11px;font-weight:500;margin-top:4px;color:#333}
+.red{background:#E2231A;border-color:#E2231A}.blue{background:#0072CE;border-color:#0072CE}.green{background:#00A651;border-color:#00A651}
+.fab{position:absolute;right:16px;bottom:104px;height:56px;padding:0 20px;border-radius:16px;background:#121212;color:#fff;display:flex;align-items:center;gap:8px;font-weight:500}
+.nav{position:absolute;left:0;right:0;bottom:0;height:88px;background:#F0F0EC;display:flex;justify-content:space-around;padding-top:12px}
+.ni{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:500;color:#444}
+.pill{width:64px;height:32px;border-radius:16px;display:grid;place-items:center}
+.on .pill{background:#FFC20E}
+</style></head><body>
+<div class="bar">9:41</div>
+<div class="top"><span class="word">h/repo</span><span>⚙</span></div>
+<div class="search"><span>Where did I put it?</span><span class="ic">◉</span><span class="ic">⌗</span></div>
+<p class="h">YOUR THINGS</p>
+<div class="row"><p class="name">Passport</p>
+ <div class="route"><span class="st" style="border-color:#E2231A"></span><span class="seg red"></span><span class="st" style="border-color:#E2231A"></span><span class="seg red"></span><span class="end red"></span></div>
+ <div class="labels"><span>Bedroom</span><span>Wardrobe</span><span>Documents folder</span></div></div>
+<div class="row"><p class="name">Spare earbuds</p>
+ <div class="route"><span class="st" style="border-color:#0072CE"></span><span class="seg blue"></span><span class="end blue"></span></div>
+ <div class="labels"><span>Office</span><span>Grey Pouch 01</span></div></div>
+<div class="row"><p class="name">Xbox controller</p>
+ <div class="route"><span class="st" style="border-color:#0072CE"></span><span class="seg blue"></span><span class="end blue"></span></div>
+ <div class="labels"><span>Office</span><span>Container 01</span></div></div>
+<div class="row"><p class="name">Tea strainer</p>
+ <div class="route"><span class="st" style="border-color:#00A651"></span><span class="seg green"></span><span class="end green"></span></div>
+ <div class="labels"><span>Kitchen</span><span>Top drawer</span></div></div>
+<div class="fab">＋ Add</div>
+<div class="nav"><div class="ni on"><span class="pill">⌕</span>Find</div><div class="ni"><span class="pill">▤</span>Places</div><div class="ni"><span class="pill">↺</span>History</div></div>
+</body></html>

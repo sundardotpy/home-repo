@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.HomeRepo" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/launch_surface</item>
+    </style>
+    <color name="launch_surface">#101615</color>
+</resources>

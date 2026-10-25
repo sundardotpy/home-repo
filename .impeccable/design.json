@@ -1,0 +1,997 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-25T16:49:43+00:00",
+  "title": "Design System: h/repo (Android)",
+  "extensions": {
+    "scope": "Native Android client only (android/, Jetpack Compose + Material 3). The web app under internal/web/ is out of scope.",
+    "colorMeta": {
+      "deep-teal": {
+        "role": "primary",
+        "displayName": "Deep Teal",
+        "canonical": "#0E5E58",
+        "tonalRamp": [
+          "#163734",
+          "#1F6560",
+          "#239990",
+          "#22D3C6",
+          "#57DBD2",
+          "#91DFD9",
+          "#C4E8E5",
+          "#EEF7F6"
+        ]
+      },
+      "on-deep-teal": {
+        "role": "primary",
+        "displayName": "On Deep Teal",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#262626",
+          "#424242",
+          "#5E5E5E",
+          "#7A7A7A",
+          "#999999",
+          "#B8B8B8",
+          "#D6D6D6",
+          "#F2F2F2"
+        ]
+      },
+      "sea-glass-tonal": {
+        "role": "primary",
+        "displayName": "Sea-Glass Tonal",
+        "canonical": "#B8E0D2",
+        "tonalRamp": [
+          "#1E2F29",
+          "#305548",
+          "#3F7E68",
+          "#4CA988",
+          "#76BCA4",
+          "#A3CCBE",
+          "#CDE0D9",
+          "#F0F5F3"
+        ]
+      },
+      "on-sea-glass-tonal": {
+        "role": "primary",
+        "displayName": "On Sea Glass Tonal",
+        "canonical": "#00201C",
+        "tonalRamp": [
+          "#103C37",
+          "#137266",
+          "#0FAE9A",
+          "#03F2D4",
+          "#3FF3DC",
+          "#83ECDF",
+          "#BEEEE8",
+          "#ECF8F7"
+        ]
+      },
+      "mist-tonal": {
+        "role": "secondary",
+        "displayName": "Mist Tonal",
+        "canonical": "#CCE8E3",
+        "tonalRamp": [
+          "#1E2F2C",
+          "#30544E",
+          "#407C72",
+          "#4DA897",
+          "#77BBAF",
+          "#A4CBC4",
+          "#CDDFDC",
+          "#F0F4F4"
+        ]
+      },
+      "on-mist-tonal": {
+        "role": "secondary",
+        "displayName": "On Mist Tonal",
+        "canonical": "#05201D",
+        "tonalRamp": [
+          "#163633",
+          "#20655D",
+          "#24988C",
+          "#23D2BE",
+          "#57DBCC",
+          "#91DED5",
+          "#C5E8E4",
+          "#EEF7F6"
+        ]
+      },
+      "shift-amber": {
+        "role": "tertiary",
+        "displayName": "Shift Amber",
+        "canonical": "#F6E0B5",
+        "tonalRamp": [
+          "#382C15",
+          "#674E1D",
+          "#9D7220",
+          "#D8991D",
+          "#DFB053",
+          "#E1C58E",
+          "#E9DCC3",
+          "#F7F4EE"
+        ]
+      },
+      "on-shift-amber": {
+        "role": "tertiary",
+        "displayName": "On Shift Amber",
+        "canonical": "#261A00",
+        "tonalRamp": [
+          "#3C2E10",
+          "#725413",
+          "#AE7C0F",
+          "#F2A603",
+          "#F3BA3F",
+          "#ECCB83",
+          "#EEDFBE",
+          "#F8F4EC"
+        ]
+      },
+      "sea-glass-ground": {
+        "role": "neutral",
+        "displayName": "Sea-Glass Ground",
+        "canonical": "#F4F7F6",
+        "tonalRamp": [
+          "#232A27",
+          "#3B4A45",
+          "#526B63",
+          "#688D81",
+          "#8BA79E",
+          "#AFC0BA",
+          "#D2DAD7",
+          "#F1F3F3"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1C2326",
+        "tonalRamp": [
+          "#23282A",
+          "#3B4549",
+          "#52636A",
+          "#68828D",
+          "#8B9EA7",
+          "#B0BBC0",
+          "#D3D8DA",
+          "#F1F3F3"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#4A5557",
+        "tonalRamp": [
+          "#242728",
+          "#3E4546",
+          "#586365",
+          "#718184",
+          "#929EA0",
+          "#B3BBBC",
+          "#D4D8D8",
+          "#F2F3F3"
+        ]
+      },
+      "slip-white": {
+        "role": "neutral",
+        "displayName": "Slip White",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#262626",
+          "#424242",
+          "#5E5E5E",
+          "#7A7A7A",
+          "#999999",
+          "#B8B8B8",
+          "#D6D6D6",
+          "#F2F2F2"
+        ]
+      },
+      "sheet-ground": {
+        "role": "neutral",
+        "displayName": "Sheet Ground",
+        "canonical": "#EEF3F2",
+        "tonalRamp": [
+          "#222A29",
+          "#3A4A47",
+          "#516C67",
+          "#668F87",
+          "#8AA8A2",
+          "#AFC1BD",
+          "#D2DAD9",
+          "#F1F3F3"
+        ]
+      },
+      "search-well": {
+        "role": "neutral",
+        "displayName": "Search Well",
+        "canonical": "#E2E9E7",
+        "tonalRamp": [
+          "#232928",
+          "#3C4945",
+          "#536963",
+          "#6A8B81",
+          "#8DA59E",
+          "#B0BFBB",
+          "#D3DAD8",
+          "#F1F3F3"
+        ]
+      },
+      "status-well": {
+        "role": "neutral",
+        "displayName": "Status Well",
+        "canonical": "#DCE3E1",
+        "tonalRamp": [
+          "#242927",
+          "#3D4845",
+          "#566762",
+          "#6D8880",
+          "#8FA39D",
+          "#B2BDBA",
+          "#D4D9D7",
+          "#F2F3F3"
+        ]
+      },
+      "outline": {
+        "role": "neutral",
+        "displayName": "Outline",
+        "canonical": "#6F7A79",
+        "tonalRamp": [
+          "#252727",
+          "#404544",
+          "#5B6261",
+          "#75807F",
+          "#959D9C",
+          "#B5BABA",
+          "#D5D7D7",
+          "#F2F3F2"
+        ]
+      },
+      "spine-line": {
+        "role": "neutral",
+        "displayName": "Spine Line",
+        "canonical": "#C3CCCA",
+        "tonalRamp": [
+          "#242827",
+          "#3E4644",
+          "#586562",
+          "#718480",
+          "#92A09D",
+          "#B3BCBA",
+          "#D4D8D7",
+          "#F2F3F3"
+        ]
+      },
+      "error": {
+        "role": "error",
+        "displayName": "Error",
+        "canonical": "#B3261E",
+        "tonalRamp": [
+          "#361816",
+          "#642421",
+          "#972C26",
+          "#D02E25",
+          "#D96059",
+          "#DD9692",
+          "#E7C7C5",
+          "#F6EFEE"
+        ]
+      },
+      "deep-teal-dark": {
+        "role": "primary",
+        "displayName": "Deep Teal Dark",
+        "canonical": "#7FD3C6",
+        "tonalRamp": [
+          "#1B312E",
+          "#2B5952",
+          "#378579",
+          "#40B5A3",
+          "#6DC5B7",
+          "#9ED1C9",
+          "#CAE2DE",
+          "#EFF5F4"
+        ]
+      },
+      "on-deep-teal-dark": {
+        "role": "primary",
+        "displayName": "On Deep Teal Dark",
+        "canonical": "#003732",
+        "tonalRamp": [
+          "#103C38",
+          "#137269",
+          "#0FAEA0",
+          "#03F2DC",
+          "#3FF3E2",
+          "#83ECE3",
+          "#BEEEEA",
+          "#ECF8F7"
+        ]
+      },
+      "sea-glass-ground-dark": {
+        "role": "neutral",
+        "displayName": "Sea Glass Ground Dark",
+        "canonical": "#101615",
+        "tonalRamp": [
+          "#232A29",
+          "#3B4A47",
+          "#526B67",
+          "#688D87",
+          "#8BA7A2",
+          "#AFC0BD",
+          "#D2DAD9",
+          "#F1F3F3"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Ink Dark",
+        "canonical": "#DEE4E2",
+        "tonalRamp": [
+          "#242827",
+          "#3E4744",
+          "#566661",
+          "#6E867E",
+          "#90A29C",
+          "#B2BDB9",
+          "#D4D9D7",
+          "#F2F3F2"
+        ]
+      },
+      "ink-muted-dark": {
+        "role": "neutral",
+        "displayName": "Ink Muted Dark",
+        "canonical": "#BFC9C7",
+        "tonalRamp": [
+          "#242827",
+          "#3E4645",
+          "#586562",
+          "#708580",
+          "#91A19E",
+          "#B3BCBA",
+          "#D4D8D7",
+          "#F2F3F3"
+        ]
+      },
+      "slip-dark": {
+        "role": "neutral",
+        "displayName": "Slip (dark)",
+        "canonical": "#0B100F",
+        "tonalRamp": [
+          "#222A29",
+          "#3A4B48",
+          "#506D67",
+          "#649188",
+          "#88AAA3",
+          "#AEC1BD",
+          "#D2DBD9",
+          "#F1F3F3"
+        ]
+      },
+      "sheet-ground-dark": {
+        "role": "neutral",
+        "displayName": "Sheet Ground Dark",
+        "canonical": "#181E1D",
+        "tonalRamp": [
+          "#242928",
+          "#3D4846",
+          "#566764",
+          "#6D8883",
+          "#8FA3A0",
+          "#B2BDBB",
+          "#D4D9D8",
+          "#F2F3F3"
+        ]
+      },
+      "search-well-dark": {
+        "role": "neutral",
+        "displayName": "Search Well Dark",
+        "canonical": "#262D2B",
+        "tonalRamp": [
+          "#242827",
+          "#3E4644",
+          "#586561",
+          "#70847F",
+          "#91A19C",
+          "#B3BCB9",
+          "#D4D8D7",
+          "#F2F3F2"
+        ]
+      },
+      "spine-line-dark": {
+        "role": "neutral",
+        "displayName": "Spine Line Dark",
+        "canonical": "#3F4947",
+        "tonalRamp": [
+          "#252827",
+          "#3F4644",
+          "#586462",
+          "#728380",
+          "#92A09D",
+          "#B4BBBA",
+          "#D4D8D7",
+          "#F2F3F3"
+        ]
+      },
+      "room-seafoam": {
+        "role": "room-tint",
+        "displayName": "Room Seafoam",
+        "canonical": "#CDEBE1",
+        "tonalRamp": [
+          "#1D3029",
+          "#2E5749",
+          "#3C806A",
+          "#47AE8B",
+          "#73BFA6",
+          "#A1CEBF",
+          "#CCE1DA",
+          "#F0F5F3"
+        ]
+      },
+      "on-room-seafoam": {
+        "role": "room-tint",
+        "displayName": "On Room Seafoam",
+        "canonical": "#0F3D33",
+        "tonalRamp": [
+          "#19342E",
+          "#265F52",
+          "#2E8F7A",
+          "#32C3A3",
+          "#63CFB8",
+          "#98D7CA",
+          "#C8E5DE",
+          "#EFF6F4"
+        ]
+      },
+      "room-amber": {
+        "role": "room-tint",
+        "displayName": "Room Amber",
+        "canonical": "#F6E0B5",
+        "tonalRamp": [
+          "#382C15",
+          "#674E1D",
+          "#9D7220",
+          "#D8991D",
+          "#DFB053",
+          "#E1C58E",
+          "#E9DCC3",
+          "#F7F4EE"
+        ]
+      },
+      "on-room-amber": {
+        "role": "room-tint",
+        "displayName": "On Room Amber",
+        "canonical": "#4A3405",
+        "tonalRamp": [
+          "#3A2D13",
+          "#6C5119",
+          "#A47819",
+          "#E3A012",
+          "#E7B54B",
+          "#E5C88A",
+          "#EBDEC1",
+          "#F7F4ED"
+        ]
+      },
+      "room-rose": {
+        "role": "room-tint",
+        "displayName": "Room Rose",
+        "canonical": "#F6D3DA",
+        "tonalRamp": [
+          "#35181D",
+          "#612330",
+          "#932A3F",
+          "#C92C4B",
+          "#D45E75",
+          "#DA95A3",
+          "#E6C6CD",
+          "#F6EEF0"
+        ]
+      },
+      "on-room-rose": {
+        "role": "room-tint",
+        "displayName": "On Room Rose",
+        "canonical": "#5A1D2B",
+        "tonalRamp": [
+          "#321B20",
+          "#5A2A35",
+          "#873648",
+          "#B83D59",
+          "#C76B80",
+          "#D39DA9",
+          "#E3CAD0",
+          "#F5EFF1"
+        ]
+      },
+      "room-lavender": {
+        "role": "room-tint",
+        "displayName": "Room Lavender",
+        "canonical": "#DED8F5",
+        "tonalRamp": [
+          "#1F1933",
+          "#32265E",
+          "#432F8D",
+          "#5134C1",
+          "#7A64CE",
+          "#A598D7",
+          "#CEC8E4",
+          "#F0EFF6"
+        ]
+      },
+      "on-room-lavender": {
+        "role": "room-tint",
+        "displayName": "On Room Lavender",
+        "canonical": "#2E2463",
+        "tonalRamp": [
+          "#1F1C31",
+          "#332C58",
+          "#453984",
+          "#5443B2",
+          "#7C6FC3",
+          "#A79FD0",
+          "#CFCBE1",
+          "#F0F0F5"
+        ]
+      },
+      "room-sky": {
+        "role": "room-tint",
+        "displayName": "Room Sky",
+        "canonical": "#D3E5F6",
+        "tonalRamp": [
+          "#182735",
+          "#234361",
+          "#2A6093",
+          "#2C7DC9",
+          "#5E9BD4",
+          "#95B9DA",
+          "#C6D7E6",
+          "#EEF2F6"
+        ]
+      },
+      "on-room-sky": {
+        "role": "room-tint",
+        "displayName": "On Room Sky",
+        "canonical": "#12344F",
+        "tonalRamp": [
+          "#182834",
+          "#254660",
+          "#2C6490",
+          "#2F83C6",
+          "#619FD1",
+          "#97BBD9",
+          "#C7D8E5",
+          "#EFF3F6"
+        ]
+      },
+      "room-sage": {
+        "role": "room-tint",
+        "displayName": "Room Sage",
+        "canonical": "#DCE6CF",
+        "tonalRamp": [
+          "#272D1F",
+          "#445133",
+          "#627745",
+          "#7FA055",
+          "#9DB57D",
+          "#BAC8A7",
+          "#D7DECF",
+          "#F2F4F0"
+        ]
+      },
+      "on-room-sage": {
+        "role": "room-tint",
+        "displayName": "On Room Sage",
+        "canonical": "#2C3A1C",
+        "tonalRamp": [
+          "#272E1F",
+          "#435332",
+          "#607A43",
+          "#7DA451",
+          "#9BB87A",
+          "#B9CAA5",
+          "#D7DFCE",
+          "#F2F4F0"
+        ]
+      },
+      "room-seafoam-dark": {
+        "role": "room-tint",
+        "displayName": "Room Seafoam Dark",
+        "canonical": "#24453C",
+        "tonalRamp": [
+          "#1F2D29",
+          "#335149",
+          "#45776A",
+          "#55A08B",
+          "#7DB5A6",
+          "#A7C8BF",
+          "#CFDEDA",
+          "#F0F4F3"
+        ]
+      },
+      "on-room-seafoam-dark": {
+        "role": "room-tint",
+        "displayName": "On Room Seafoam Dark",
+        "canonical": "#C6EBDD",
+        "tonalRamp": [
+          "#1C3129",
+          "#2C5948",
+          "#388568",
+          "#41B488",
+          "#6EC4A3",
+          "#9ED1BE",
+          "#CBE2D9",
+          "#EFF5F3"
+        ]
+      },
+      "room-amber-dark": {
+        "role": "room-tint",
+        "displayName": "Room Amber Dark",
+        "canonical": "#4A3A16",
+        "tonalRamp": [
+          "#322B1A",
+          "#5C4C29",
+          "#896F33",
+          "#BB933A",
+          "#CAAC68",
+          "#D4C39B",
+          "#E3DBC9",
+          "#F5F3EF"
+        ]
+      },
+      "on-room-amber-dark": {
+        "role": "room-tint",
+        "displayName": "On Room Amber Dark",
+        "canonical": "#F6E0B5",
+        "tonalRamp": [
+          "#382C15",
+          "#674E1D",
+          "#9D7220",
+          "#D8991D",
+          "#DFB053",
+          "#E1C58E",
+          "#E9DCC3",
+          "#F7F4EE"
+        ]
+      },
+      "room-rose-dark": {
+        "role": "room-tint",
+        "displayName": "Room Rose Dark",
+        "canonical": "#52303A",
+        "tonalRamp": [
+          "#2C2024",
+          "#4F363D",
+          "#734A56",
+          "#9A5B6E",
+          "#B0828F",
+          "#C5AAB2",
+          "#DDD0D4",
+          "#F4F1F2"
+        ]
+      },
+      "on-room-rose-dark": {
+        "role": "room-tint",
+        "displayName": "On Room Rose Dark",
+        "canonical": "#F6D3DA",
+        "tonalRamp": [
+          "#35181D",
+          "#612330",
+          "#932A3F",
+          "#C92C4B",
+          "#D45E75",
+          "#DA95A3",
+          "#E6C6CD",
+          "#F6EEF0"
+        ]
+      },
+      "room-lavender-dark": {
+        "role": "room-tint",
+        "displayName": "Room Lavender Dark",
+        "canonical": "#3A3458",
+        "tonalRamp": [
+          "#22212C",
+          "#3A364E",
+          "#514A73",
+          "#665C99",
+          "#8A82B0",
+          "#AFAAC5",
+          "#D2D0DC",
+          "#F1F1F4"
+        ]
+      },
+      "on-room-lavender-dark": {
+        "role": "room-tint",
+        "displayName": "On Room Lavender Dark",
+        "canonical": "#DED8F5",
+        "tonalRamp": [
+          "#1F1933",
+          "#32265E",
+          "#432F8D",
+          "#5134C1",
+          "#7A64CE",
+          "#A598D7",
+          "#CEC8E4",
+          "#F0EFF6"
+        ]
+      },
+      "room-sky-dark": {
+        "role": "room-tint",
+        "displayName": "Room Sky Dark",
+        "canonical": "#2A3D52",
+        "tonalRamp": [
+          "#1F262D",
+          "#334252",
+          "#455D78",
+          "#5478A1",
+          "#7C98B6",
+          "#A7B7C9",
+          "#CED6DE",
+          "#F0F2F4"
+        ]
+      },
+      "on-room-sky-dark": {
+        "role": "room-tint",
+        "displayName": "On Room Sky Dark",
+        "canonical": "#D3E5F6",
+        "tonalRamp": [
+          "#182735",
+          "#234361",
+          "#2A6093",
+          "#2C7DC9",
+          "#5E9BD4",
+          "#95B9DA",
+          "#C6D7E6",
+          "#EEF2F6"
+        ]
+      },
+      "room-sage-dark": {
+        "role": "room-tint",
+        "displayName": "Room Sage Dark",
+        "canonical": "#38432B",
+        "tonalRamp": [
+          "#272B21",
+          "#434D38",
+          "#60704D",
+          "#7D9460",
+          "#9BAD85",
+          "#B9C3AC",
+          "#D7DBD1",
+          "#F2F4F1"
+        ]
+      },
+      "on-room-sage-dark": {
+        "role": "room-tint",
+        "displayName": "On Room Sage Dark",
+        "canonical": "#DCE6CF",
+        "tonalRamp": [
+          "#272D1F",
+          "#445133",
+          "#627745",
+          "#7FA055",
+          "#9DB57D",
+          "#BAC8A7",
+          "#D7DECF",
+          "#F2F4F0"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display-small": {
+        "displayName": "Display Small",
+        "purpose": "The bold \"h/repo\" wordmark on the connection setup screen; used once."
+      },
+      "headline-small": {
+        "displayName": "Headline Small",
+        "purpose": "Sheet headings, including the item name in its sheet."
+      },
+      "title-large": {
+        "displayName": "Title Large",
+        "purpose": "Top app bar title; bold only for the h/repo wordmark on Find."
+      },
+      "title-medium": {
+        "displayName": "Title Medium",
+        "purpose": "Item and place names in rows, notice titles, room and avatar initials."
+      },
+      "title-small": {
+        "displayName": "Title Small",
+        "purpose": "Sentence-case list section titles in muted ink."
+      },
+      "body-large": {
+        "displayName": "Body Large",
+        "purpose": "Fields and the search input."
+      },
+      "body-medium": {
+        "displayName": "Body Medium",
+        "purpose": "Notices, subtitles, sheet copy, the shift notice."
+      },
+      "label-large": {
+        "displayName": "Label Large",
+        "purpose": "Buttons, chips, quantities, monogram initials."
+      },
+      "label-medium": {
+        "displayName": "Label Medium",
+        "purpose": "Drawer tab text, one ellipsised line."
+      },
+      "label-small": {
+        "displayName": "Label Small",
+        "purpose": "The status label."
+      }
+    },
+    "shadows": [
+      {
+        "name": "material-component-elevation",
+        "value": "Material 3 default elevation (FAB, bottom sheet, dialog)",
+        "purpose": "The only shadows; custom surfaces are flat and tonal."
+      },
+      {
+        "name": "tab-hairline",
+        "value": "1px solid rgba(195,204,202,0.7)",
+        "purpose": "Separates drawer tabs from the ground instead of shadow."
+      }
+    ],
+    "motion": [
+      {
+        "name": "drawer-pull",
+        "value": "shared-axis Y: slide 1/10 height + fade, tween 300ms (Compose default FastOutSlowIn)",
+        "purpose": "Into or out of a room or box; reversed on pop and predictive back."
+      },
+      {
+        "name": "fade-through",
+        "value": "out: fade 90ms; in: fade + scale from 0.92 over 210ms after 90ms delay",
+        "purpose": "Every other navigation change."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "navigation-suite",
+        "value": "Material adaptive window size class",
+        "purpose": "Bottom bar on compact width, rail on wider windows."
+      }
+    ],
+    "knownLimits": [
+      "Six room tints chosen by name hash: two rooms can share a tint. Store a tint per room if households outgrow six.",
+      "Dynamic (wallpaper) colour is intentionally off; the palette is the identity."
+    ]
+  },
+  "components": [
+    {
+      "name": "Drawer Path",
+      "kind": "custom",
+      "refersTo": "drawer-tab-room",
+      "description": "The signature: a location as drawer tabs down one 2dp spine; room tab tinted, inner tabs are slip labels, 10dp indent per level, fixed 22dp height.",
+      "html": "<div class=\"ds-path\" aria-label=\"In Bedroom, Wardrobe, Documents folder\"><span class=\"ds-path-spine\"></span><div class=\"ds-path-tabs\"><span class=\"ds-tab ds-tab-room\">Bedroom</span><span class=\"ds-tab\" style=\"margin-left:10px\">Wardrobe</span><span class=\"ds-tab\" style=\"margin-left:20px\">Documents folder</span></div></div>",
+      "css": ".ds-path{display:flex;gap:8px;background:#F4F7F6;padding:8px 16px}.ds-path-spine{width:2px;border-radius:1px;background:#C3CCCA}.ds-path-tabs{display:flex;flex-direction:column;align-items:flex-start;gap:3px}.ds-tab{font-family: system-ui, Roboto, sans-serif;box-sizing:border-box;min-height:22px;display:inline-flex;align-items:center;padding:1px 9px;border-radius:6px;border:1px solid rgba(195,204,202,.7);background:#FFFFFF;color:#1C2326;font-size:12px;font-weight:500;line-height:16px;letter-spacing:.5px;white-space:nowrap}.ds-tab-room{background:#CDEBE1;color:#0F3D33}"
+    },
+    {
+      "name": "Item Row",
+      "kind": "card",
+      "refersTo": "item-avatar",
+      "description": "One thing in a list: 40dp tinted avatar, title-medium name, drawer path below; 16dp gutter, 12dp vertical padding, 14dp gap.",
+      "html": "<div class=\"ds-row\" tabindex=\"0\"><div class=\"ds-avatar\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"6\" y=\"3\" width=\"12\" height=\"18\" rx=\"2\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></svg></div><div class=\"ds-row-main\"><div class=\"ds-row-name\">Passport</div><div class=\"ds-row-path\"><span class=\"ds-row-spine\"></span><div class=\"ds-row-tabs\"><span class=\"ds-row-tab ds-row-room\">Bedroom</span><span class=\"ds-row-tab\" style=\"margin-left:10px\">Wardrobe</span></div></div></div></div>",
+      "css": ".ds-row{font-family: system-ui, Roboto, sans-serif;display:flex;gap:14px;padding:12px 16px;background:#F4F7F6;color:#1C2326;cursor:pointer;transition:background .15s}.ds-row:hover{background:#E8EEED}.ds-row:focus-visible{outline:2px solid #0E5E58;outline-offset:-2px}.ds-avatar{width:40px;height:40px;flex-shrink:0;border-radius:14px;background:#D3E5F6;color:#12344F;display:flex;align-items:center;justify-content:center}.ds-row-main{display:flex;flex-direction:column;gap:6px}.ds-row-name{font-size:16px;font-weight:500;line-height:24px;letter-spacing:.15px}.ds-row-path{display:flex;gap:8px}.ds-row-spine{width:2px;border-radius:1px;background:#C3CCCA}.ds-row-tabs{display:flex;flex-direction:column;align-items:flex-start;gap:3px}.ds-row-tab{min-height:22px;box-sizing:border-box;display:inline-flex;align-items:center;padding:1px 9px;border-radius:6px;border:1px solid rgba(195,204,202,.7);background:#FFFFFF;font-size:12px;font-weight:500;letter-spacing:.5px}.ds-row-room{background:#CDEBE1;color:#0F3D33}"
+    },
+    {
+      "name": "Extended FAB",
+      "kind": "button",
+      "refersTo": "fab-extended",
+      "description": "The screen's one deep-teal action, bottom right, verb label.",
+      "html": "<button class=\"ds-fab\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 5v14M5 12h14\"/></svg>Add</button>",
+      "css": ".ds-fab{font-family: system-ui, Roboto, sans-serif;display:inline-flex;align-items:center;gap:12px;height:56px;padding:0 20px 0 16px;border:none;border-radius:20px;background:#0E5E58;color:#FFFFFF;font-size:14px;font-weight:500;letter-spacing:.1px;box-shadow:0 3px 6px rgba(0,0,0,.18);cursor:pointer;transition:filter .15s}.ds-fab:hover{filter:brightness(1.12)}.ds-fab:focus-visible{outline:3px solid #7FD3C6;outline-offset:2px}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one filled confirm in a sheet (Move, Save, Yes).",
+      "html": "<button class=\"ds-btn-primary\">Move</button>",
+      "css": ".ds-btn-primary{font-family: system-ui, Roboto, sans-serif;height:52px;padding:0 24px;border:none;border-radius:9999px;background:#0E5E58;color:#FFFFFF;font-size:14px;font-weight:500;letter-spacing:.1px;cursor:pointer;transition:filter .15s}.ds-btn-primary:hover{filter:brightness(1.12)}.ds-btn-primary:focus-visible{outline:3px solid #7FD3C6;outline-offset:2px}"
+    },
+    {
+      "name": "Tonal Button",
+      "kind": "button",
+      "refersTo": "button-tonal",
+      "description": "Secondary actions that matter: +1, Try again, Add \"query\".",
+      "html": "<button class=\"ds-btn-tonal\">+1</button>",
+      "css": ".ds-btn-tonal{font-family: system-ui, Roboto, sans-serif;height:52px;padding:0 24px;border:none;border-radius:9999px;background:#CCE8E3;color:#05201D;font-size:14px;font-weight:500;letter-spacing:.1px;cursor:pointer;transition:background .15s}.ds-btn-tonal:hover{background:#BFDDD7}.ds-btn-tonal:focus-visible{outline:3px solid #0E5E58;outline-offset:2px}"
+    },
+    {
+      "name": "Outlined Button",
+      "kind": "button",
+      "refersTo": "button-outlined",
+      "description": "Cancel or alternative choices: No, Keep it, Declutter.",
+      "html": "<button class=\"ds-btn-outlined\">Keep it</button>",
+      "css": ".ds-btn-outlined{font-family: system-ui, Roboto, sans-serif;height:52px;padding:0 24px;border:1px solid #6F7A79;border-radius:9999px;background:transparent;color:#0E5E58;font-size:14px;font-weight:500;letter-spacing:.1px;cursor:pointer;transition:background .15s}.ds-btn-outlined:hover{background:rgba(14,94,88,.08)}.ds-btn-outlined:focus-visible{outline:3px solid #0E5E58;outline-offset:2px}"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "Docked search in a 28dp search well with mic and scan.",
+      "html": "<label class=\"ds-search\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M20 20l-4-4\"/></svg><input placeholder=\"Where did I put it?\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"9\" y=\"3\" width=\"6\" height=\"11\" rx=\"3\"/><path d=\"M5 11a7 7 0 0 0 14 0M12 18v3\"/></svg></label>",
+      "css": ".ds-search{font-family: system-ui, Roboto, sans-serif;display:flex;align-items:center;gap:16px;height:56px;padding:0 16px;border-radius:28px;background:#E2E9E7;color:#4A5557;transition:box-shadow .15s}.ds-search:focus-within{box-shadow:inset 0 0 0 2px #0E5E58}.ds-search input{flex:1;border:none;background:transparent;font:inherit;font-size:16px;letter-spacing:.5px;color:#1C2326;outline:none}"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "filter-chip-selected",
+      "description": "Your things / Decluttered / All; selected fills mist tonal with a check.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip ds-chip-on\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\"><path d=\"M5 12l5 5 9-10\"/></svg>Your things</button><button class=\"ds-chip\">Decluttered</button><button class=\"ds-chip\">All</button></div>",
+      "css": ".ds-chips{display:flex;gap:8px}.ds-chip{font-family: system-ui, Roboto, sans-serif;display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 16px;border:1px solid #C3CCCA;border-radius:8px;background:transparent;color:#4A5557;font-size:14px;font-weight:500;cursor:pointer}.ds-chip:hover{background:rgba(28,35,38,.06)}.ds-chip:focus-visible{outline:2px solid #0E5E58;outline-offset:2px}.ds-chip-on{border-color:transparent;background:#CCE8E3;color:#05201D;padding-left:8px}"
+    },
+    {
+      "name": "Navigation Bar",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Find, Places, History; mist-tonal active indicator.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-on\"><span class=\"ds-nav-ind\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M20 20l-4-4\"/></svg></span>Find</a><a class=\"ds-nav-item\"><span class=\"ds-nav-ind\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"4\" y=\"4\" width=\"16\" height=\"7\" rx=\"2\"/><rect x=\"4\" y=\"13\" width=\"16\" height=\"7\" rx=\"2\"/></svg></span>Places</a><a class=\"ds-nav-item\"><span class=\"ds-nav-ind\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 12a9 9 0 1 0 3-6.7L3 8\"/><path d=\"M3 3v5h5M12 7v5l3 2\"/></svg></span>History</a></nav>",
+      "css": ".ds-nav{font-family: system-ui, Roboto, sans-serif;display:flex;justify-content:space-around;padding:12px 0 16px;background:#E8EEED}.ds-nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:500;letter-spacing:.5px;color:#4A5557;cursor:pointer}.ds-nav-ind{width:64px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;transition:background .2s}.ds-nav-item:hover .ds-nav-ind{background:rgba(28,35,38,.08)}.ds-nav-on{color:#1C2326}.ds-nav-on .ds-nav-ind{background:#CCE8E3;color:#05201D}"
+    },
+    {
+      "name": "Shift Notice",
+      "kind": "custom",
+      "refersTo": "shift-notice",
+      "description": "The House Shift status under the top bar; the only tertiary use.",
+      "html": "<div class=\"ds-shift\">House Shift is on — pack on the web. Changes here go to the live inventory.</div>",
+      "css": ".ds-shift{font-family: system-ui, Roboto, sans-serif;margin:4px 16px;min-height:48px;box-sizing:border-box;padding:12px 14px;border-radius:14px;background:#F6E0B5;color:#261A00;font-size:14px;line-height:20px;letter-spacing:.25px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Clear Drawers",
+    "overview": "Every place is a frosted drawer you can see into, and a location path is the stack of drawers. The ground is pale sea-glass, cool and quiet. Colour belongs to rooms: each room carries one of six soft tints. Deep teal is the only loud colour, and it marks the one main action on each screen. The category default is a grey list with the path as a faint subtitle. This system turns that path into the picture itself: a short stack of same-height tabs hanging from one thin spine.\n\nThe world is Material 3 tuned rather than replaced. Scheme roles, shapes, motion and navigation come from the platform. Character comes from the palette, from drawer geometry repeated at every scale (list row, place header, app icon), and from a refusal to add boxes. Hierarchy comes from Material type size and weight in the device's own sans, so the app follows the user's font and font-size settings. Cards and dividers are not used for hierarchy. The density is calm: one item per row, generous 16dp gutters, and enough room under the list for the extended FAB.",
+    "keyCharacteristics": [
+      "Frosted sea-glass ground (light and dark), with tonal surface containers for depth and no card shadows.",
+      "Deep teal on exactly one main action per screen. Secondary actions are tonal or outlined.",
+      "Six room tints (seafoam, amber, rose, lavender, sky, sage). Each is a light/dark tonal pair, picked by a hash of the room name.",
+      "The drawer path is the signature: one spine, fixed 22dp tabs, a tinted room tab, and white slip-label inner tabs.",
+      "The device's system sans at stock Material roles. No bundled font.",
+      "Two motions only: a shared-axis Y \"drawer pull\" into and out of places, and a fade-through everywhere else."
+    ],
+    "rules": [
+      {
+        "name": "The One Teal Rule",
+        "body": "Each screen has at most one deep-teal action: the FAB on a list, the filled confirm in a sheet. Everything else is tonal (`mist-tonal`), outlined, or a text button.",
+        "section": "colors"
+      },
+      {
+        "name": "The Room Owns Its Colour Rule",
+        "body": "Tints identify rooms and never encode status or emphasis. An item's avatar, its room tab and its room's swatch always share one tint.",
+        "section": "colors"
+      },
+      {
+        "name": "The Own Palette Rule",
+        "body": "Dynamic (wallpaper) colour is deliberately off. The palette is the app's identity, and a room's tint has to stay stable from one launch to the next.",
+        "section": "colors"
+      },
+      {
+        "name": "The Borrowed Voice Rule",
+        "body": "Never bundle a font or hard-code sp sizes outside the Material roles. Every text style is a `MaterialTheme.typography` role.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "Section titles are sentence case at title-small in muted ink. Never use uppercase tracking labels above them.",
+        "section": "typography"
+      },
+      {
+        "name": "The Frosted, Not Lifted Rule",
+        "body": "To show that something sits on top, use the next surface-container step or a hairline. Don't add shadows to custom surfaces.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do give each screen exactly one deep-teal action: the extended FAB on lists, the filled confirm in sheets.",
+      "Do use tonal (mist) for secondary actions and outlined for cancel or alternative choices.",
+      "Do show every location as a Drawer Path: one 2dp spine, 22dp tabs, a 10dp indent per level (at most three steps), and the room tab tinted while inner tabs are slips.",
+      "Do show paths relative to the current place when listing inside a room or box.",
+      "Do pair every room tint with its own ink (`on-room-*`), in both light and dark.",
+      "Do keep 16dp gutters and 96dp bottom clearance on any list with an extended FAB.",
+      "Do use the 300ms shared-axis Y only for moving into or out of a place, and fade-through for everything else.",
+      "Do use Material type roles only, so the user's font and size settings carry through."
+    ],
+    "donts": [
+      "Don't turn on dynamic (wallpaper) colour. The palette and stable room tints are the identity.",
+      "Don't use deep teal for decoration, selection, or a second action on the same screen.",
+      "Don't vary drawer tab height or text size to show depth. Depth is the indent, and the tab scale is fixed so paths compare at a glance.",
+      "Don't use room tints for status or emphasis. A tint means \"this room\".",
+      "Don't wrap rows in cards or add shadows to custom surfaces. Depth is tonal.",
+      "Don't add uppercase tracked labels above section titles. Titles are sentence-case title-small.",
+      "Don't treat two rooms that share a tint as related. Six tints chosen by name hash can collide, and that is a known limit, not a meaning."
+    ]
+  }
+}

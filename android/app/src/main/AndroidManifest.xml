@@ -4,9 +4,10 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <application
         android:label="Home Repo"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.HomeRepo"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

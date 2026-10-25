@@ -1,0 +1,104 @@
+{
+  "title": "Choose the visual world for the Android app",
+  "question": "The roll assigned Clear Drawers. Keep it, take an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned", "kind": "assigned", "label": "Clear Drawers", "kicker": "THE ROLL",
+      "lineage": "stacking translucent storage drawers with slip-in labels",
+      "thesis": "Every place is a frosted drawer you can see into, and a path is the stack.",
+      "palette": ["#EEF2F2", "#0E5E58", "#B8E0D2", "#F3D9A4", "#F2C4CE", "#1C2326"],
+      "materials": ["frosted polypropylene", "white slip-in labels"],
+      "viewport": "Search bar with mic and scan on top; every item row shows its path as stacked translucent drawer tabs, tinted by room; one Add FAB; Find, Places, History in the nav bar.",
+      "risk": "Translucent tints turn to mush in dark theme unless each room colour is a real tonal role.",
+      "raised": [
+        {"from": "challenger-laban", "raise": "One axis rules: the path always reads down a single leading-edge spine, on every screen."},
+        {"from": "challenger-botanical", "raise": "Fixed scale: every drawer tab is the same height and type size everywhere, so paths compare at a glance."},
+        {"from": "challenger-monochrome", "raise": "Accent discipline: the deep teal is spent only on the one primary action per screen."},
+        {"from": "challenger-specimen", "raise": "Scale contrast does the hierarchy: item name large, path small, no boxes or rules to separate them."},
+        {"from": "challenger-feed", "raise": "One thing owns the sheet: an opened item fills its sheet with that item and its actions, nothing else."}
+      ],
+      "html": ".impeccable/mocks/decision/assigned.html", "htmlFrame": "390x844"
+    },
+    {
+      "id": "model-pick", "kind": "pick", "label": "Transit Map", "kicker": "IMPECCABLE’S PICK",
+      "lineage": "metro wayfinding diagrams",
+      "thesis": "Every room is a coloured line; units and boxes are stops; the item is the terminus.",
+      "palette": ["#FAFAF8", "#E2231A", "#0072CE", "#00A651", "#FFC20E", "#121212"],
+      "materials": ["enamel signage", "round station dots"],
+      "viewport": "Search on top; each item row carries a tiny route line from room to item; Places draws each room as a line with its units as stations.",
+      "risk": "The most familiar wayfinding move for paths; long paths need to wrap without breaking the line.",
+      "html": ".impeccable/mocks/decision/model-pick.html", "htmlFrame": "390x844"
+    },
+    {
+      "id": "challenger-boarding", "kind": "challenger", "catalogId": "vernacular-ephemera-boarding-pass-and-gate-board",
+      "label": "Boarding Pass", "verdict": "competitive",
+      "lineage": "boarding passes and departure boards",
+      "thesis": "Each item is a pass: its path printed as labelled segments, recent moves held lit like a gate change.",
+      "palette": ["#F4F4F0", "#101010", "#2B4C7E", "#FF5A1F"],
+      "materials": ["perforated card stock", "tabular figures"],
+      "viewport": "Search on top; rows as passes with ROOM | UNIT | BOX segments; an item moved today keeps an orange edge until you open it.",
+      "case": "Holds clarity (segmented paths, held change-state) but loses identification: it reads as travel, not home.",
+      "risk": "Reads as an airline app if the segments get too literal.",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-boarding-pass-and-gate-board-hero.webp",
+      "html": ".impeccable/mocks/decision/challenger-boarding.html", "htmlFrame": "390x844"
+    },
+    {
+      "id": "challenger-laban", "kind": "challenger", "catalogId": "notation-diagram-systems-labanotation",
+      "label": "Labanotation Score", "verdict": "declined", "lineage": "dance notation scores",
+      "thesis": "A vertical centre staff where shape, shading and length carry meaning.",
+      "palette": ["#FFFFFF", "#111111", "#D9D9D9"], "materials": ["score paper", "hatched blocks"],
+      "viewport": "A centre staff with items as shaded blocks.", "risk": "Unreadable without training.",
+      "case": "Fuses poorly: households do not read notation, and paths are not durations.",
+      "kept": "One axis rules the layout."
+    },
+    {
+      "id": "challenger-botanical", "kind": "challenger", "catalogId": "editorial-sequence-montage-botanical-folio-season",
+      "label": "Botanical Folio", "verdict": "declined", "lineage": "seasonal botanical plates",
+      "thesis": "One subject followed through stages on fixed-scale plates.",
+      "palette": ["#F3EAD8", "#3F6B3A", "#B22D2D", "#6E6A63"], "materials": ["engraved plates", "sepia hairlines"],
+      "viewport": "Five aligned plates on one baseline.", "risk": "Ornamental on a working screen.",
+      "case": "Fuses poorly: a home inventory has no seasons to compare.",
+      "kept": "Fixed scale across every plate."
+    },
+    {
+      "id": "challenger-monochrome", "kind": "challenger", "catalogId": "digital-design-canon-monochrome-product-marketing",
+      "label": "Monochrome Product", "verdict": "declined", "lineage": "software marketing canon",
+      "thesis": "One neutral scale and an accent used four times.",
+      "palette": ["#FAFAFA", "#0A0A0A", "#6E6E6E", "#3B5BDB"], "materials": ["neutral scale", "framed screenshots"],
+      "viewport": "Claim and proof pairs in a strict grid.", "risk": "Grey and generic.",
+      "case": "Fuses poorly: a marketing grammar with no home in it.",
+      "kept": "Total accent discipline."
+    },
+    {
+      "id": "challenger-feed", "kind": "challenger", "catalogId": "pop-culture-shelf-vertical-video-feed-surface",
+      "label": "Vertical Feed", "verdict": "declined", "lineage": "full-screen media feeds",
+      "thesis": "One item owns the viewport, next one a snap away.",
+      "palette": ["#000000", "#FFFFFF", "#FE2C55"], "materials": ["full-bleed media", "glyph rail"],
+      "viewport": "One item per screen with a right action rail.", "risk": "Lookups need lists, not snaps.",
+      "case": "Fuses poorly: finding a thing is a search, not a scroll of one at a time.",
+      "kept": "One thing owns the screen when it is open."
+    },
+    {
+      "id": "challenger-specimen", "kind": "challenger", "catalogId": "variable-font-specimen",
+      "label": "Type Specimen", "verdict": "declined", "lineage": "variable font specimens",
+      "thesis": "Hierarchy by scale contrast alone.",
+      "palette": ["#F7F7F5", "#0B0B0B", "#FF4F00"], "materials": ["paper", "live glyph grid"],
+      "viewport": "One giant glyph and an axis slider.", "risk": "No task to do.",
+      "case": "Fuses poorly: nothing in the product is about type.",
+      "kept": "Hierarchy by scale contrast, nothing else."
+    }
+  ],
+  "reroll": {"registers": ["safer", "bolder"]},
+  "buildPath": {"value": "code"},
+  "canon": true,
+  "canonCard": {
+    "kind": "canon", "label": "The category standard",
+    "thesis": "A stock Material 3 utility app, the way Google's own apps are built, executed impeccably.",
+    "palette": ["#FEF7FF", "#6750A4", "#E8DEF8", "#1D1B20"],
+    "materials": ["dynamic colour", "tonal surfaces"],
+    "viewport": "Material search bar, list items with supporting path text, an Add FAB, a three-tab nav bar.",
+    "risk": "Indistinguishable from every other utility on the phone, by design.",
+    "html": ".impeccable/mocks/decision/canon.html", "htmlFrame": "390x844"
+  },
+  "steer": true
+}
