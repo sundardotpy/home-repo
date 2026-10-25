@@ -1,3 +1,16 @@
+import java.util.Properties
+
+// The household database is built into the app, so the phone never asks for it.
+// First found wins: -PhomerepoDb=…, homerepo.db in android/local.properties, then
+// DATABASE_URL in the repo's .env. Both files are gitignored, so the credential
+// never enters git; it does ship inside the APK.
+val householdDb: String = (findProperty("homerepoDb") as String?)
+    ?: rootProject.file("local.properties").takeIf { it.exists() }
+        ?.let { file -> Properties().apply { file.inputStream().use { load(it) } }.getProperty("homerepo.db") }
+    ?: rootProject.file("../.env").takeIf { it.exists() }?.readLines()
+        ?.firstOrNull { it.startsWith("DATABASE_URL=") }?.substringAfter("=")?.trim()?.trim('"')
+    ?: ""
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -18,6 +31,7 @@ android {
         targetSdk = 36
         versionCode = 2
         versionName = "2.0"
+        buildConfigField("String", "DB_URL", "\"" + householdDb.replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
     }
 
     buildTypes {
@@ -38,7 +52,10 @@ android {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         }
     }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 }
 
 dependencies {

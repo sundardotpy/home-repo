@@ -41,7 +41,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object HistoryKey : NavKey
 @Serializable data object SettingsKey : NavKey
 @Serializable data class RoomKey(val id: String, val name: String) : NavKey
-@Serializable data class UnitKey(val id: String, val name: String, val roomId: String, val path: String) : NavKey
+@Serializable data class UnitKey(val id: String, val name: String, val roomId: String, val path: String, val parentId: String? = null) : NavKey
 
 private data class Tab(val key: NavKey, val label: String, val icon: ImageVector)
 
@@ -127,14 +127,14 @@ fun App(prefs: android.content.SharedPreferences) {
                         RoomScreen(
                             key,
                             onBack = { back() },
-                            onOpenUnit = { go(UnitKey(it.id, it.name, it.roomId, it.pathString)) },
+                            onOpenUnit = { go(UnitKey(it.id, it.name, it.roomId, it.pathString, it.parentId)) },
                         )
                     }
                     entry<UnitKey> { key ->
                         UnitScreen(
                             key,
                             onBack = { back() },
-                            onOpenUnit = { go(UnitKey(it.id, it.name, it.roomId, it.pathString)) },
+                            onOpenUnit = { go(UnitKey(it.id, it.name, it.roomId, it.pathString, it.parentId)) },
                         )
                     }
                     entry<HistoryKey> { HistoryScreen() }

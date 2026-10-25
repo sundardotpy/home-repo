@@ -138,15 +138,18 @@ fun SettingsScreen(prefs: android.content.SharedPreferences, onBack: () -> Unit,
                 )
             }
             Text(
-                "The phone and the web app share this database. The last change wins, so both always show the same thing.",
+                (if (Db.builtIn) "Built into this app. " else "") +
+                    "The phone and the web app share this database. The last change wins, so both always show the same thing.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),
             )
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { ui.done("Reloaded") }, modifier = Modifier.fillMaxWidth()) { Text("Reload everything") }
-                OutlinedButton(onClick = { confirmForget = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Disconnect this phone", color = MaterialTheme.colorScheme.error)
+                if (!Db.builtIn) {
+                    OutlinedButton(onClick = { confirmForget = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Disconnect this phone", color = MaterialTheme.colorScheme.error)
+                    }
                 }
             }
         }

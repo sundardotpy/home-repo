@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.DropdownMenu
@@ -25,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -145,11 +148,12 @@ private fun BoxIcon() {
 
 /** Rename and delete, tucked behind the top bar's overflow. */
 @Composable
-private fun PlaceMenu(onRename: () -> Unit, onDelete: () -> Unit) {
+private fun PlaceMenu(onRename: () -> Unit, onDelete: () -> Unit, onMove: (() -> Unit)? = null) {
     var open by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { open = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "More") }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            if (onMove != null) DropdownMenuItem(text = { Text("Move") }, onClick = { open = false; onMove() })
             DropdownMenuItem(text = { Text("Rename") }, onClick = { open = false; onRename() })
             DropdownMenuItem(
                 text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
@@ -279,11 +283,12 @@ fun UnitScreen(unit: UnitKey, onBack: () -> Unit, onOpenUnit: (UnitRow) -> Unit)
     var newBox by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
+    var moving by remember { mutableStateOf(false) }
 
     ScreenScaffold(
         title = name,
         onBack = onBack,
-        actions = { PlaceMenu(onRename = { renaming = true }, onDelete = { deleting = true }) },
+        actions = { PlaceMenu(onRename = { renaming = true }, onDelete = { deleting = true }, onMove = { moving = true }) },
         fab = {
             ExtendedFloatingActionButton(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -317,6 +322,7 @@ fun UnitScreen(unit: UnitKey, onBack: () -> Unit, onOpenUnit: (UnitRow) -> Unit)
     }
 
     detail?.let { ItemSheet(it, onDismiss = { detail = null }) }
+    if (moving) MoveBoxSheet(unit, name, onDismiss = { moving = false }, onMoved = onBack)
     if (newBox) {
         TextPromptDialog(title = "New box inside $name", placeholder = "Top shelf", confirmLabel = "Create", onDismiss = { newBox = false }) { box ->
             newBox = false
@@ -353,6 +359,73 @@ fun UnitScreen(unit: UnitKey, onBack: () -> Unit, onOpenUnit: (UnitRow) -> Unit)
                     ui.done("Deleted $name")
                     onBack()
                 } catch (e: Exception) { ui.say(e.message ?: "Couldn't delete the box") }
+            }
+        }
+    }
+}
+
+/** Where a box can go: a room, or inside another box. Everything in it goes too. */
+@Composable
+private fun MoveBoxSheet(unit: UnitKey, name: String, onDismiss: () -> Unit, onMoved: () -> Unit) {
+    val ui = LocalUi.current
+    val scope = rememberCoroutineScope()
+    var filter by remember { mutableStateOf("") }
+    var spots by remember { mutableStateOf<Pair<List<RoomRow>, List<UnitRow>>?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        try {
+            spots = withContext(Dispatchers.IO) {
+                // Cycle guard: never offer the box itself or a box inside it.
+                val blocked = Db.unitAndNested(unit.id)
+                Db.rooms() to Db.units().filter { it.id !in blocked }
+            }
+        } catch (e: Exception) { error = e.message }
+    }
+
+    fun go(where: String, roomId: String?, parentId: String?) {
+        busy = true
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) { Db.moveUnit(unit.id, roomId, parentId) }
+                // Undo puts it back exactly where it was.
+                ui.done("Moved $name to $where") { Db.moveUnit(unit.id, unit.roomId, unit.parentId) }
+                onDismiss()
+                onMoved()
+            } catch (e: Exception) {
+                error = e.message
+                busy = false
+            }
+        }
+    }
+
+    Sheet(onDismiss, scroll = false) {
+        SheetTitle("Move $name")
+        Text("Everything inside goes with it.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        DrawerPath(unit.path)
+        OutlinedTextField(
+            filter, { filter = it },
+            placeholder = { Text("Find a room or box") },
+            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        ErrorLine(error)
+        if (spots == null || busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+        val (rooms, boxes) = spots ?: (emptyList<RoomRow>() to emptyList())
+        val q = filter.trim()
+        fun hit(s: String) = q.isEmpty() || s.contains(q, ignoreCase = true)
+        LazyColumn(Modifier.heightIn(max = 520.dp)) {
+            val r = rooms.filter { hit(it.name) }
+            if (r.isNotEmpty()) item { SectionTitle("Rooms") }
+            items(r, key = { "r" + it.id }) { room ->
+                MoveRow(room.name, "Straight in the room", { RoomSwatch(room.name, 36.dp) }, !busy) { go(room.name, room.id, null) }
+            }
+            val b = boxes.filter { hit(it.pathString) }
+            if (b.isNotEmpty()) item { SectionTitle("Inside another box") }
+            items(b, key = { "u" + it.id }) { box ->
+                MoveRow(box.name, pathParts(box.pathString).joinToString(" › "), { BoxGlyph() }, !busy) { go(box.name, null, box.id) }
             }
         }
     }

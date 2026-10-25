@@ -61,7 +61,7 @@ import kotlinx.coroutines.withContext
 /** Every sheet's frame: full-height-capable, scrolls, clears the nav bar. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Sheet(onDismiss: () -> Unit, scroll: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
+fun Sheet(onDismiss: () -> Unit, scroll: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -80,10 +80,10 @@ private fun Sheet(onDismiss: () -> Unit, scroll: Boolean = true, content: @Compo
 }
 
 @Composable
-private fun SheetTitle(text: String) = Text(text, style = MaterialTheme.typography.headlineSmall)
+fun SheetTitle(text: String) = Text(text, style = MaterialTheme.typography.headlineSmall)
 
 @Composable
-private fun ErrorLine(error: String?) {
+fun ErrorLine(error: String?) {
     error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
 }
 
@@ -258,10 +258,10 @@ fun MoveSheet(item: ItemRow, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun BoxGlyph() = Icon(Icons.Outlined.Inventory2, contentDescription = null, modifier = Modifier.size(36.dp).padding(6.dp))
+fun BoxGlyph() = Icon(Icons.Outlined.Inventory2, contentDescription = null, modifier = Modifier.size(36.dp).padding(6.dp))
 
 @Composable
-private fun MoveRow(title: String, sub: String, leading: @Composable () -> Unit, enabled: Boolean, onClick: () -> Unit) {
+fun MoveRow(title: String, sub: String, leading: @Composable () -> Unit, enabled: Boolean, onClick: () -> Unit) {
     ListItem(
         headlineContent = { Text(title) },
         supportingContent = { Text(sub, maxLines = 1) },

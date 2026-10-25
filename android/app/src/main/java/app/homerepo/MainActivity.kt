@@ -14,7 +14,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val prefs = getSharedPreferences("homerepo", MODE_PRIVATE)
-        if (prefs.contains("host")) {
+        val builtIn = Profile.fromUrl(BuildConfig.DB_URL)
+        if (builtIn != null) {
+            Db.profile = builtIn
+            Db.builtIn = true
+        } else if (prefs.contains("host")) {
             Db.profile = Profile(
                 host = prefs.getString("host", "")!!,
                 port = prefs.getInt("port", 5432),

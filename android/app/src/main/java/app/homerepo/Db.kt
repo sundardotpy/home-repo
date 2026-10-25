@@ -27,6 +27,28 @@ data class Profile(
 ) {
     fun url(): String =
         "jdbc:postgresql://$host:$port/$database?sslmode=${if (ssl) "require" else "disable"}"
+
+    companion object {
+        /** postgresql://user:password@host:port/db?sslmode=… → a profile; null when blank or malformed. */
+        fun fromUrl(url: String): Profile? {
+            if (url.isBlank()) return null
+            return runCatching {
+                val u = java.net.URI(url.trim().replaceFirst(Regex("^postgres(ql)?://"), "http://"))
+                val (user, password) = (u.rawUserInfo ?: "").split(":", limit = 2).map {
+                    java.net.URLDecoder.decode(it, "UTF-8")
+                } + listOf("", "")
+                val sslmode = u.rawQuery.orEmpty().split("&").firstOrNull { it.startsWith("sslmode=") }?.substringAfter("=")
+                Profile(
+                    host = u.host,
+                    port = if (u.port > 0) u.port else 5432,
+                    database = u.path.trimStart('/'),
+                    user = user,
+                    password = password,
+                    ssl = sslmode != "disable",
+                )
+            }.getOrNull()
+        }
+    }
 }
 
 data class RoomRow(
@@ -105,6 +127,9 @@ private fun java.sql.PreparedStatement.setUuid(index: Int, value: String?) {
 object Db {
     @Volatile
     var profile: Profile? = null
+
+    /** True when the database is built into this build of the app, not entered on the phone. */
+    var builtIn = false
 
     private val lock = Any()
     private var conn: Connection? = null
@@ -670,6 +695,67 @@ object Db {
     }
 
     /** Children and contents are promoted one level up, exactly as the server does. */
+    /** A box and every box inside it — none of them can take it in (cycle guard). */
+    fun unitAndNested(id: String): Set<String> = db { c ->
+        c.prepareStatement("SELECT id FROM storage_unit_paths WHERE ? = ANY(id_path)").use { st ->
+            st.setUuid(1, id)
+            st.executeQuery().use { rs -> buildSet { add(id); while (rs.next()) add(rs.getString(1)) } }
+        }
+    }
+
+    /**
+     * Moves a box to a room (parentId null) or into another box. Every box and
+     * thing inside follows it into the new room, as the server does.
+     */
+    fun moveUnit(id: String, roomId: String?, parentId: String?): Unit = tx { c ->
+        if (parentId != null) {
+            c.prepareStatement("SELECT ? = ANY(id_path) FROM storage_unit_paths WHERE id = ?").use { st ->
+                st.setUuid(1, id)
+                st.setUuid(2, parentId)
+                st.executeQuery().use { rs ->
+                    if (parentId == id || (rs.next() && rs.getBoolean(1))) {
+                        throw DbException("a box can't go inside itself or a box within it")
+                    }
+                }
+            }
+        }
+        val room = if (parentId != null) {
+            c.prepareStatement("SELECT room_id FROM storage_units WHERE id = ?").use { st ->
+                st.setUuid(1, parentId)
+                st.executeQuery().use { rs -> if (rs.next()) rs.getString(1) else throw DbException("box not found") }
+            }
+        } else roomId ?: throw DbException("pick a room or a box")
+        c.prepareStatement(
+            """SELECT 1 FROM storage_units o, storage_units me
+                WHERE me.id = ? AND o.id <> me.id AND o.room_id = ?
+                  AND o.parent_id IS NOT DISTINCT FROM ?::uuid
+                  AND lower(o.name) = lower(me.name)"""
+        ).use { st ->
+            st.setUuid(1, id)
+            st.setUuid(2, room)
+            st.setUuid(3, parentId)
+            st.executeQuery().use { rs -> if (rs.next()) throw DbException("there's already a box with that name there") }
+        }
+        c.prepareStatement("UPDATE storage_units SET parent_id = ?, updated_at = now() WHERE id = ?").use { st ->
+            st.setUuid(1, parentId)
+            st.setUuid(2, id)
+            if (st.executeUpdate() == 0) throw DbException("box not found")
+        }
+        val subtree = """WITH RECURSIVE sub AS (
+                SELECT id FROM storage_units WHERE id = ?
+                UNION ALL
+                SELECT su.id FROM storage_units su JOIN sub ON su.parent_id = sub.id
+            )"""
+        for (table in listOf("items", "storage_units")) {
+            val col = if (table == "items") "storage_unit_id" else "id"
+            c.prepareStatement("$subtree UPDATE $table SET room_id = ?, updated_at = now() WHERE $col IN (SELECT id FROM sub)").use { st ->
+                st.setUuid(1, id)
+                st.setUuid(2, room)
+                st.executeUpdate()
+            }
+        }
+    }
+
     fun deleteUnit(id: String): Unit = tx { c ->
         c.prepareStatement("SELECT parent_id, room_id FROM storage_units WHERE id = ?").use { st ->
             st.setUuid(1, id)
