@@ -4,3 +4,4 @@ uploads/
 *.local
 .DS_Store
 node_modules/
+.zcode/

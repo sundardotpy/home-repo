@@ -475,6 +475,9 @@ scripts/export-icons.mjs     writes every line icon as a standalone .svg
 scripts/gen-brand-icons.mjs  re-vendors the brand marks from Simple Icons
 ```
 
+The complete file-by-file map of the repo lives in
+[structure.md](structure.md).
+
 Migrations are plain `.sql` files in `internal/db/migrations`, applied in
 filename order inside a transaction and recorded in `schema_migrations`. Add
 `0002_*.sql` and restart.
