@@ -7,6 +7,7 @@ import { MONOGRAMS, MONOGRAM_KEYS } from './brand-monograms.js';
 import { checkSession, lockNow, lockRequired } from './lock.js';
 import { ICON_GROUPS, ICON_KEYS, ITEM_ICONS, iconLabel, isBrandKey, itemIconSVG, suggestIcon } from './item-icons.js';
 import { barcodeCaptureSheet, labelCard, qrSheet, scanSheet } from './labels.js';
+import { openVoiceSheet } from './voice.js';
 import { ago, currentUI, isRepo, pathText, rupees, rupeesPerDay, setValueLine, slug, t, valueLine } from './look.js';
 import { attachPhoto, removePhoto } from './photos.js';
 import * as store from './store.js';
@@ -287,7 +288,7 @@ function itemSheet({ item = null, roomId = null, unitId = null, barcode = '', fo
   let selectedUnit = item?.storage_unit_id || unitId || '';
 
   openSheet({
-    title: editing ? 'Edit item' : t('Put it away', 'Put it away'),
+    title: editing ? 'Edit item' : t('Add (bought)', 'add'),
     body: `
       <form data-form>
         <div class="flex items-end gap-3 mb-4">
@@ -375,7 +376,7 @@ function itemSheet({ item = null, roomId = null, unitId = null, barcode = '', fo
         </details>
 
         <div class="flex gap-2 pt-1">
-          ${primaryButton(editing ? t('Save', 'Commit') : t('Put it away', 'Commit'), 'data-save class="flex-1"')}
+          ${primaryButton(editing ? t('Save', 'Commit') : t('Add', 'add'), 'data-save class="flex-1"')}
           ${editing ? ghostButton(icon('trash', 'w-5 h-5'), 'data-delete aria-label="Delete item"') : ''}
         </div>
       </form>`,
@@ -781,8 +782,10 @@ function historyMarkup(moves) {
       <span class="flex-1 min-w-0 pb-4">
         <span class="flex items-baseline justify-between gap-2">
           <span class="font-semibold text-[14px]">${
-            m.kind === 'added' ? t('Put away', 'Added') : t('Moved', 'Moved')
-          }</span>
+            m.kind === 'added' ? t('Added', 'Added')
+              : m.kind === 'decluttered' ? t('Decluttered', 'Removed')
+                : t('Moved', 'Moved')
+          }${m.quantity ? ` ×${m.quantity}` : ''}</span>
           <span class="text-[12px] text-[var(--ink-faint)] shrink-0">${esc(ago(m.moved_at, { long: true }))}</span>
         </span>
         <span class="block mt-1 text-[12px] leading-relaxed t-path">
@@ -879,9 +882,23 @@ function itemDetailSheet(item) {
 
         <div class="flex gap-2">
           ${primaryButton(t('Move it', 'git mv'), 'data-move class="flex-1"')}
+          ${
+            item.status === 'decluttered'
+              ? ghostButton(t('Restore', 'restore'), 'data-declutter aria-label="Restore item" class="flex-1"')
+              : ghostButton(t('Decluttered', 'rm'), 'data-declutter aria-label="Mark decluttered" class="flex-1"')
+          }
           ${ghostButton(icon('pencil', 'w-5 h-5'), 'data-edit aria-label="Edit item"')}
           ${ghostButton(icon('trash', 'w-5 h-5'), 'data-delete aria-label="Delete item"')}
         </div>
+
+        ${
+          item.status === 'decluttered'
+            ? `<div class="surface p-3 text-[13px] text-[var(--ink-soft)]">
+                 ${esc(t('Decluttered — out of the house, kept in the record.', 'decluttered — removed; record kept.'))}
+                 ${item.declutter_note ? `<span class="font-medium">${esc(item.declutter_note)}</span>` : ''}
+               </div>`
+            : ''
+        }
 
         ${valueCard}
 
@@ -925,6 +942,27 @@ function itemDetailSheet(item) {
       body.querySelector('[data-move]').addEventListener('click', () => {
         close();
         moveSheet(item);
+      });
+      body.querySelector('[data-declutter]').addEventListener('click', () => {
+        if (item.status === 'decluttered') {
+          // Back into the active inventory, where it was.
+          api('PATCH', `/items/${item.id}`, { status: 'active' }).then(() => {
+            close();
+            store.revalidate();
+            toast(t('Restored', 'restored'));
+          });
+          return;
+        }
+        close();
+        promptSheet({
+          title: t('Decluttered', 'rm'),
+          label: t('Note (optional)', 'note'),
+          value: '',
+          onSubmit: (note) => {
+            post(`/items/${item.id}/declutter`, { note }).then(() => store.revalidate());
+            toast(t(`${item.name} decluttered`, `${item.name}: removed`));
+          },
+        });
       });
       body.querySelector('[data-delete]').addEventListener('click', () => {
         close();
@@ -1252,7 +1290,7 @@ function wireMoveRows(root) {
 // The front door: one question, one box, and what you put away lately — often
 // the answer is in that list before you have typed anything.
 const findScreen = {
-  paths: () => ['/activity?limit=5', '/rooms'],
+  paths: () => ['/activity?limit=5', '/rooms', '/items?limit=20&sort=recent'],
   header: () => `
     <div class="px-4 pt-4 pb-1">
       <div class="flex items-center justify-between lg:hidden">
@@ -1278,6 +1316,10 @@ const findScreen = {
                  <span class="truncate">Charger, SIM pin, a box code…</span>`
           }
         </button>
+        <button type="button" data-voice aria-label="Speak to put something away"
+          class="w-11 h-11 shrink-0 rounded-[var(--btn-radius)] bg-[var(--sunken)] text-[var(--ink)] grid place-items-center">
+          ${icon('mic', 'w-5 h-5')}
+        </button>
         <button type="button" data-scan aria-label="Scan a code"
           class="w-11 h-11 shrink-0 rounded-[var(--btn-radius)] bg-[var(--ink)] text-[var(--paper)] grid place-items-center">
           ${icon('scan', 'w-5 h-5')}
@@ -1296,20 +1338,30 @@ const findScreen = {
     const moves = feed.data?.moves || [];
     const { data: roomData, cached: roomsCached } = store.peek('/rooms');
     const list = roomData?.rooms || [];
+    const { data: itemData, cached: itemsCached } = store.peek('/items?limit=20&sort=recent');
+    const items = itemData?.items || [];
 
     body.innerHTML = `
       ${syncBanner()}
-      ${sectionTitle(t('Last put away', 'Recent commits'))}
+      ${sectionTitle(t('Your things', 'files'))}
       ${
-        !feed.cached
-          ? skeletonList(3)
-          : moves.length
-            ? `<div class="surface divide-y divide-[var(--line)] overflow-hidden stagger">${moves.map(moveRow).join('')}</div>`
+        !itemsCached
+          ? skeletonList(4)
+          : items.length
+            ? `<div class="surface divide-y divide-[var(--line)] overflow-hidden stagger">
+                 ${items.map((it) => itemRow(it, { showLocation: true })).join('')}
+               </div>`
             : emptyState(
-                'Nothing put away yet',
-                'Add something and it shows up here, with where it went.',
-                primaryButton(t('Put something away', 'Commit something'), 'data-add-first'),
+                t('Nothing tracked yet', 'no files'),
+                t('Add something with the + button and it shows up here.', 'add a file with +'),
+                primaryButton(t('Add something', 'add something'), 'data-add-first'),
               )
+      }
+      ${
+        moves.length
+          ? `${sectionTitle(t('Last put away', 'recent commits'))}
+             <div class="surface divide-y divide-[var(--line)] overflow-hidden stagger">${moves.map(moveRow).join('')}</div>`
+          : ''
       }
       ${sectionTitle(t('Rooms', 'Folders'))}
       ${
@@ -1336,6 +1388,7 @@ const findScreen = {
 
     wireSyncBanner(body);
     wireMoveRows(body);
+    wireItemRows(body, items);
     body.querySelector('[data-add-first]')?.addEventListener('click', () => itemSheet());
   },
 };
@@ -1510,7 +1563,7 @@ const valueScreen = {
             : emptyState(
                 'Nothing priced yet',
                 'Add a price and a purchase date to something and it shows up here with what it costs per day.',
-                primaryButton(t('Put something away', 'Commit something'), 'data-add-first'),
+                primaryButton(t('Add something', 'add something'), 'data-add-first'),
               )
       }`;
 
@@ -1947,6 +2000,18 @@ const settingsScreen = {
 
       ${sectionTitle('Appearance')}
       <div class="surface p-4" data-appearance>${appearanceMarkup()}</div>
+
+      ${sectionTitle('House shift')}
+      <div class="surface p-4 flex items-center justify-between gap-3">
+        <p class="text-[13px] text-[var(--ink-soft)] flex-1">
+          Reorganise the whole house in a throwaway copy of the inventory.
+        </p>
+        <a href="#/shift" class="btn btn-ghost shrink-0" data-shift-open>
+          ${shiftState.active
+            ? t('Open — on', 'open — on')
+            : t('Open', 'open')}
+        </a>
+      </div>
 
       ${sectionTitle('Labels')}
       ${listCard(`
@@ -2645,10 +2710,183 @@ function wireItemRows(root, items) {
 
 // --------------------------------------------------------------- router ----
 
+// ---------------------------------------------------------- house shift ----
+
+// A temporary copy of the inventory to reorganise in. Everything here works
+// against the copy; Commit replays the changes onto the real thing.
+let shiftState = { active: false };
+async function loadShiftState() {
+  try {
+    shiftState = await get('/shift');
+  } catch {
+    shiftState = { active: false };
+  }
+  paintShiftBanner();
+  return shiftState;
+}
+
+function paintShiftBanner() {
+  const head = headerEl();
+  head.querySelector('[data-shift-banner]')?.remove();
+  if (!shiftState.active || current === shiftScreen) return;
+  head.insertAdjacentHTML('afterbegin', `
+    <a href="#/shift" data-shift-banner
+       class="block mx-4 mt-3 px-3 py-2 rounded-lg text-[13px] font-medium fade-in"
+       style="background:color-mix(in srgb, #d97706 16%, var(--paper)); color:#92400e;">
+      ${t(`Shift mode on — ${shiftState.changes ?? 0} change(s) live in a copy. Tap to open.`,
+          'shift mode — working copy')}
+    </a>`);
+}
+
+const PACK_TYPES = ['Tech', 'Fragile', 'Wet', 'Soft', 'Small', 'Unsure'];
+
+const shiftRow = (i) => `
+  <div data-shift-row="${esc(i.id)}" class="px-4 py-3">
+    <div class="flex items-center gap-2">
+      <span class="flex-1 min-w-0">
+        <span class="block font-semibold truncate t-name">${esc(i.name)}</span>
+        <span class="block text-[13px] text-[var(--ink-soft)] truncate t-path">${esc(i.location.path_string)}</span>
+      </span>
+    </div>
+    <div class="mt-2 grid grid-cols-2 gap-2">
+      <div data-pack-type></div>
+      <div data-pack-room></div>
+    </div>
+  </div>`;
+
+const shiftScreen = {
+  paths: () => ['/shift', '/rooms'],
+  header: () => `
+    <div class="px-4 pt-4">
+      <h1 class="font-display font-bold tracking-tight text-[1.7rem]">${t('House Shift', 'house shift')}</h1>
+      <p class="text-[13px] text-[var(--ink-soft)] mt-1">
+        ${t('Reorganise in a copy; commit when it looks right.', 'reorganise in a copy; commit when it looks right.')}
+      </p>
+    </div>`,
+  mount(el) {
+    el.innerHTML = '<div id="shift-body" class="px-4 pb-8"></div>';
+    this.update();
+  },
+  update() {
+    const body = document.getElementById('shift-body');
+    if (!body) return;
+    const { data } = store.peek('/shift');
+    if (!data) {
+      body.innerHTML = skeletonList(3);
+      return;
+    }
+    shiftState = data;
+    paintShiftBanner();
+
+    if (!data.active) {
+      body.innerHTML = `
+        ${emptyState(
+          t('Reorganise without touching the real thing', 'reorganise in a copy'),
+          t('House Shift copies your inventory. Move and pack freely, then commit the result back — or throw the copy away.', 'copy, reorganise, commit or discard.'),
+          primaryButton(t('Start House Shift', 'init shift'), 'data-shift-start'),
+        )}`;
+      body.querySelector('[data-shift-start]').addEventListener('click', async () => {
+        await post('/shift/enter', {});
+        await loadShiftState();
+        await store.load('/shift', { force: true }).catch(() => {});
+        this.update();
+      });
+      return;
+    }
+
+    const items = data.items ?? [];
+    const { data: roomData } = store.peek('/rooms');
+    const rooms = roomData?.rooms ?? [];
+    const group = (type) => items.filter((i) => i.pack_type === type);
+
+    body.innerHTML = `
+      <div class="surface p-3 flex items-center gap-2 text-[13px]">
+        <span class="flex-1">${t(
+          `${data.item_count} items in the copy · ${data.changes} change(s) · ${data.unsure} unsure`,
+          `${data.item_count} files · ${data.changes} changes`)}</span>
+      </div>
+      <div class="mt-3 flex gap-2 items-stretch">
+        <div class="flex-1">${primaryButton(t('Commit changes', 'merge'), 'data-shift-commit')}</div>
+        <div class="flex-1">${ghostButton(t('Discard', 'reset --hard'), 'data-shift-discard')}</div>
+      </div>
+      ${PACK_TYPES.map((type) => `
+        <div class="mt-5">
+          <p class="text-[11px] font-bold tracking-[0.1em] text-[var(--ink-faint)] mb-2">${type.toUpperCase()}</p>
+          ${
+            group(type).length
+              ? `<div class="surface divide-y divide-[var(--line)] overflow-hidden">
+                   ${group(type).map(shiftRow).join('')}
+                 </div>`
+              : `<p class="text-[13px] text-[var(--ink-faint)] px-1">—</p>`
+          }
+        </div>`).join('')}`;
+
+    body.querySelectorAll('[data-shift-row]').forEach((row) => {
+      const item = items.find((i) => i.id === row.dataset.shiftRow);
+      if (!item) return;
+      createSelect(row.querySelector('[data-pack-type]'), {
+        options: PACK_TYPES.map((p) => ({ value: p, label: p })),
+        value: item.pack_type,
+        placeholder: t('Pack as…', 'pack as…'),
+        onChange: (v) => patchShiftItem(item.id, { pack_type: v }),
+      });
+      createSelect(row.querySelector('[data-pack-room]'), {
+        options: [
+          { value: '', label: t('Pack for… (room)', 'pack for…') },
+          ...rooms.map((r) => ({ value: r.id, label: r.name })),
+        ],
+        value: item.pack_room_id ?? '',
+        placeholder: t('Pack for… (room)', 'pack for…'),
+        onChange: (v) => patchShiftItem(item.id, { pack_room_id: v || null }),
+      });
+    });
+
+    body.querySelector('[data-shift-commit]').addEventListener('click', () => exitConfirm(true));
+    body.querySelector('[data-shift-discard]').addEventListener('click', () => exitConfirm(false));
+  },
+};
+
+async function patchShiftItem(id, patch) {
+  try {
+    await api('PATCH', `/shift/items/${id}`, patch);
+    await store.load('/shift', { force: true });
+  } catch (err) {
+    toast(err.message ?? 'Failed', { tone: 'error' });
+  }
+}
+
+function exitConfirm(commit) {
+  openSheet({
+    title: commit ? t('Commit the shift?', 'merge shift?') : t('Discard the shift?', 'reset shift?'),
+    body: `
+      <p class="text-[14px] leading-relaxed">${
+        commit
+          ? t('Every move and addition made in the copy is replayed onto the real inventory, oldest first.', 'replays moves and adds onto live data, oldest first.')
+          : t('The copy and everything in it is thrown away. The real inventory was never touched.', 'the copy is dropped; live data untouched.')
+      }</p>
+      <div class="mt-4 flex gap-2 items-stretch">
+        <div class="flex-1">${primaryButton(commit ? t('Commit', 'merge') : t('Discard', 'reset'), 'data-shift-go')}</div>
+        <div class="flex-1">${ghostButton(t('Cancel', 'cancel'), 'data-shift-cancel')}</div>
+      </div>`,
+    onMount(body, close) {
+      body.querySelector('[data-shift-cancel]').addEventListener('click', close);
+      body.querySelector('[data-shift-go]').addEventListener('click', async () => {
+        await post('/shift/exit', { commit });
+        close();
+        await loadShiftState();
+        await store.load('/shift', { force: true }).catch(() => {});
+        shiftScreen.update();
+        toast(commit ? t('Shift committed', 'shift merged') : t('Shift discarded', 'shift discarded'));
+      });
+    },
+  });
+}
+
 const routes = [
   { re: /^\/?$/, screen: findScreen },
   { re: /^\/places$/, screen: placesScreen },
   { re: /^\/value$/, screen: valueScreen },
+  { re: /^\/shift$/, screen: shiftScreen },
   { re: /^\/room\/([0-9a-z-]+)$/i, screen: roomScreen, keys: ['id'] },
   { re: /^\/unit\/([0-9a-z-]+)$/i, screen: unitScreen, keys: ['id'] },
   { re: /^\/labels\/([0-9a-z-]+)$/i, screen: labelsScreen, keys: ['id'] },
@@ -2749,6 +2987,7 @@ function refresh() {
 // Chrome that depends on the current screen or on pending work.
 function syncChrome() {
   renderNav();
+  paintShiftBanner();
   document.getElementById('sync-pip').classList.toggle('hidden', store.pendingCount() === 0);
   // Adding an item makes no sense on the label sheet or in settings, and the
   // floating button would sit on top of their controls.
@@ -2763,6 +3002,7 @@ function rewireHeader() {
   head.querySelector('[data-go-search]')?.addEventListener('click', () => {
     location.hash = '#/search';
   });
+  head.querySelector('[data-voice]')?.addEventListener('click', () => openVoiceSheet());
   head.querySelector('[data-scan]')?.addEventListener('click', () => scanWithFallback());
   head.querySelector('[data-add-room]')?.addEventListener('click', () => roomSheet());
   head.querySelector('[data-qr]')?.addEventListener('click', () => {
@@ -2847,4 +3087,5 @@ onUIChange(() => {
 initTheme();
 checkSession();
 store.load('/rooms').catch(() => {});
+loadShiftState().catch(() => {});
 render();

@@ -110,6 +110,23 @@ printf '        icon now: %s\n' "$(field "icon")"
 req GET "/items/$TORCH"; check "item carries its floor" 200
 printf '        floor: %s\n' "$(field "location.floor_label")"
 
+echo "== nesting (items inside items) =="
+req POST /items "{\"name\":\"Helmet Box\",\"storage_unit_id\":\"$BOX\",\"quantity\":1}"; check "create a container item" 201
+HELMETBOX=$(field "id")
+req POST /items "{\"name\":\"Helmet\",\"parent_item_id\":\"$HELMETBOX\"}"; check "create item inside the container" 201
+HELMET=$(field "id")
+printf '        location: %s\n' "$(field "location.path_string")"
+req PATCH "/items/$HELMETBOX" "{\"parent_item_id\":\"$HELMET\"}"; check "cycle rejected" 400
+req GET "/items?container_id=$HELMETBOX"; check "list container contents" 200
+printf '        contents: %s\n' "$(field "total")"
+req GET "/items?container_id=$HELMETBOX&deep=true"; check "deep container list includes the container" 200
+req PATCH "/items/$HELMETBOX" "{\"room_id\":\"$GARAGE\"}"; check "move the container to another room" 200
+printf '        container now at: %s\n' "$(field "location.path_string")"
+req GET "/items/$HELMET"; check "nested item followed the container" 200
+printf '        helmet now at: %s\n' "$(field "location.path_string")"
+req PATCH "/items/$HELMET" "{\"parent_item_id\":null}"; check "take the item out of its container" 200
+printf '        helmet now at: %s\n' "$(field "location.path_string")"
+
 echo "== browse =="
 req GET "/rooms/$ROOM/tree"; check "room tree" 200
 req GET "/storage-units/$WARDROBE/contents?deep=true"; check "deep contents" 200
@@ -228,6 +245,46 @@ req PATCH "/items/$DRILL" '{"quantity":3}'; check "saving without moving adds no
 req GET "/items/$DRILL/history"; check "item history" 200
 printf '        moves: %s\n' "$(python3 -c "import json,sys; print(len(json.loads(sys.argv[1])['moves']))" "$BODY")"
 req GET "/activity?limit=3"; check "recent activity" 200
+
+echo "== declutter and quantity =="
+req POST /items "{\"name\":\"Old Telly\",\"room_id\":\"$GARAGE\",\"purchase_price\":5000,\"purchased_on\":\"2019-06-01\"}"; check "create item to declutter" 201
+TELLY=$(field "id")
+req POST "/items/$TELLY/declutter" '{"note":"sold"}'; check "declutter" 200
+printf '        status: %s\n' "$(field "status")"
+req GET "/items/$TELLY"; check "decluttered item still readable" 200
+req GET "/items?status=decluttered"; check "decluttered list" 200
+req GET "/items/$TELLY/history"; check "declutter wrote history" 200
+req PATCH "/items/$TELLY" '{"status":"active"}'; check "restore" 200
+printf '        status now: %s\n' "$(field "status")"
+req PATCH "/items/$TELLY" '{"quantity_delta":2}'; check "buy two more" 200
+printf '        quantity: %s\n' "$(field "quantity")"
+req PATCH "/items/$TELLY" '{"quantity_delta":-9}'; check "delta below zero rejected" 400
+req PATCH "/items/$TELLY" '{"status":"decluttered"}'; check "declutter via PATCH rejected" 400
+req DELETE "/items/$TELLY"; check "cleanup telly" 204
+
+echo "== house shift =="
+req POST /shift/enter ''; check "enter house shift" 200
+req GET /shift; check "the copy is live" 200
+req PATCH "/shift/items/$DRILL" "{\"room_id\":\"$GARAGE\",\"pack_type\":\"Tech\"}"; check "move and pack inside the copy" 200
+printf '        shift location: %s\n' "$(field "location.path_string")"
+req GET "/items/$DRILL"; check "live data untouched during the shift" 200
+req POST /shift/items "{\"name\":\"Shift Only\",\"room_id\":\"$GARAGE\"}"; check "add inside the copy" 201
+req PATCH "/shift/items/$DRILL" '{"pack_type":"Bogus"}'; check "bogus pack type rejected" 400
+req POST /shift/exit '{"commit":false}'; check "discard" 200
+req GET "/items/$DRILL"; check "discard left live data alone" 200
+req GET "/search?q=Shift%20Only"; check "the discarded addition is gone" 200
+req POST /shift/enter ''; check "enter again" 200
+req PATCH "/shift/items/$DRILL" "{\"room_id\":\"$GARAGE\"}"; check "move in the copy" 200
+req POST /shift/items "{\"name\":\"Shift Only 2\",\"room_id\":\"$GARAGE\"}"; check "add in the copy" 201
+req POST /shift/exit '{"commit":true}'; check "commit" 200
+printf '        committed: %s\n' "$(field "committed")"
+req GET "/items/$DRILL"; check "the move reached live data" 200
+printf '        drill at: %s\n' "$(field "location.path_string")"
+req GET "/search?q=Shift%20Only%202"; check "the addition reached live data" 200
+req GET /shift; check "shift mode is off" 200
+# The commit relocated the drill to the garage; put it back where the
+# delete-cascade checks below expect it.
+req POST "/items/$DRILL/move" "{\"storage_unit_id\":\"$BOX\"}"; check "drill back in its box" 200
 
 echo "== relocating a unit carries its subtree =="
 req PATCH "/storage-units/$SHELF" "{\"room_id\":\"$GARAGE\",\"parent_id\":null}"; check "move shelf to garage" 200

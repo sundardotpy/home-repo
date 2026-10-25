@@ -15,9 +15,9 @@ test('move history writes columns in matching parameter order', async () => {
 
   await recordMove(store, 'item-id', 'moved', from, to, 'actor-id');
 
-  assert.match(captured.sql, /from_room_id, from_unit_id, to_room_id, to_unit_id,\s+from_path, to_path, moved_by/);
+  assert.match(captured.sql, /from_room_id, from_unit_id, to_room_id, to_unit_id,\s+from_path, to_path, moved_by, quantity/);
   assert.deepEqual(captured.values, [
     'item-id', 'moved', 'from-room', 'from-unit', 'to-room', 'to-unit',
-    ['Home', 'Old'], ['Home', 'New'], 'actor-id',
+    ['Home', 'Old'], ['Home', 'New'], 'actor-id', null,
   ]);
 });

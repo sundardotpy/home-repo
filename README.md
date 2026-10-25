@@ -16,6 +16,33 @@ The frontend is a dependency-free ES-module client served by the same Node.js
 app. No framework or bundler is needed; only Tailwind compiles, and its output
 is committed.
 
+## The rework (October 2026)
+
+Seven features landed together; [docs/todo-rework-spec.md](docs/todo-rework-spec.md)
+is the full design (data model, edge cases, defaults chosen). In brief:
+
+- **Items nest inside items** (`parent_item_id` + `item_paths` view): paths read
+  `Room > Unit > Box > Case > Thing`; moving a container moves its subtree;
+  cycles are refused.
+- **Add / Decluttered / Move** replace the single "put away": decluttered things
+  stay in the record but leave the active inventory; buying more logs an
+  `added` event with the quantity.
+- **Voice-to-action**: the mic in the search bar takes "Helmet is in living
+  room", matches fuzzy against items, rooms, units and containers, and never
+  acts without an explicit Yes. Typed input runs the same parser everywhere.
+- **Home screen**: search is the hero; every active item is listed under it.
+- **MCP server** at `POST /mcp` (Streamable HTTP, stateless): ten tools for an
+  external AI, authenticated by `MCP_TOKEN` (unset = the endpoint does not
+  exist). Check it live with `MCP_TOKEN=… node scripts/mcp-check.mjs`.
+- **House Shift mode** (`#/shift`): a throwaway `shift` schema holds a copy of
+  the inventory; moves and additions are journalled, and Commit replays them
+  onto live data while Discard drops the copy. Packing labels (L1 room, L2
+  type) are planning-only and never reach live data.
+- **Android client** (`android/`, Kotlin + Compose): talks Postgres directly —
+  one database, two clients, no sync layer. Credentials live in the app
+  (create a scoped role first; see the spec). `adb reverse tcp:5433 tcp:5433`
+  points it at the local Docker database for development.
+
 ## Run it
 
 Copy `.env.example` to `.env` and put your `DATABASE_URL` in it (Neon's **pooled**
@@ -30,12 +57,18 @@ The app is on `http://localhost:8080`. Migrations apply automatically at
 startup. The development container runs the Node server with the project files
 mounted into it.
 
-To work offline against a local Postgres instead, drop `DATABASE_URL` from
-`.env` and start the bundled database:
+To work offline against a local Postgres instead, pass the bundled database's
+URL on the command line — the shell environment wins over `.env` in Compose
+interpolation, so `.env` can keep pointing at Neon for deploys:
 
 ```bash
-docker compose --profile localdb up -d
+DATABASE_URL='postgres://hsh:hsh@db:5432/home_repo?sslmode=disable' \
+  docker compose --profile localdb up -d
 ```
+
+(Dropping `DATABASE_URL` from `.env` works too. Note that plain
+`docker compose up` with a Neon URL in `.env` connects the dev container to the
+real database.)
 
 Editing Tailwind classes needs the CSS rebuilt. `app.css` is committed, so this
 is only for when you change styles:
@@ -53,8 +86,13 @@ Exercise every route end to end:
 Unit tests:
 
 ```bash
-docker compose run --rm --no-deps app npm test
+docker compose exec app npm test
 ```
+
+The integration test needs a database and **refuses a remote one** (anything
+other than `localhost`/`db`) unless `ALLOW_REMOTE_TEST_DB=1` is set — it creates
+and deletes rows. With the localdb stack above, `exec` inherits the container's
+local `DATABASE_URL` and everything runs.
 
 Useful:
 
@@ -207,6 +245,7 @@ internal/web/static/js/api.js         fetch wrapper, permanent vs transient erro
 internal/web/static/js/store.js       views, revalidation, mutation queue, overlays
 internal/web/static/js/photos.js      photo uploads with instant local preview
 internal/web/static/js/labels.js      QR label sheet, print layout, scanner
+internal/web/static/js/voice.js       voice-to-action: parse, match, confirm
 internal/web/static/js/components.js  app-drawn dropdowns and accordions
 internal/web/static/js/item-icons.js  the original icons, grouping, brand-aware renderer
 internal/web/static/js/icon-set.js    the larger set of line icons
@@ -374,9 +413,9 @@ rest of the Homelab is the obvious next thought.
 
 | Table | Notes |
 | --- | --- |
-| `users` | Seeded with one default household member. No auth yet; `items.created_by` / `updated_by` already point here so multi-user and the move log are additive later. |
+| `users` | Seeded with one default household member. An optional shared passcode (`APP_PASSCODE`) gates every `/api` route and `/media`; sessions are a signed cookie, and writes are still attributed to this user so multi-user and the move log are additive later. |
 | `rooms` | `floor` (integer, negative for basements) plus optional `floor_name` for places a number cannot describe ("Attic"). Names are unique **per floor**, so two "Bedroom"s can coexist upstairs and down. Rooms sort bottom-up. |
-| `storage_units` | `room_id` + nullable `parent_id` = arbitrary nesting. Each carries a unique `qr_slug` for phase 4. Sibling names are unique within a parent. |
+| `storage_units` | `room_id` + nullable `parent_id` = arbitrary nesting. Each carries a unique `qr_slug` for its printed label. Sibling names are unique within a parent. |
 | `photos` | Rendered JPEG bytes, keyed by `(key, variant)` where variant is `display` or `thumb`. `bytes` is `STORAGE EXTERNAL` so it never gets read back by a listing query. |
 | `items` | Always has a `room_id`; `storage_unit_id` is null for things sitting loose in a room. `tags text[]`, trigram indexes on name/description for fuzzy search. `icon` holds a key from the frontend's icon set (or `brand:<slug>`). `barcode` holds a manufacturer's code, indexed but not unique. `purchase_price` (numeric) and `purchased_on` (date) are optional and feed the cost-per-day figure. |
 | `item_moves` | Where every item has been: one `added` row, then one `moved` row per relocation. Paths are stored as names and ids are plain columns, so history survives a renamed or deleted box; deleting the item deletes its moves. |
@@ -396,6 +435,10 @@ All routes are under `/api`. IDs are UUIDs.
 
 | Method | Path | Notes |
 | --- | --- | --- |
+| GET | `/healthz`, `GET /api/healthz` | Database probe for load balancers and compose healthchecks. |
+| GET | `/api/session` | Whether a passcode is required and who is in. |
+| POST | `/api/login` | `{passcode}` — sets the signed `hr_session` cookie (30 days). |
+| POST | `/api/logout` | Clears the session. |
 | GET | `/rooms` | Each room includes `storage_unit_count` and `item_count`. |
 | POST | `/rooms` | `{name, floor?, floor_name?, description?, sort_order?}` |
 | GET | `/rooms/{id}` | |
@@ -426,16 +469,23 @@ All routes are under `/api`. IDs are UUIDs.
 | PATCH | `/items/{id}` | Sending `room_id` or `storage_unit_id` relocates it. `purchase_price` and `purchased_on` (`YYYY-MM-DD`) can be set, or cleared with `null`. |
 | GET | `/items/{id}/history` | Its moves, newest first. |
 | GET | `/activity` | `?limit=` The latest moves across every item: the "last put away" feed. |
-| POST | `/items/{id}/move` | Relocation-only shortcut — the hook for the future move log. |
+| POST | `/items/{id}/move` | Relocation-only shortcut; also takes `parent_item_id` to nest inside another item. |
+| POST | `/items/{id}/declutter` | `{note?}`, `?cascade=true` for containers — the thing left the house but stays in the record. |
 | POST | `/items/{id}/photo` | multipart upload; see [Photos](#photos). |
 | DELETE | `/items/{id}/photo` | |
-| DELETE | `/items/{id}` | Deletes its photo files too. |
+| DELETE | `/items/{id}` | Deletes its photo files too; nested items are promoted one level. |
 | GET | `/search?q=` | Matches name, description, tags, barcode and custom field keys/values; ranked by name similarity. |
 | GET | `/tags` | The vocabulary with usage counts. |
 | POST | `/tags` | `{name}` |
 | PATCH | `/tags/{tag}` | Rename, rewriting every item that uses it. |
 | DELETE | `/tags/{tag}` | Retire, stripping it from every item. |
 | GET | `/properties` | Field names in use, with their values. |
+| GET | `/shift` | House Shift state; the copy's items when active. |
+| POST | `/shift/enter` | Create the working copy. |
+| POST | `/shift/exit` | `{commit}` — replay the journal onto live data, or drop it. |
+| PATCH | `/shift/items/{id}` | Move / pack inside the copy (journaled). |
+| POST | `/shift/items` | Add inside the copy (journaled). |
+| POST | `/shift/items/{id}/declutter` | Declutter inside the copy (journaled). |
 
 Every item response carries a `location` object, and a `value` object (`days`, `per_day`) when it has both a price and a purchase date:
 
@@ -465,12 +515,15 @@ Errors are `{"error": "...", "detail": "..."}` with 400 (bad input), 404, 409
 api/index.js         Vercel entrypoint (same handler, built once per instance)
 scripts/dev.js       local Node.js server entrypoint
 lib                  config, database, migrations, API, storage and app wiring
+lib/mcp.js           Model Context Protocol endpoint (MCP_TOKEN-gated)
 internal/db/migrations  ordered SQL migrations shared by every runtime
 internal/web/static  frontend assets served from disk
 internal/web/css     Tailwind source; generated CSS is committed in static/css
 lib/media            image processing and disk/Postgres photo storage
 lib/qr.js            QR rendering (SVG for print, PNG fallback)
+android              Kotlin + Compose client, direct Postgres over JDBC
 scripts/smoke.sh    end-to-end API test
+scripts/mcp-check.mjs  live MCP round-trip check
 scripts/export-icons.mjs     writes every line icon as a standalone .svg
 scripts/gen-brand-icons.mjs  re-vendors the brand marks from Simple Icons
 ```

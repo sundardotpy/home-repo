@@ -47,10 +47,33 @@ services:
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
       # Optional: one shared passcode that locks the app. Unset at home.
       APP_PASSCODE: ${APP_PASSCODE:-}
+      # Optional: bearer token that enables the MCP endpoint at /mcp for
+      # external AI clients. Unset = the endpoint does not exist.
+      MCP_TOKEN: ${MCP_TOKEN:-}
     ports:
       - "8080:8080"
     init: true
-    command: sh -c "npm ci --no-audit --no-fund && npm run dev"
+    # Install only when package-lock.json changed since the last install. The
+    # hash lives in the node_modules volume, so restarting with an unchanged
+    # lockfile skips npm ci and starts in seconds. ($$ escapes Compose
+    # interpolation; the shell sees single $.)
+    command: >
+      sh -c 'want=$$(md5sum package-lock.json | cut -d" " -f1);
+      [ -f node_modules/.ci-hash ] && [ "$$(cat node_modules/.ci-hash)" = "$$want" ]
+      || { npm ci --no-audit --no-fund && echo "$$want" > node_modules/.ci-hash; };
+      npm run dev'
+    # The db service only runs under the localdb profile; required: false keeps
+    # this valid when DATABASE_URL points elsewhere and db never starts.
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 1m
     volumes:
       - .:/app
       - node_modules:/app/node_modules

@@ -31,7 +31,10 @@ function response() {
 
 test('raw API requests are gated, including photo and QR handlers', async () => {
   const auth = new Auth('a sufficiently long passcode');
-  const router = buildRouter({ auth, store: {}, media: {}, web: async (_req, res) => res.end() });
+  const router = buildRouter({
+    auth, store: {}, media: {}, config: { mcpToken: '' },
+    web: async (_req, res) => res.end(),
+  });
 
   for (const [method, path] of [
     ['GET', '/api/scan?code=1234'],
