@@ -1364,7 +1364,9 @@ function wireMoveRows(root) {
 // The front door: one question, one box, and what you put away lately — often
 // the answer is in that list before you have typed anything.
 const findScreen = {
-  paths: () => ['/activity?limit=5', '/rooms', '/items?limit=20&sort=recent'],
+  limit: 20,
+  shown: [],
+  paths: () => ['/activity?limit=10', '/rooms', `/items?limit=${findScreen.limit}&sort=recent`],
   header: () => `
     <div class="px-4 pt-4 pb-1">
       <div class="flex items-center justify-between lg:hidden">
@@ -1408,15 +1410,29 @@ const findScreen = {
   update() {
     const body = document.getElementById('home-body');
     if (!body) return;
-    const feed = store.peek('/activity?limit=5');
-    const moves = feed.data?.moves || [];
+    const feed = store.peek('/activity?limit=10');
+    // The shelf only shows when something actually happened this week.
+    const weekAgo = Date.now() - 7 * 86_400_000;
+    const moves = (feed.data?.moves || []).filter((m) => new Date(m.moved_at).getTime() >= weekAgo);
     const { data: roomData, cached: roomsCached } = store.peek('/rooms');
     const list = roomData?.rooms || [];
-    const { data: itemData, cached: itemsCached } = store.peek('/items?limit=20&sort=recent');
-    const items = itemData?.items || [];
+    const { data: itemData, cached: fresh } = store.peek(this.paths()[2]);
+    // While "Show more" loads, keep the rows already on screen instead of a skeleton.
+    if (fresh) this.shown = itemData?.items || [];
+    const items = this.shown;
+    const itemsCached = fresh || items.length > 0;
+    const more = fresh && (itemData?.total ?? 0) > items.length;
 
     body.innerHTML = `
       ${syncBanner()}
+      ${
+        moves.length
+          ? `${sectionTitle(t('Last put away', 'recent commits'))}
+             <div class="flex gap-2 overflow-x-auto snap-x snap-mandatory scroll-px-4 -mx-4 px-4 pb-1">
+               ${moves.map((m) => `<div class="surface shrink-0 w-[260px] snap-start overflow-hidden">${moveRow(m)}</div>`).join('')}
+             </div>`
+          : ''
+      }
       ${sectionTitle(t('Your things', 'files'))}
       ${
         !itemsCached
@@ -1424,18 +1440,13 @@ const findScreen = {
           : items.length
             ? `<div class="surface divide-y divide-[var(--line)] overflow-hidden stagger">
                  ${items.map((it) => itemRow(it, { showLocation: true })).join('')}
-               </div>`
+               </div>
+               ${more ? `<div class="mt-3">${ghostButton(t('Show more', 'more'), 'data-more class="w-full"')}</div>` : ''}`
             : emptyState(
                 t('Nothing tracked yet', 'no files'),
                 t('Add something with the + button and it shows up here.', 'add a file with +'),
                 primaryButton(t('Add something', 'add something'), 'data-add-first'),
               )
-      }
-      ${
-        moves.length
-          ? `${sectionTitle(t('Last put away', 'recent commits'))}
-             <div class="surface divide-y divide-[var(--line)] overflow-hidden stagger">${moves.map(moveRow).join('')}</div>`
-          : ''
       }
       ${sectionTitle(t('Rooms', 'Folders'))}
       ${
@@ -1464,8 +1475,26 @@ const findScreen = {
     wireMoveRows(body);
     wireItemRows(body, items);
     body.querySelector('[data-add-first]')?.addEventListener('click', () => itemSheet());
+    body.querySelector('[data-more]')?.addEventListener('click', () => {
+      this.limit += 20;
+      store.setActive(this.paths());
+      store.load(this.paths()[2]).catch(() => {});
+    });
   },
 };
+
+// Typing anywhere on Find (outside a field or sheet) starts a search with that key.
+addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1 || !e.key.trim()) return;
+  if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
+  if (document.querySelector('[role=dialog]')) return;
+  // Keys typed before the search field takes focus still belong to it.
+  if (current === searchScreen) return document.getElementById('search-input')?.focus();
+  if (current !== findScreen) return;
+  e.preventDefault();
+  searchQuery = e.key;
+  location.hash = `#/search?q=${encodeURIComponent(e.key)}`;
+});
 
 // ---------------------------------------------------------------- places ----
 
