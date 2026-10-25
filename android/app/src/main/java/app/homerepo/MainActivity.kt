@@ -24,11 +24,16 @@ import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.speech.RecognizerIntent
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import androidx.compose.ui.Alignment
@@ -411,8 +416,26 @@ fun HomeScreen(pad: PaddingValues, tick: Int, refresh: () -> Unit, onOpenSetting
     var pickMove by remember { mutableStateOf(false) }
     var detail by remember { mutableStateOf<ItemRow?>(null) }
     var scanResult by remember { mutableStateOf<ScanResult?>(null) }
+    var voiceText by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    // The phone's own speech dialog: no microphone permission of ours to ask for.
+    // Cancelled, denied or unheard, the sheet still opens to take typed text.
+    val speechLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        voiceText = r.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull() ?: ""
+    }
+    fun listen() {
+        try {
+            speechLauncher.launch(
+                Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                    .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    .putExtra(RecognizerIntent.EXTRA_PROMPT, "Helmet is in living room"),
+            )
+        } catch (_: ActivityNotFoundException) {
+            voiceText = "" // no recogniser on this phone: the sheet takes typed text
+        }
+    }
 
     // The printed labels encode an absolute URL; the scanner hands back the
     // whole contents and the resolver extracts the code.
@@ -483,8 +506,13 @@ fun HomeScreen(pad: PaddingValues, tick: Int, refresh: () -> Unit, onOpenSetting
                         unfocusedBorderColor = Line,
                     ),
                     trailingIcon = {
-                        IconButton(onClick = { scan() }) {
-                            Icon(Icons.Outlined.QrCodeScanner, contentDescription = "Scan a code", tint = Ink)
+                        Row {
+                            IconButton(onClick = { listen() }) {
+                                Icon(Icons.Outlined.Mic, contentDescription = "Say where something is", tint = Ink)
+                            }
+                            IconButton(onClick = { scan() }) {
+                                Icon(Icons.Outlined.QrCodeScanner, contentDescription = "Scan a code", tint = Ink)
+                            }
                         }
                     },
                 )
@@ -591,6 +619,9 @@ fun HomeScreen(pad: PaddingValues, tick: Int, refresh: () -> Unit, onOpenSetting
     }
     detail?.let { item ->
         ItemSheet(item, { refresh() }, onDismiss = { detail = null }, onChanged = { refresh() })
+    }
+    voiceText?.let { said ->
+        VoiceSheet(said) { changed -> voiceText = null; if (changed) refresh() }
     }
     scanResult?.let { result ->
         ScanSheet(
@@ -884,6 +915,114 @@ fun MoveSheet(item: ItemRow, onDone: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+/** "Helmet is in living room" → match → one explicit yes. Nothing changes without it. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun VoiceSheet(said: String, onDone: (changed: Boolean) -> Unit) {
+    val scope = rememberCoroutineScope()
+    var text by remember { mutableStateOf(said) }
+    var move by remember { mutableStateOf<Parsed.Move?>(null) }
+    var items by remember { mutableStateOf<List<ItemRow>>(emptyList()) }
+    var places by remember { mutableStateOf<List<Target>>(emptyList()) }
+    var note by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+
+    fun run(t: String) {
+        note = null
+        move = null
+        when (val p = parseUtterance(t)) {
+            Parsed.Empty -> note = "Didn't catch that — try again or type it."
+            Parsed.Ambiguous -> note = "Say it like “Helmet is in living room”."
+            is Parsed.Move -> scope.launch {
+                busy = true
+                try {
+                    val m = withContext(Dispatchers.IO) { matchUtterance(p) }
+                    items = m.items
+                    places = m.places
+                    move = p
+                } catch (e: Exception) {
+                    note = e.message
+                }
+                busy = false
+            }
+        }
+    }
+    LaunchedEffect(Unit) { if (said.isNotBlank()) run(said) }
+
+    // A missing place becomes a new room, as on the web.
+    fun apply(item: ItemRow?, target: Target?) {
+        val p = move ?: return
+        busy = true
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val to = target ?: Db.createRoom(p.place).let { Target(Target.Kind.ROOM, it.id, it.name) }
+                    applyVoice(item, p.item, to)
+                }
+                onDone(true)
+            } catch (e: Exception) {
+                note = e.message
+                busy = false
+            }
+        }
+    }
+
+    ModalBottomSheet(onDismissRequest = { onDone(false) }) {
+        Column(
+            Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text("Say where something is", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Ink)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    text, { text = it },
+                    placeholder = { Text("Helmet is in living room") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                )
+                Button(onClick = { run(text) }, enabled = !busy) { Text("Go") }
+            }
+            note?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp) }
+            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+
+            val p = move
+            if (p != null && !busy) {
+                when {
+                    items.size > 1 -> {
+                        Text("Which “${p.item}”?", color = InkSoft, fontSize = 13.sp)
+                        items.forEach { i -> MoveTargetRow(i.name, i.path, false) { items = listOf(i) } }
+                    }
+                    places.size > 1 -> {
+                        Text("Which “${p.place}”?", color = InkSoft, fontSize = 13.sp)
+                        places.forEach { t -> MoveTargetRow(t.name, t.sub, false) { places = listOf(t) } }
+                    }
+                    items.size == 1 && places.size == 1 -> YesNo(
+                        "Move ${items[0].name} to ${places[0].name}?", { onDone(false) },
+                    ) { apply(items[0], places[0]) }
+                    places.size == 1 -> YesNo(
+                        "Nothing called “${p.item}” — add it to ${places[0].name}?", { onDone(false) },
+                    ) { apply(null, places[0]) }
+                    items.size == 1 -> YesNo(
+                        "No place called “${p.place}” — create it and move ${items[0].name} there?", { onDone(false) },
+                    ) { apply(items[0], null) }
+                    else -> YesNo(
+                        "Add “${p.item}” to a new room called “${p.place}”?", { onDone(false) },
+                    ) { apply(null, null) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun YesNo(question: String, onNo: () -> Unit, onYes: () -> Unit) {
+    Text(question, fontSize = 16.sp, color = Ink)
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(onClick = onYes, modifier = Modifier.weight(1f)) { Text("Yes") }
+        OutlinedButton(onClick = onNo, modifier = Modifier.weight(1f)) { Text("No") }
     }
 }
 

@@ -1,0 +1,20 @@
+# Voice parser cases, shared by the web (test/voice.test.js) and Android
+# (VoiceParseTest.kt). Columns, tab-separated: transcript, kind, item, place.
+# kind is move | ambiguous | empty; item and place are blank unless move.
+Helmet is in living room	move	Helmet	living room
+helmet is inside the blue box	move	helmet	blue box
+The charger is in my bedroom.	move	charger	bedroom
+Keys are in the drawer	move	Keys	drawer
+put the helmet in the living room	move	helmet	living room
+Please put my passport in the documents folder	move	passport	documents folder
+move tool box to garage	move	tool box	garage
+could you move the spare earbuds into grey pouch	move	spare earbuds	grey pouch
+place the tool box in drawer	move	tool box	drawer
+drop batteries at office	move	batteries	office
+SIM ejector went into the travel pouch!	move	SIM ejector	travel pouch
+shelve the books in the bookshelf in the study	move	books in the bookshelf	study
+  extra   spaces   is in   kitchen  	move	extra spaces	kitchen
+helmet living room	ambiguous		
+is in the kitchen	ambiguous		
+put the helmet in	ambiguous		
+	empty		

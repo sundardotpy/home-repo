@@ -52,5 +52,6 @@ dependencies {
     // QR / barcode scanning for printed labels.
     implementation("com.journeyapps:zxing-android-embedded:4.3.0") { isTransitive = false }
     implementation("com.google.zxing:core:3.5.3")
+    testImplementation("junit:junit:4.13.2")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }
