@@ -420,10 +420,13 @@ object Db {
     }
 
     fun moveItem(id: String, roomId: String?, unitId: String?, parentItemId: String?): Unit = tx { c ->
-        if (parentItemId != null && parentItemId in selfAndNested(c, id)) {
+        val inside = selfAndNested(c, id) - id
+        if (parentItemId != null && (parentItemId == id || parentItemId in inside)) {
             throw DbException("would create a cycle — it can't go inside itself or its own contents")
         }
         val from = locationOf(c, id)
+        // Where everything inside was, so each one that moves gets its own history row.
+        val nestedBefore = inside.map { locationOf(c, it) }
         val (newRoom, newUnit) = resolvePlacement(c, roomId, unitId, parentItemId)
         c.prepareStatement(
             """UPDATE items
@@ -437,7 +440,11 @@ object Db {
             if (st.executeUpdate() == 0) throw DbException("item not found")
         }
         retagSubtree(c, id, newRoom, newUnit)
-        recordMove(c, id, "moved", from, newRoom, newUnit, actor(c))
+        val a = actor(c)
+        recordMove(c, id, "moved", from, newRoom, newUnit, a)
+        nestedBefore.forEach { old ->
+            if (locationOf(c, old.id).path != old.path) recordMove(c, old.id, "moved", old, newRoom, newUnit, a)
+        }
     }
 
     fun declutterItem(id: String, note: String?): Unit = tx { c ->

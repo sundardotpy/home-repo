@@ -142,3 +142,32 @@ test('duplicates answer 409, not 500', { skip }, async () => {
     await invoke('DELETE', `/api/rooms/${otherId}?cascade=true`);
   }
 });
+
+test('moving a container logs a history row for everything inside it', { skip }, async () => {
+  const json = { 'content-type': 'application/json' };
+  const run = randomUUID().slice(0, 8);
+  const post = async (path, payload) => JSON.parse((await invoke('POST', path, json, JSON.stringify(payload))).text);
+  const history = async (id) => JSON.parse((await invoke('GET', `/api/items/${id}/history`)).text).moves;
+
+  const a = await post('/api/rooms', { name: `Nest A ${run}` });
+  const b = await post('/api/rooms', { name: `Nest B ${run}` });
+  try {
+    const box = await post('/api/items', { name: 'Box', room_id: a.id });
+    const pouch = await post('/api/items', { name: 'Pouch', parent_item_id: box.id });
+    const coin = await post('/api/items', { name: 'Coin', parent_item_id: pouch.id });
+
+    const moved = await invoke('POST', `/api/items/${box.id}/move`, json, JSON.stringify({ room_id: b.id }));
+    assert.equal(moved.status, 200);
+
+    // One row each, with that item's own full path before and after.
+    const [coinMove] = await history(coin.id);
+    assert.equal(coinMove.kind, 'moved');
+    assert.deepEqual(coinMove.from_path, [`Nest A ${run}`, 'Box', 'Pouch']);
+    assert.deepEqual(coinMove.to_path, [`Nest B ${run}`, 'Box', 'Pouch']);
+    assert.deepEqual((await history(pouch.id))[0].to_path, [`Nest B ${run}`, 'Box']);
+    assert.deepEqual((await history(box.id))[0].to_path, [`Nest B ${run}`]);
+  } finally {
+    await invoke('DELETE', `/api/rooms/${a.id}?cascade=true`);
+    await invoke('DELETE', `/api/rooms/${b.id}?cascade=true`);
+  }
+});
