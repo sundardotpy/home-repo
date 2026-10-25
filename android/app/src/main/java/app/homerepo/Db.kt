@@ -202,6 +202,13 @@ object Db {
 
     // --------------------------------------------------------------- reads
 
+    /** House Shift runs on the web; while it is on, live edits bypass the copy being packed. */
+    fun shiftOn(): Boolean = db { c ->
+        c.prepareStatement("SELECT value FROM app_settings WHERE key = 'house_shift'").use { st ->
+            st.executeQuery().use { rs -> rs.next() && rs.getString(1) == "on" }
+        }
+    }
+
     fun defaultUserId(): String = db { c ->
         actor(c) ?: throw DbException("no default user")
     }
@@ -470,11 +477,16 @@ object Db {
         }
     }
 
-    fun addQuantity(id: String, delta: Int): Unit = db { c ->
+    fun addQuantity(id: String, delta: Int): Unit = tx { c ->
         c.prepareStatement("UPDATE items SET quantity = quantity + ? WHERE id = ?").use { st ->
             st.setInt(1, delta)
             st.setUuid(2, id)
-            st.executeUpdate()
+            if (st.executeUpdate() == 0) throw DbException("item not found")
+        }
+        // More of the thing arrived: an acquisition, logged like the web's quantity_delta.
+        if (delta > 0) {
+            val now = locationOf(c, id)
+            recordMove(c, id, "added", null, now.roomId, now.unitId, actor(c), delta)
         }
     }
 
@@ -715,14 +727,15 @@ object Db {
         toRoom: String,
         toUnit: String?,
         a: String?,
+        quantity: Int? = null,
     ) {
         // The item's own location after the write: room, units and containers, like the web.
         val toPath = locationOf(c, itemId).path.split(" > ")
 
         c.prepareStatement(
             """INSERT INTO item_moves (item_id, kind, from_room_id, from_unit_id, to_room_id,
-                       to_unit_id, from_path, to_path, moved_by)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+                       to_unit_id, from_path, to_path, moved_by, quantity)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
         ).use { st ->
             st.setUuid(1, itemId)
             st.setString(2, kind)
@@ -733,6 +746,7 @@ object Db {
             st.setArray(7, c.createArrayOf("text", (from?.path?.split(" > ") ?: emptyList()).toTypedArray()))
             st.setArray(8, c.createArrayOf("text", toPath.toTypedArray()))
             st.setUuid(9, a)
+            st.setIntOrNull(10, quantity)
             st.executeUpdate()
         }
     }

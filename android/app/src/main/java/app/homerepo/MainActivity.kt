@@ -230,16 +230,32 @@ fun App(prefs: android.content.SharedPreferences) {
     val scope = rememberCoroutineScope()
     var refreshTick by remember { mutableStateOf(0) }
     fun refresh() { refreshTick += 1 }
+    var shiftOn by remember { mutableStateOf(false) }
+    LaunchedEffect(refreshTick, screen) {
+        // A failed check (old role, offline) just hides the banner.
+        shiftOn = runCatching { withContext(Dispatchers.IO) { Db.shiftOn() } }.getOrDefault(false)
+    }
 
     Scaffold(
         topBar = {
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("h/repo", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Ink)
-                Spacer(Modifier.weight(1f))
-                TextButton(onClick = { screen = Screen.Settings }) { Text("Settings") }
+            Column {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("h/repo", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Ink)
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = { screen = Screen.Settings }) { Text("Settings") }
+                }
+                if (shiftOn) {
+                    Text(
+                        "House Shift is on — pack on the web. Changes here go to the live inventory.",
+                        color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+                            .background(TintYellowBg, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                    )
+                }
             }
         },
         bottomBar = {
