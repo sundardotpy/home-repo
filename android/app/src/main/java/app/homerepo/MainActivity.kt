@@ -995,14 +995,12 @@ fun ItemSheet(item: ItemRow, refresh: () -> Unit, onDismiss: () -> Unit, onChang
     var moving by remember { mutableStateOf(false) }
     var editOpen by remember { mutableStateOf(false) }
     var deleteConfirm by remember { mutableStateOf(false) }
-    var rooms by remember { mutableStateOf<List<RoomRow>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
     var statusLine by remember { mutableStateOf("") }
 
-    LaunchedEffect(Unit) {
-        try {
-            withContext(Dispatchers.IO) { rooms = Db.rooms() }
-        } catch (_: Exception) { }
+    // One move flow everywhere: rooms, units, and other items as containers.
+    if (moving) {
+        MoveSheet(item, onDone = { moving = false; onChanged(); onDismiss() })
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -1023,59 +1021,40 @@ fun ItemSheet(item: ItemRow, refresh: () -> Unit, onDismiss: () -> Unit, onChang
             statusLine.let { if (it.isNotEmpty()) Text(it, color = Good, fontSize = 13.sp) }
 
             if (item.active) {
-                if (moving) {
-                    Text("Move to…", fontSize = 13.sp, color = InkSoft)
-                    rooms.forEach { r ->
-                        TextButton(
-                            onClick = {
-                                scope.launch {
-                                    try {
-                                        withContext(Dispatchers.IO) { Db.moveItem(item.id, r.id, null, null) }
-                                        moving = false
-                                        onChanged()
-                                        onDismiss()
-                                    } catch (e: Exception) { error = e.message }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) { Text(r.name) }
-                    }
-                } else {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { moving = true }, modifier = Modifier.weight(1f)) { Text("Move") }
-                        OutlinedButton(
-                            onClick = {
-                                scope.launch {
-                                    try {
-                                        withContext(Dispatchers.IO) { Db.addQuantity(item.id, 1) }
-                                        onChanged(); onDismiss()
-                                    } catch (e: Exception) { error = e.message }
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                        ) { Text("+1") }
-                        OutlinedButton(
-                            onClick = {
-                                scope.launch {
-                                    try {
-                                        withContext(Dispatchers.IO) { Db.declutterItem(item.id, null) }
-                                        onChanged(); onDismiss()
-                                    } catch (e: Exception) { error = e.message }
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                        ) { Text("Declutter", color = MaterialTheme.colorScheme.error) }
-                    }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(
-                            onClick = { editOpen = true },
-                            modifier = Modifier.weight(1f),
-                        ) { Text("Edit") }
-                        OutlinedButton(
-                            onClick = { deleteConfirm = true },
-                            modifier = Modifier.weight(1f),
-                        ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
-                    }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { moving = true }, modifier = Modifier.weight(1f)) { Text("Move") }
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    withContext(Dispatchers.IO) { Db.addQuantity(item.id, 1) }
+                                    onChanged(); onDismiss()
+                                } catch (e: Exception) { error = e.message }
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("+1") }
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    withContext(Dispatchers.IO) { Db.declutterItem(item.id, null) }
+                                    onChanged(); onDismiss()
+                                } catch (e: Exception) { error = e.message }
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Declutter", color = MaterialTheme.colorScheme.error) }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = { editOpen = true },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Edit") }
+                    OutlinedButton(
+                        onClick = { deleteConfirm = true },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
                 }
             } else {
                 Button(

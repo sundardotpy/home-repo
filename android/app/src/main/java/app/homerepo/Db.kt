@@ -709,21 +709,8 @@ object Db {
         toUnit: String?,
         a: String?,
     ) {
-        fun pathOf(roomId: String, unitId: String?): List<String> {
-            c.prepareStatement(
-                """SELECT ARRAY[r.name] || COALESCE(p.path, ARRAY[]::text[])
-                     FROM rooms r LEFT JOIN storage_unit_paths p ON p.id = ?
-                    WHERE r.id = ?"""
-            ).use { st ->
-                st.setUuid(1, unitId)
-                st.setUuid(2, roomId)
-                st.executeQuery().use { rs ->
-                    return if (rs.next())
-                        (rs.getArray(1).array as Array<*>).map { it.toString() }
-                    else emptyList()
-                }
-            }
-        }
+        // The item's own location after the write: room, units and containers, like the web.
+        val toPath = locationOf(c, itemId).path.split(" > ")
 
         c.prepareStatement(
             """INSERT INTO item_moves (item_id, kind, from_room_id, from_unit_id, to_room_id,
@@ -737,7 +724,7 @@ object Db {
             st.setUuid(5, toRoom)
             st.setUuid(6, toUnit)
             st.setArray(7, c.createArrayOf("text", (from?.path?.split(" > ") ?: emptyList()).toTypedArray()))
-            st.setArray(8, c.createArrayOf("text", pathOf(toRoom, toUnit).toTypedArray()))
+            st.setArray(8, c.createArrayOf("text", toPath.toTypedArray()))
             st.setUuid(9, a)
             st.executeUpdate()
         }
