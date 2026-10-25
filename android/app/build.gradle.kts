@@ -27,6 +27,8 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
     kotlin {
+        // Build with JDK 21 whatever JDK runs Gradle (JDK 27's jlink breaks the Android SDK).
+        jvmToolchain(21)
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
@@ -44,7 +46,6 @@ dependencies {
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
-    implementation("androidx.security:security-crypto:1.1.0")
     // The Postgres wire protocol, straight from the phone — same database the
     // server uses, no API layer in between (the user's call, per the spec).
     implementation("org.postgresql:postgresql:42.7.7")
