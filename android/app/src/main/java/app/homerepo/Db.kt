@@ -420,6 +420,9 @@ object Db {
     }
 
     fun moveItem(id: String, roomId: String?, unitId: String?, parentItemId: String?): Unit = tx { c ->
+        if (parentItemId != null && parentItemId in selfAndNested(c, id)) {
+            throw DbException("would create a cycle — it can't go inside itself or its own contents")
+        }
         val from = locationOf(c, id)
         val (newRoom, newUnit) = resolvePlacement(c, roomId, unitId, parentItemId)
         c.prepareStatement(
@@ -686,15 +689,16 @@ object Db {
         }
     }
 
-    /** Cycle guard, mirroring the store's: a box cannot go inside its contents. */
-    fun wouldCycle(id: String, containerId: String): Boolean = db { c ->
-        if (id == containerId) return@db true
-        c.prepareStatement("SELECT ? = ANY(id_path) FROM item_paths WHERE id = ?").use { st ->
+    /** The item and everything nested below it — none of them can hold it (cycle guard). */
+    fun selfAndNested(id: String): Set<String> = db { c -> selfAndNested(c, id) }
+
+    private fun selfAndNested(c: Connection, id: String): Set<String> =
+        c.prepareStatement("SELECT id FROM item_paths WHERE ? = ANY(id_path)").use { st ->
             st.setUuid(1, id)
-            st.setUuid(2, containerId)
-            st.executeQuery().use { rs -> rs.next() && rs.getBoolean(1) }
+            st.executeQuery().use { rs ->
+                buildSet { add(id); while (rs.next()) add(rs.getString(1)) }
+            }
         }
-    }
 
     private fun recordMove(
         c: Connection,

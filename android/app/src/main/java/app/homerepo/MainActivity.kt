@@ -800,6 +800,7 @@ fun MoveSheet(item: ItemRow, onDone: () -> Unit) {
     val scope = rememberCoroutineScope()
     var rooms by remember { mutableStateOf<List<RoomRow>>(emptyList()) }
     var units by remember { mutableStateOf<List<UnitRow>>(emptyList()) }
+    var containers by remember { mutableStateOf<List<ItemRow>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
     var busyTarget by remember { mutableStateOf<String?>(null) }
 
@@ -808,9 +809,25 @@ fun MoveSheet(item: ItemRow, onDone: () -> Unit) {
             withContext(Dispatchers.IO) {
                 rooms = Db.rooms()
                 units = Db.units()
+                // Cycle guard: never offer the item itself or anything inside it.
+                val blocked = Db.selfAndNested(item.id)
+                containers = Db.items("").filter { it.id !in blocked }
             }
         } catch (e: Exception) {
             error = e.message
+        }
+    }
+
+    fun go(target: String, roomId: String?, unitId: String?, parentId: String?) {
+        busyTarget = target
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) { Db.moveItem(item.id, roomId, unitId, parentId) }
+                onDone()
+            } catch (e: Exception) {
+                error = e.message
+                busyTarget = null
+            }
         }
     }
 
@@ -830,36 +847,24 @@ fun MoveSheet(item: ItemRow, onDone: () -> Unit) {
                         label = r.name,
                         sub = "Loose in the room",
                         busy = busyTarget == r.id,
-                    ) {
-                        busyTarget = r.id
-                        scope.launch {
-                            try {
-                                withContext(Dispatchers.IO) { Db.moveItem(item.id, r.id, null, null) }
-                                onDone()
-                            } catch (e: Exception) {
-                                error = e.message
-                                busyTarget = null
-                            }
-                        }
-                    }
+                    ) { go(r.id, r.id, null, null) }
                 }
                 items(units) { u ->
                     MoveTargetRow(
                         label = u.name,
                         sub = u.pathString,
                         busy = busyTarget == u.id,
-                    ) {
-                        busyTarget = u.id
-                        scope.launch {
-                            try {
-                                withContext(Dispatchers.IO) { Db.moveItem(item.id, null, u.id, null) }
-                                onDone()
-                            } catch (e: Exception) {
-                                error = e.message
-                                busyTarget = null
-                            }
-                        }
-                    }
+                    ) { go(u.id, null, u.id, null) }
+                }
+                if (containers.isNotEmpty()) {
+                    item { SectionLabel("PUT INSIDE ANOTHER ITEM") }
+                }
+                items(containers) { c ->
+                    MoveTargetRow(
+                        label = c.name,
+                        sub = c.path,
+                        busy = busyTarget == c.id,
+                    ) { go(c.id, null, null, c.id) }
                 }
             }
         }

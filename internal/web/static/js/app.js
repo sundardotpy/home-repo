@@ -175,6 +175,33 @@ function moveItem(item, roomId, unit) {
   toast(`Moved to ${pathText(record.location.path)}`);
 }
 
+// Into another item: the container decides room and unit, the server guards cycles.
+function moveIntoItem(item, container) {
+  const path = [...(container.location?.path || []), container.name];
+  const record = {
+    ...item,
+    room_id: container.room_id,
+    storage_unit_id: container.storage_unit_id || null,
+    parent_item_id: container.id,
+    location: {
+      ...container.location,
+      container_id: container.id,
+      path,
+      path_string: path.join(' > '),
+    },
+  };
+  store.mutate({
+    kind: 'item.move',
+    method: 'POST',
+    path: `/items/${item.id}/move`,
+    body: { parent_item_id: container.id },
+    targetId: item.id,
+    temp: item.id,
+    record,
+  });
+  toast(`Moved into ${container.name}`);
+}
+
 function deleteItem(item) {
   store.mutate({
     kind: 'item.delete',
@@ -994,7 +1021,12 @@ function moveSheet(item) {
   store.load('/activity?limit=30').catch(() => {});
   let selectedRoom = item.room_id;
   let selectedUnit = item.storage_unit_id || '';
+  let selectedContainer = item.location?.container_id || item.parent_item_id || '';
   const here = `${item.room_id}|${item.storage_unit_id || ''}`;
+  // Cycle guard: the item itself and everything nested inside it can't hold it.
+  const blocked = new Set([item.id]);
+  const insidePath = `/items?container_id=${item.id}&deep=true&limit=500`;
+  const candidatesPath = () => `/items?room_id=${selectedRoom}&limit=500`;
 
   openSheet({
     title: t('Move it', 'git mv'),
@@ -1005,8 +1037,38 @@ function moveSheet(item) {
       <div data-recent class="flex flex-wrap gap-2 mb-4"></div>
       ${field('Room', `<div data-room-select></div>`)}
       ${field('Storage unit', `<div data-unit-select></div>`, 'Leave as "Anywhere in the room" for things that are not in a box.')}
+      ${field('Put inside another item', `<div data-container-select></div>`, 'A box inside a box, a case inside a bag. It goes wherever that item is.')}
       ${primaryButton(t('Move here', 'Commit move'), 'data-save class="w-full"')}`,
     onMount(body, close) {
+      const candidates = () =>
+        (store.peek(candidatesPath()).data?.items || []).filter((i) => !blocked.has(i.id));
+      const containerOptions = () => [
+        { value: '', label: 'Not inside anything' },
+        ...candidates().map((i) => ({ value: i.id, label: i.name, hint: pathText(i.location?.path || []) })),
+      ];
+      const containerSelect = createSelect(body.querySelector('[data-container-select]'), {
+        options: containerOptions(),
+        value: selectedContainer,
+        onChange: (v) => {
+          selectedContainer = v;
+          // The container decides the unit; the two pickers never disagree.
+          if (v) {
+            selectedUnit = '';
+            unitSelect.value = '';
+          }
+        },
+      });
+      const loadContainers = () =>
+        Promise.all([store.load(candidatesPath()), store.load(insidePath)])
+          .then(() => {
+            for (const i of store.peek(insidePath).data?.items || []) blocked.add(i.id);
+          })
+          .catch(() => {})
+          .finally(() => {
+            containerSelect.setOptions(containerOptions());
+            containerSelect.value = selectedContainer;
+          });
+
       const unitOptions = () => {
         const flat = flattenUnits(store.peek(`/rooms/${selectedRoom}/tree`).data?.storage_units || []);
         return [
@@ -1022,6 +1084,8 @@ function moveSheet(item) {
         value: selectedUnit,
         onChange: (v) => {
           selectedUnit = v;
+          selectedContainer = '';
+          containerSelect.value = '';
           paintRecent();
         },
       });
@@ -1036,12 +1100,15 @@ function moveSheet(item) {
         onChange: (v) => {
           selectedRoom = v;
           selectedUnit = '';
+          selectedContainer = '';
           unitSelect.setOptions([{ value: '', label: 'Anywhere in the room' }], false);
           loadUnits();
+          loadContainers();
           paintRecent();
         },
       });
       loadUnits();
+      loadContainers();
       store.load('/rooms').then(() => {
         roomSelect.setOptions(roomOptions());
         roomSelect.value = selectedRoom;
@@ -1057,8 +1124,10 @@ function moveSheet(item) {
             const p = places[Number(b.dataset.recent)];
             selectedRoom = p.roomId;
             selectedUnit = p.unitId;
+            selectedContainer = '';
             roomSelect.value = selectedRoom;
             loadUnits();
+            loadContainers();
             paintRecent();
           }),
         );
@@ -1069,9 +1138,14 @@ function moveSheet(item) {
       body.querySelector('[data-save]').addEventListener('click', () => {
         const flat = flattenUnits(store.peek(`/rooms/${selectedRoom}/tree`).data?.storage_units || []);
         const unit = flat.find((u) => u.id === (unitSelect.value || '')) || null;
-        const unchanged = selectedRoom === item.room_id && (unit?.id || '') === (item.storage_unit_id || '');
+        const container = candidates().find((i) => i.id === selectedContainer) || null;
+        const wasIn = item.location?.container_id || item.parent_item_id || '';
+        const unchanged = container
+          ? container.id === wasIn
+          : !wasIn && selectedRoom === item.room_id && (unit?.id || '') === (item.storage_unit_id || '');
         close();
         if (unchanged) return toast('It is already there');
+        if (container) return moveIntoItem(item, container);
         moveItem(item, selectedRoom, unit);
       });
     },
