@@ -40,7 +40,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object PlacesKey : NavKey
 @Serializable data object HistoryKey : NavKey
 @Serializable data object SettingsKey : NavKey
-@Serializable data class RoomKey(val id: String, val name: String) : NavKey
+@Serializable data class RoomKey(val id: String, val name: String, val icon: String = "") : NavKey
 @Serializable data class UnitKey(val id: String, val name: String, val roomId: String, val path: String, val parentId: String? = null) : NavKey
 
 private data class Tab(val key: NavKey, val label: String, val icon: ImageVector)
@@ -122,7 +122,7 @@ fun App(prefs: android.content.SharedPreferences) {
                 predictivePopTransitionSpec = { if (backStack.lastOrNull().isDrawer()) drawerIn() else fadeThrough() },
                 entryProvider = entryProvider {
                     entry<FindKey> { FindScreen(onOpenSettings = { go(SettingsKey) }) }
-                    entry<PlacesKey> { PlacesScreen(onOpenRoom = { go(RoomKey(it.id, it.name)) }) }
+                    entry<PlacesKey> { PlacesScreen(onOpenRoom = { go(RoomKey(it.id, it.name, it.icon)) }) }
                     entry<RoomKey> { key ->
                         RoomScreen(
                             key,

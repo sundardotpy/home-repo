@@ -96,7 +96,7 @@ fun PlacesScreen(onOpenRoom: (RoomRow) -> Unit) {
             }
             items(rooms.orEmpty(), key = { it.id }) { r ->
                 PlaceRow(
-                    leading = { RoomSwatch(r.name) },
+                    leading = { RoomSwatch(r.name, icon = r.icon) },
                     title = r.name,
                     sub = count(r.unitCount, "box", "boxes") + " · " + count(r.itemCount, "thing", "things"),
                 ) { onOpenRoom(r) }
@@ -148,12 +148,13 @@ private fun BoxIcon() {
 
 /** Rename and delete, tucked behind the top bar's overflow. */
 @Composable
-private fun PlaceMenu(onRename: () -> Unit, onDelete: () -> Unit, onMove: (() -> Unit)? = null) {
+private fun PlaceMenu(onRename: () -> Unit, onDelete: () -> Unit, onMove: (() -> Unit)? = null, onIcon: (() -> Unit)? = null) {
     var open by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { open = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "More") }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             if (onMove != null) DropdownMenuItem(text = { Text("Move") }, onClick = { open = false; onMove() })
+            if (onIcon != null) DropdownMenuItem(text = { Text("Change icon") }, onClick = { open = false; onIcon() })
             DropdownMenuItem(text = { Text("Rename") }, onClick = { open = false; onRename() })
             DropdownMenuItem(
                 text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
@@ -170,6 +171,8 @@ fun RoomScreen(room: RoomKey, onBack: () -> Unit, onOpenUnit: (UnitRow) -> Unit)
     val ui = LocalUi.current
     val scope = rememberCoroutineScope()
     var name by remember { mutableStateOf(room.name) }
+    var icon by remember { mutableStateOf(room.icon) }
+    var pickingIcon by remember { mutableStateOf(false) }
     val (data, error, retry) = rememberLoad(room.id) {
         Db.units(room.id).filter { it.parentId == null } to Db.itemsInRoom(room.id, loose = true)
     }
@@ -181,7 +184,7 @@ fun RoomScreen(room: RoomKey, onBack: () -> Unit, onOpenUnit: (UnitRow) -> Unit)
     ScreenScaffold(
         title = name,
         onBack = onBack,
-        actions = { PlaceMenu(onRename = { renaming = true }, onDelete = { deleting = true }) },
+        actions = { PlaceMenu(onRename = { renaming = true }, onDelete = { deleting = true }, onIcon = { pickingIcon = true }) },
         fab = {
             ExtendedFloatingActionButton(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -203,7 +206,7 @@ fun RoomScreen(room: RoomKey, onBack: () -> Unit, onOpenUnit: (UnitRow) -> Unit)
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    RoomSwatch(name, 48.dp)
+                    RoomSwatch(name, 48.dp, icon)
                     Text(
                         count(units.size, "box", "boxes") + " · " + count(loose.size, "thing", "things") + " loose",
                         style = MaterialTheme.typography.bodyLarge,
@@ -228,6 +231,18 @@ fun RoomScreen(room: RoomKey, onBack: () -> Unit, onOpenUnit: (UnitRow) -> Unit)
     }
 
     detail?.let { ItemSheet(it, onDismiss = { detail = null }) }
+    if (pickingIcon) {
+        IconPickerSheet("Icon for $name", icon, onDismiss = { pickingIcon = false }) { picked ->
+            pickingIcon = false
+            scope.launch {
+                try {
+                    withContext(Dispatchers.IO) { Db.setRoomIcon(room.id, picked) }
+                    icon = picked
+                    ui.done(if (picked.isEmpty()) "$name shows its initial again" else "Icon set for $name")
+                } catch (e: Exception) { ui.say(e.message ?: "Couldn't change the icon") }
+            }
+        }
+    }
     if (newBox) {
         TextPromptDialog(title = "New box in $name", placeholder = "Wardrobe", confirmLabel = "Create", onDismiss = { newBox = false }) { box ->
             newBox = false
@@ -420,7 +435,7 @@ private fun MoveBoxSheet(unit: UnitKey, name: String, onDismiss: () -> Unit, onM
             val r = rooms.filter { hit(it.name) }
             if (r.isNotEmpty()) item { SectionTitle("Rooms") }
             items(r, key = { "r" + it.id }) { room ->
-                MoveRow(room.name, "Straight in the room", { RoomSwatch(room.name, 36.dp) }, !busy) { go(room.name, room.id, null) }
+                MoveRow(room.name, "Straight in the room", { RoomSwatch(room.name, 36.dp, room.icon) }, !busy) { go(room.name, room.id, null) }
             }
             val b = boxes.filter { hit(it.pathString) }
             if (b.isNotEmpty()) item { SectionTitle("Inside another box") }

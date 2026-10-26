@@ -217,7 +217,7 @@ components:
 
 **Creative North Star: "Clear Drawers"**
 
-Every place is a frosted drawer you can see into, and a location path is the stack of drawers. The ground is pale sea-glass, cool and quiet. Colour belongs to rooms: each room carries one of six soft tints. One accent is the only loud colour: deep teal by default, or whichever of six the user picks in Settings. It marks the one main action on each screen. The category default is a grey list with the path as a faint subtitle. This system turns that path into the picture itself: a short stack of same-height tabs hanging from one thin spine.
+Every place is a frosted drawer you can see into, and a location path is the stack of drawers. The ground is pale sea-glass, cool and quiet. Colour belongs to rooms: each room carries one of six soft tints. One accent is the only loud colour: deep teal by default, or whichever of seven the user picks in Settings. It marks the one main action on each screen. The category default is a grey list with the path as a faint subtitle. This system turns that path into the picture itself: a short stack of same-height tabs hanging from one thin spine.
 
 The world is Material 3 tuned rather than replaced. Scheme roles, shapes, motion and navigation come from the platform. Character comes from the palette, from drawer geometry repeated at every scale (list row, place header, app icon), and from a refusal to add boxes. Hierarchy comes from Material type size and weight in the device's own sans, so the app follows the user's font and font-size settings. Cards and dividers are not used for hierarchy. The density is calm: one item per row, generous 16dp gutters, and enough room under the list for the extended FAB.
 
@@ -232,7 +232,7 @@ The world is Material 3 tuned rather than replaced. Scheme roles, shapes, motion
 
 ## Colors
 
-The palette is a cool, low-chroma sea-glass neutral set, plus one accent (deep teal by default, five others to choose from) and six pastel room tints that each carry their own ink.
+The palette is a cool, low-chroma sea-glass neutral set, plus one accent (deep teal by default, six others to choose from) and six pastel room tints that each carry their own ink.
 
 ### Primary
 - **Deep Teal** (`deep-teal`; dark theme `deep-teal-dark`): the one main action on a screen. That means the extended FAB (Add, New room, Box inside), the filled confirm button in a sheet (Move, Save, Yes, Go, Restore), and the launcher icon ground. Nothing decorative uses it. When the user picks another accent it takes this role everywhere except the launcher icon, which stays teal.
@@ -243,16 +243,17 @@ The palette is a cool, low-chroma sea-glass neutral set, plus one accent (deep t
 Settings offers the theme mode and the accent as cards, each a miniature of the app drawn from the real colour scheme it stands for.
 
 - **Theme mode:** System (follows the phone; its card is split half light, half dark), Light, or Dark. The status and navigation bar icons follow the chosen mode, not only the phone.
-- **Accent:** each one replaces `primary`, `primary-container`, the tonal `secondary-container` and `inverse-primary`, in matched light and dark pairs. The sea-glass ground, the neutrals and the room tints never change; they carry the drawers.
+- **Accent:** one exact colour per choice. It becomes `primary` in light mode as given. In dark mode the same hue is mixed 35% toward white (Compose `lerp`, Oklab), so accent-coloured text stays legible on the dark ground. The ink on the fill (`on-primary`) is white or near-black (#1A1C1E), whichever has more contrast. `primary-container` and the tonal `secondary-container` are the accent mixed into the ground (25% and 18% light, 45% and 30% dark), with `on-surface` ink. The sea-glass ground, the neutrals and the room tints never change; they carry the drawers.
 
-| Accent | Light primary | Light tonal | Dark primary | Dark tonal |
-| --- | --- | --- | --- | --- |
-| Sea glass (default) | #0E5E58 | #CCE8E3 | #7FD3C6 | #324B47 |
-| Tangerine | #9A4A00 | #FFE2CC | #FFB77A | #5C3A1F |
-| Blueberry | #3654A8 | #DDE2F9 | #B3C5FF | #3E4759 |
-| Raspberry | #A3324F | #FFD9DF | #FFB1C0 | #5C3F43 |
-| Kale | #3F6B2E | #D8E7CB | #A5D68E | #3C4B35 |
-| Lavender | #6750A4 | #E8DEF8 | #CFBCFF | #4A4458 |
+| Accent | Hex (light primary) | Ink on fill | Contrast |
+| --- | --- | --- | --- |
+| Sea glass (default) | #0E5E58 | white | 7.6:1 |
+| Moonstone | #4A5462 | white | 7.7:1 |
+| Tangerine | #D68401 | #1A1C1E | 5.8:1 |
+| Kale | #4B7A45 | white | 5.0:1 |
+| Blueberry | #3569BA | white | 5.4:1 |
+| Lavender | #756BBD | white | 4.6:1 |
+| Raspberry | #CA4F71 | white | 4.3:1 (known limit: just under 4.5:1 for small text; neither ink reaches it on this exact hex) |
 
 Both choices are stored on the phone (`theme_mode`, `accent` in the app's preferences) and apply the moment they change.
 
@@ -348,6 +349,20 @@ Corners are soft and step with size: 6dp for tabs and status labels, 10dp for ro
 ### Navigation
 - **Top bar:** a small top app bar on the ground colour (no tint, no elevation colour shift), with a back arrow on pushed screens and trailing actions such as settings or the place menu. The House Shift notice hangs directly under it while a shift runs.
 - **Destinations:** a navigation suite with outlined icons and labels. The active indicator is mist tonal.
+
+### Icons
+
+- One icon set serves items and rooms: the line icons first, then brand marks (stored as `brand:<name>`). An empty key means no icon: the item or room shows its initial on its room tint.
+- The icon picker is a sheet with a search field and an adaptive grid (68dp cells: a 44dp tile, the name in label-small under it). The first cell is "No icon". The chosen cell has a 2dp accent border and a tonal tile.
+- Items change their icon from Edit details; rooms from the room's menu (Change icon). Room icons live in `rooms.icon` (migration 0010) and appear wherever the room's swatch does.
+
+### Quick add
+
+- A bottom sheet on `surface-container-lowest` with no border around the name: a title-large text field ("What are you putting away?"), focused with the keyboard up.
+- Under it, one scrolling row of assist chips: "+" (Icon, How many, Price), the place chip (room swatch and path; a menu of every room and box), then a chip for each extra that is set.
+- At the end, a 52dp accent button: a mic while the name is empty (speech fills the name and, from "X is in Y", the place), an up arrow once there is text. Enter also sends.
+- Typing `#` and part of a name lists matching rooms and boxes in a card above the field; picking one sets the place and removes the `#` text.
+- After an add the sheet stays open: a one-line confirmation in `on-surface-variant`, the field cleared, the place kept.
 
 ### Settings choice cards
 

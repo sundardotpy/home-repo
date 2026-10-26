@@ -234,7 +234,7 @@ fun MoveSheet(item: ItemRow, onDismiss: () -> Unit) {
             val r = rooms.filter { hit(it.name) }
             if (r.isNotEmpty()) item { SectionTitle("Rooms") }
             items(r, key = { "r" + it.id }) { room ->
-                MoveRow(room.name, "Loose in the room", { RoomSwatch(room.name, 36.dp) }, !busy) {
+                MoveRow(room.name, "Loose in the room", { RoomSwatch(room.name, 36.dp, room.icon) }, !busy) {
                     go(room.name) { Db.moveItem(item.id, room.id, null, null) }
                 }
             }
@@ -314,100 +314,6 @@ fun DeclutterSheet(item: ItemRow, onDismiss: () -> Unit) {
     }
 }
 
-// ------------------------------------------------------------------- add
-
-/** Bought something, or found something worth tracking. */
-@Composable
-fun AddSheet(initialName: String, onDismiss: () -> Unit) {
-    val ui = LocalUi.current
-    val scope = rememberCoroutineScope()
-    var name by remember { mutableStateOf(initialName) }
-    var qty by remember { mutableStateOf("1") }
-    var price by remember { mutableStateOf("") }
-    var rooms by remember { mutableStateOf<List<RoomRow>>(emptyList()) }
-    var units by remember { mutableStateOf<List<UnitRow>>(emptyList()) }
-    var roomId by remember { mutableStateOf<String?>(null) }
-    var unitId by remember { mutableStateOf<String?>(null) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var busy by remember { mutableStateOf(false) }
-    val focus = remember { FocusRequester() }
-
-    LaunchedEffect(Unit) {
-        try {
-            withContext(Dispatchers.IO) { rooms = Db.rooms(); units = Db.units() }
-            if (roomId == null) roomId = rooms.firstOrNull()?.id
-        } catch (e: Exception) { error = e.message }
-        if (initialName.isBlank()) runCatching { focus.requestFocus() }
-    }
-
-    Sheet(onDismiss = { if (!busy) onDismiss() }) {
-        SheetTitle("Add something")
-        OutlinedTextField(name, { name = it }, label = { Text("What is it?") }, singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            modifier = Modifier.fillMaxWidth().focusRequester(focus))
-        Text("Room", style = MaterialTheme.typography.titleSmall)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            rooms.forEach { r ->
-                FilterChip(
-                    selected = roomId == r.id,
-                    onClick = { roomId = r.id; unitId = null },
-                    label = { Text(r.name) },
-                    leadingIcon = if (roomId == r.id) { { Icon(Icons.Outlined.Check, null, Modifier.size(18.dp)) } } else null,
-                )
-            }
-        }
-        val inRoom = units.filter { it.roomId == roomId }
-        if (inRoom.isNotEmpty()) {
-            Text("Box", style = MaterialTheme.typography.titleSmall)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = unitId == null, onClick = { unitId = null }, label = { Text("Anywhere in the room") })
-                inRoom.forEach { u ->
-                    FilterChip(
-                        selected = unitId == u.id,
-                        onClick = { unitId = u.id },
-                        label = { Text(pathParts(u.pathString).drop(1).joinToString(" › ").ifEmpty { u.name }) },
-                    )
-                }
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(qty, { qty = it }, label = { Text("How many") }, singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
-            OutlinedTextField(price, { price = it }, label = { Text("Price ₹") }, singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f))
-        }
-        ErrorLine(error)
-        Button(
-            onClick = {
-                busy = true
-                scope.launch {
-                    try {
-                        val n = name.trim()
-                        withContext(Dispatchers.IO) {
-                            Db.addItem(AddItem(
-                                name = n, roomId = roomId, unitId = unitId,
-                                quantity = qty.trim().toIntOrNull()?.coerceAtLeast(0) ?: 1,
-                                price = price.trim().toDoubleOrNull(),
-                            ))
-                        }
-                        ui.done("Added $n to ${rooms.firstOrNull { it.id == roomId }?.name ?: "the room"}")
-                        onDismiss()
-                    } catch (e: Exception) {
-                        error = e.message
-                        busy = false
-                    }
-                }
-            },
-            enabled = !busy && name.isNotBlank() && roomId != null,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-        ) {
-            Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.size(8.dp))
-            Text(if (busy) "Adding…" else "Add")
-        }
-    }
-}
-
 // ------------------------------------------------------------------ edit
 
 @Composable
@@ -418,11 +324,24 @@ fun EditItemSheet(item: ItemRow, onDismiss: () -> Unit) {
     var qty by remember { mutableStateOf(item.quantity.toString()) }
     var price by remember { mutableStateOf(item.price?.let { "%.0f".format(it) } ?: "") }
     var bought by remember { mutableStateOf(item.purchasedOn ?: "") }
+    var icon by remember { mutableStateOf(item.icon) }
+    var pickingIcon by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
 
+    if (pickingIcon) {
+        IconPickerSheet("Icon for ${name.ifBlank { item.name }}", icon, onDismiss = { pickingIcon = false }) {
+            icon = it; pickingIcon = false
+        }
+        return
+    }
+
     Sheet(onDismiss = { if (!busy) onDismiss() }) {
         SheetTitle("Edit details")
+        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            ItemAvatar(icon, name, pathParts(item.path).firstOrNull().orEmpty(), 52.dp)
+            OutlinedButton(onClick = { pickingIcon = true }) { Text(if (icon.isEmpty()) "Choose icon" else "Change icon") }
+        }
         OutlinedTextField(name, { name = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(qty, { qty = it }, label = { Text("How many") }, singleLine = true,
@@ -449,6 +368,7 @@ fun EditItemSheet(item: ItemRow, onDismiss: () -> Unit) {
                                 clearPrice = price.isBlank() && item.price != null,
                                 purchasedOn = date.ifEmpty { null },
                                 clearDate = date.isEmpty() && item.purchasedOn != null,
+                                icon = icon.takeIf { it != item.icon },
                             )
                         }
                         ui.done("Saved ${name.trim()}")
@@ -610,6 +530,7 @@ fun TextPromptDialog(
     initial: String = "",
     placeholder: String = "",
     confirmLabel: String = "Save",
+    keyboardType: KeyboardType = KeyboardType.Text,
     onDismiss: () -> Unit,
     onOk: (String) -> Unit,
 ) {
@@ -624,7 +545,7 @@ fun TextPromptDialog(
                 value, { value = it },
                 placeholder = { Text(placeholder) },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = ImeAction.Done),
                 keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { if (value.isNotBlank()) onOk(value.trim()) }),
                 modifier = Modifier.fillMaxWidth().focusRequester(focus),
             )

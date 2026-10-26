@@ -164,13 +164,15 @@ private fun DrawerTab(label: String, container: androidx.compose.ui.graphics.Col
 
 /** The room's own drawer front, for the Places list and room headers. */
 @Composable
-fun RoomSwatch(room: String, size: Dp = 40.dp) {
+fun RoomSwatch(room: String, size: Dp = 40.dp, icon: String = "") {
     val tint = roomTint(room)
     Box(
         Modifier.size(size).background(tint.container, MaterialTheme.shapes.small),
         contentAlignment = Alignment.Center,
     ) {
-        Text(room.take(1).uppercase(), color = tint.onContainer, style = MaterialTheme.typography.titleMedium)
+        val res = iconRes(icon)
+        if (res != null) Icon(painterResource(res), contentDescription = null, tint = tint.onContainer, modifier = Modifier.size(size * 0.55f))
+        else Text(room.take(1).uppercase(), color = tint.onContainer, style = if (size < 32.dp) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleMedium)
     }
 }
 

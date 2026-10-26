@@ -56,6 +56,7 @@ data class RoomRow(
     val name: String,
     val unitCount: Int,
     val itemCount: Int,
+    val icon: String = "",
 )
 
 data class UnitRow(
@@ -92,6 +93,7 @@ data class AddItem(
     val tags: List<String> = emptyList(),
     val price: Double? = null,
     val purchasedOn: String? = null,
+    val icon: String = "",
 )
 
 data class MoveRow(
@@ -244,14 +246,15 @@ object Db {
         c.prepareStatement(
             """SELECT r.id, r.name,
                  (SELECT count(*) FROM storage_units su WHERE su.room_id = r.id),
-                 (SELECT count(*) FROM items i WHERE i.room_id = r.id AND i.status = 'active')
+                 (SELECT count(*) FROM items i WHERE i.room_id = r.id AND i.status = 'active'),
+                 r.icon
                FROM rooms r
                ORDER BY r.floor, r.sort_order, lower(r.name)"""
         ).use { st ->
             st.executeQuery().use { rs ->
                 buildList {
                     while (rs.next()) add(
-                        RoomRow(rs.getString(1), rs.getString(2), rs.getInt(3), rs.getInt(4))
+                        RoomRow(rs.getString(1), rs.getString(2), rs.getInt(3), rs.getInt(4), rs.getString(5) ?: "")
                     )
                 }
             }
@@ -400,19 +403,20 @@ object Db {
         c.prepareStatement(
             """INSERT INTO items (name, description, quantity, tags, icon, room_id,
                    storage_unit_id, parent_item_id, purchase_price, purchased_on, created_by, updated_by)
-               VALUES (?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?) RETURNING id"""
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id"""
         ).use { st ->
             st.setString(1, input.name)
             st.setString(2, input.description)
             st.setInt(3, input.quantity)
             st.setArray(4, c.createArrayOf("text", input.tags.toTypedArray()))
-            st.setUuid(5, roomId)
-            st.setUuid(6, unitId)
-            st.setUuid(7, input.parentItemId)
-            st.setObject(8, input.price)
-            st.setObject(9, input.purchasedOn)
-            st.setUuid(10, a)
+            st.setString(5, input.icon)
+            st.setUuid(6, roomId)
+            st.setUuid(7, unitId)
+            st.setUuid(8, input.parentItemId)
+            st.setObject(9, input.price)
+            st.setObject(10, input.purchasedOn)
             st.setUuid(11, a)
+            st.setUuid(12, a)
             st.executeQuery().use { rs -> rs.next(); id = rs.getString(1) }
         }
 
@@ -434,25 +438,28 @@ object Db {
         purchasedOn: String? = null,
         clearDate: Boolean = false,
         description: String? = null,
+        icon: String? = null,
     ): Unit = tx { c ->
         c.prepareStatement(
             """UPDATE items SET
                    name        = COALESCE(?, name),
+                   icon        = COALESCE(?, icon),
                    quantity    = COALESCE(?, quantity),
                    purchase_price = CASE WHEN ? THEN NULL ELSE COALESCE(?, purchase_price) END,
-                   purchased_on   = CASE WHEN ? THEN NULL ELSE COALESCE(?, purchased_on) END,
+                   purchased_on   = CASE WHEN ? THEN NULL ELSE COALESCE(?::date, purchased_on) END,
                    description = COALESCE(?, description),
                    updated_at  = now()
                  WHERE id = ?"""
         ).use { st ->
             st.setString(1, name)
-            st.setIntOrNull(2, quantity)
-            st.setBoolean(3, clearPrice)
-            if (!clearPrice) st.setObject(4, price) else st.setNull(4, java.sql.Types.DECIMAL)
-            st.setBoolean(5, clearDate)
-            if (!clearDate) st.setString(6, purchasedOn) else st.setNull(6, java.sql.Types.DATE)
-            st.setString(7, description)
-            st.setUuid(8, id)
+            st.setString(2, icon)
+            st.setIntOrNull(3, quantity)
+            st.setBoolean(4, clearPrice)
+            if (!clearPrice) st.setObject(5, price) else st.setNull(5, java.sql.Types.DECIMAL)
+            st.setBoolean(6, clearDate)
+            if (!clearDate) st.setString(7, purchasedOn) else st.setNull(7, java.sql.Types.DATE)
+            st.setString(8, description)
+            st.setUuid(9, id)
             if (st.executeUpdate() == 0) throw DbException("item not found")
         }
     }
@@ -558,6 +565,15 @@ object Db {
             st.executeQuery().use { rs -> rs.next(); id = rs.getString(1) }
         }
         RoomRow(id, name, 0, 0)
+    }
+
+    /** Picks a room's icon; "" goes back to its initial. */
+    fun setRoomIcon(id: String, icon: String): Unit = db { c ->
+        c.prepareStatement("UPDATE rooms SET icon = ?, updated_at = now() WHERE id = ?").use { st ->
+            st.setString(1, icon)
+            st.setUuid(2, id)
+            if (st.executeUpdate() == 0) throw DbException("room not found")
+        }
     }
 
     fun renameRoom(id: String, name: String): Unit = tx { c ->

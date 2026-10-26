@@ -13,6 +13,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 
 // Clear Drawers: a frosted sea-glass ground, deep teal spent only on the one
@@ -135,58 +137,47 @@ private val AppShapes = Shapes(
 
 enum class ThemeMode(val label: String) { System("System"), Light("Light"), Dark("Dark") }
 
-/** The accent's roles in one mode: the loud colour, its container, and the tonal fill. */
-data class AccentRoles(
-    val primary: Color, val onPrimary: Color,
-    val container: Color, val onContainer: Color,
-    val tonal: Color, val onTonal: Color,
-)
-
 /**
- * The user's accent. It replaces the teal on actions, selection and the FAB;
- * the sea-glass ground and the room tints stay, because they carry the drawers.
+ * The user's accent: one exact colour. It replaces the teal on actions,
+ * selection and the FAB; the sea-glass ground and the room tints stay, because
+ * they carry the drawers.
  */
-enum class Accent(val label: String, val light: AccentRoles, val dark: AccentRoles) {
-    SeaGlass(
-        "Sea glass",
-        AccentRoles(Color(0xFF0E5E58), Color.White, Color(0xFFB8E0D2), Color(0xFF00201C), Color(0xFFCCE8E3), Color(0xFF05201D)),
-        AccentRoles(Color(0xFF7FD3C6), Color(0xFF003732), Color(0xFF1F4F49), Color(0xFFB8F0E4), Color(0xFF324B47), Color(0xFFCCE8E3)),
-    ),
-    Tangerine(
-        "Tangerine",
-        AccentRoles(Color(0xFF9A4A00), Color.White, Color(0xFFFFDCC2), Color(0xFF321200), Color(0xFFFFE2CC), Color(0xFF2F1500)),
-        AccentRoles(Color(0xFFFFB77A), Color(0xFF522300), Color(0xFF763600), Color(0xFFFFDCC2), Color(0xFF5C3A1F), Color(0xFFFFDCC2)),
-    ),
-    Blueberry(
-        "Blueberry",
-        AccentRoles(Color(0xFF3654A8), Color.White, Color(0xFFDBE1FF), Color(0xFF00184A), Color(0xFFDDE2F9), Color(0xFF131B2C)),
-        AccentRoles(Color(0xFFB3C5FF), Color(0xFF002A77), Color(0xFF1A3C8F), Color(0xFFDBE1FF), Color(0xFF3E4759), Color(0xFFDDE2F9)),
-    ),
-    Raspberry(
-        "Raspberry",
-        AccentRoles(Color(0xFFA3324F), Color.White, Color(0xFFFFD9DF), Color(0xFF3F0016), Color(0xFFFFD9DF), Color(0xFF2C1519)),
-        AccentRoles(Color(0xFFFFB1C0), Color(0xFF650025), Color(0xFF851A3A), Color(0xFFFFD9DF), Color(0xFF5C3F43), Color(0xFFFFD9DF)),
-    ),
-    Kale(
-        "Kale",
-        AccentRoles(Color(0xFF3F6B2E), Color.White, Color(0xFFC0F2A8), Color(0xFF032100), Color(0xFFD8E7CB), Color(0xFF131F0D)),
-        AccentRoles(Color(0xFFA5D68E), Color(0xFF0E3900), Color(0xFF275219), Color(0xFFC0F2A8), Color(0xFF3C4B35), Color(0xFFD8E7CB)),
-    ),
-    Lavender(
-        "Lavender",
-        AccentRoles(Color(0xFF6750A4), Color.White, Color(0xFFE9DDFF), Color(0xFF22005D), Color(0xFFE8DEF8), Color(0xFF1D192B)),
-        AccentRoles(Color(0xFFCFBCFF), Color(0xFF381E72), Color(0xFF4F378B), Color(0xFFE9DDFF), Color(0xFF4A4458), Color(0xFFE8DEF8)),
-    ),
+enum class Accent(val label: String, val color: Color) {
+    SeaGlass("Sea glass", Color(0xFF0E5E58)),
+    Moonstone("Moonstone", Color(0xFF4A5462)),
+    Tangerine("Tangerine", Color(0xFFD68401)),
+    Kale("Kale", Color(0xFF4B7A45)),
+    Blueberry("Blueberry", Color(0xFF3569BA)),
+    Lavender("Lavender", Color(0xFF756BBD)),
+    Raspberry("Raspberry", Color(0xFFCA4F71)),
 }
 
-/** The full colour scheme for a mode and an accent, also used by the settings previews. */
+private fun contrast(a: Color, b: Color): Float {
+    val (hi, lo) = listOf(a.luminance(), b.luminance()).sortedDescending()
+    return (hi + 0.05f) / (lo + 0.05f)
+}
+
+/** White or near-black, whichever reads better on the fill. */
+private fun inkOn(fill: Color): Color {
+    val dark = Color(0xFF1A1C1E)
+    return if (contrast(fill, Color.White) >= contrast(fill, dark)) Color.White else dark
+}
+
+/**
+ * The full scheme for a mode and an accent, also used by the settings previews.
+ * Light mode fills with the exact accent; dark mode lightens the same hue a
+ * third so accent text stays legible on the dark ground. Containers and the
+ * tonal fill are the accent mixed into the ground.
+ */
 fun schemeFor(dark: Boolean, accent: Accent): androidx.compose.material3.ColorScheme {
-    val a = if (dark) accent.dark else accent.light
-    return (if (dark) DarkScheme else LightScheme).copy(
-        primary = a.primary, onPrimary = a.onPrimary,
-        primaryContainer = a.container, onPrimaryContainer = a.onContainer,
-        secondaryContainer = a.tonal, onSecondaryContainer = a.onTonal,
-        inversePrimary = (if (dark) accent.light else accent.dark).primary,
+    val base = if (dark) DarkScheme else LightScheme
+    val lifted = lerp(accent.color, Color.White, 0.35f)
+    val primary = if (dark) lifted else accent.color
+    return base.copy(
+        primary = primary, onPrimary = inkOn(primary),
+        primaryContainer = lerp(base.surface, accent.color, if (dark) 0.45f else 0.25f), onPrimaryContainer = base.onSurface,
+        secondaryContainer = lerp(base.surface, accent.color, if (dark) 0.30f else 0.18f), onSecondaryContainer = base.onSurface,
+        inversePrimary = if (dark) accent.color else lifted,
     )
 }
 
