@@ -9,6 +9,8 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -129,12 +131,97 @@ private val AppShapes = Shapes(
     extraLarge = RoundedCornerShape(28.dp),
 )
 
+// ------------------------------------------------------------ appearance
+
+enum class ThemeMode(val label: String) { System("System"), Light("Light"), Dark("Dark") }
+
+/** The accent's roles in one mode: the loud colour, its container, and the tonal fill. */
+data class AccentRoles(
+    val primary: Color, val onPrimary: Color,
+    val container: Color, val onContainer: Color,
+    val tonal: Color, val onTonal: Color,
+)
+
+/**
+ * The user's accent. It replaces the teal on actions, selection and the FAB;
+ * the sea-glass ground and the room tints stay, because they carry the drawers.
+ */
+enum class Accent(val label: String, val light: AccentRoles, val dark: AccentRoles) {
+    SeaGlass(
+        "Sea glass",
+        AccentRoles(Color(0xFF0E5E58), Color.White, Color(0xFFB8E0D2), Color(0xFF00201C), Color(0xFFCCE8E3), Color(0xFF05201D)),
+        AccentRoles(Color(0xFF7FD3C6), Color(0xFF003732), Color(0xFF1F4F49), Color(0xFFB8F0E4), Color(0xFF324B47), Color(0xFFCCE8E3)),
+    ),
+    Tangerine(
+        "Tangerine",
+        AccentRoles(Color(0xFF9A4A00), Color.White, Color(0xFFFFDCC2), Color(0xFF321200), Color(0xFFFFE2CC), Color(0xFF2F1500)),
+        AccentRoles(Color(0xFFFFB77A), Color(0xFF522300), Color(0xFF763600), Color(0xFFFFDCC2), Color(0xFF5C3A1F), Color(0xFFFFDCC2)),
+    ),
+    Blueberry(
+        "Blueberry",
+        AccentRoles(Color(0xFF3654A8), Color.White, Color(0xFFDBE1FF), Color(0xFF00184A), Color(0xFFDDE2F9), Color(0xFF131B2C)),
+        AccentRoles(Color(0xFFB3C5FF), Color(0xFF002A77), Color(0xFF1A3C8F), Color(0xFFDBE1FF), Color(0xFF3E4759), Color(0xFFDDE2F9)),
+    ),
+    Raspberry(
+        "Raspberry",
+        AccentRoles(Color(0xFFA3324F), Color.White, Color(0xFFFFD9DF), Color(0xFF3F0016), Color(0xFFFFD9DF), Color(0xFF2C1519)),
+        AccentRoles(Color(0xFFFFB1C0), Color(0xFF650025), Color(0xFF851A3A), Color(0xFFFFD9DF), Color(0xFF5C3F43), Color(0xFFFFD9DF)),
+    ),
+    Kale(
+        "Kale",
+        AccentRoles(Color(0xFF3F6B2E), Color.White, Color(0xFFC0F2A8), Color(0xFF032100), Color(0xFFD8E7CB), Color(0xFF131F0D)),
+        AccentRoles(Color(0xFFA5D68E), Color(0xFF0E3900), Color(0xFF275219), Color(0xFFC0F2A8), Color(0xFF3C4B35), Color(0xFFD8E7CB)),
+    ),
+    Lavender(
+        "Lavender",
+        AccentRoles(Color(0xFF6750A4), Color.White, Color(0xFFE9DDFF), Color(0xFF22005D), Color(0xFFE8DEF8), Color(0xFF1D192B)),
+        AccentRoles(Color(0xFFCFBCFF), Color(0xFF381E72), Color(0xFF4F378B), Color(0xFFE9DDFF), Color(0xFF4A4458), Color(0xFFE8DEF8)),
+    ),
+}
+
+/** The full colour scheme for a mode and an accent, also used by the settings previews. */
+fun schemeFor(dark: Boolean, accent: Accent): androidx.compose.material3.ColorScheme {
+    val a = if (dark) accent.dark else accent.light
+    return (if (dark) DarkScheme else LightScheme).copy(
+        primary = a.primary, onPrimary = a.onPrimary,
+        primaryContainer = a.container, onPrimaryContainer = a.onContainer,
+        secondaryContainer = a.tonal, onSecondaryContainer = a.onTonal,
+        inversePrimary = (if (dark) accent.light else accent.dark).primary,
+    )
+}
+
+fun tintsFor(dark: Boolean): List<RoomTint> = if (dark) DarkTints else LightTints
+
+/** Light/dark and accent, saved on this phone and applied the moment they change. */
+class Appearance(private val prefs: android.content.SharedPreferences) {
+    var mode by androidx.compose.runtime.mutableStateOf(
+        ThemeMode.entries.firstOrNull { it.name == prefs.getString("theme_mode", null) } ?: ThemeMode.System,
+    )
+        private set
+    var accent by androidx.compose.runtime.mutableStateOf(
+        Accent.entries.firstOrNull { it.name == prefs.getString("accent", null) } ?: Accent.SeaGlass,
+    )
+        private set
+
+    fun choose(mode: ThemeMode) { this.mode = mode; prefs.edit().putString("theme_mode", mode.name).apply() }
+    fun choose(accent: Accent) { this.accent = accent; prefs.edit().putString("accent", accent.name).apply() }
+
+    @Composable
+    fun isDark(): Boolean = when (mode) {
+        ThemeMode.System -> isSystemInDarkTheme()
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+    }
+}
+
+val LocalAppearance = staticCompositionLocalOf<Appearance> { error("Appearance not provided") }
+
 @Composable
-fun HrepoTheme(content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
-    CompositionLocalProvider(LocalTints provides if (dark) DarkTints else LightTints) {
+fun HrepoTheme(appearance: Appearance, content: @Composable () -> Unit) {
+    val dark = appearance.isDark()
+    CompositionLocalProvider(LocalTints provides tintsFor(dark), LocalAppearance provides appearance) {
         MaterialTheme(
-            colorScheme = if (dark) DarkScheme else LightScheme,
+            colorScheme = schemeFor(dark, appearance.accent),
             // The device system sans at Material roles: the app follows the user own font and size.
             typography = Typography(),
             shapes = AppShapes,

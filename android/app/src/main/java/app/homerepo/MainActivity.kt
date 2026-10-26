@@ -6,7 +6,10 @@ package app.homerepo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import android.graphics.Color
+import androidx.compose.runtime.DisposableEffect
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,6 +32,20 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        setContent { HrepoTheme { App(prefs) } }
+        val appearance = Appearance(prefs)
+        setContent {
+            HrepoTheme(appearance) {
+                // System bar icons follow the app's chosen mode, not only the phone's.
+                val dark = appearance.isDark()
+                DisposableEffect(dark) {
+                    enableEdgeToEdge(
+                        statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
+                        navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
+                    )
+                    onDispose {}
+                }
+                App(prefs)
+            }
+        }
     }
 }

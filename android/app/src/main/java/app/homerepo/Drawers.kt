@@ -66,6 +66,8 @@ class Ui(val snackbar: SnackbarHostState, private val scope: CoroutineScope) {
     var tick by mutableIntStateOf(0)
         private set
     var shiftOn by androidx.compose.runtime.mutableStateOf(false)
+    /** When Settings last confirmed the database answered, this session. */
+    var lastSync by androidx.compose.runtime.mutableStateOf<Long?>(null)
 
     fun refresh() { tick += 1 }
 
