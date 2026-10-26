@@ -217,13 +217,14 @@ components:
 
 **Creative North Star: "Clear Drawers"**
 
-Every place is a frosted drawer you can see into, and a location path is the stack of drawers. The ground is pale sea-glass, cool and quiet. Colour belongs to rooms: each room carries one of six soft tints. Deep teal is the only loud colour, and it marks the one main action on each screen. The category default is a grey list with the path as a faint subtitle. This system turns that path into the picture itself: a short stack of same-height tabs hanging from one thin spine.
+Every place is a frosted drawer you can see into, and a location path is the stack of drawers. The ground is pale sea-glass, cool and quiet. Colour belongs to rooms: each room carries one of six soft tints. One accent is the only loud colour: deep teal by default, or whichever of six the user picks in Settings. It marks the one main action on each screen. The category default is a grey list with the path as a faint subtitle. This system turns that path into the picture itself: a short stack of same-height tabs hanging from one thin spine.
 
 The world is Material 3 tuned rather than replaced. Scheme roles, shapes, motion and navigation come from the platform. Character comes from the palette, from drawer geometry repeated at every scale (list row, place header, app icon), and from a refusal to add boxes. Hierarchy comes from Material type size and weight in the device's own sans, so the app follows the user's font and font-size settings. Cards and dividers are not used for hierarchy. The density is calm: one item per row, generous 16dp gutters, and enough room under the list for the extended FAB.
 
 **Key Characteristics:**
 - Frosted sea-glass ground (light and dark), with tonal surface containers for depth and no card shadows.
-- Deep teal on exactly one main action per screen. Secondary actions are tonal or outlined.
+- The accent (deep teal by default) on exactly one main action per screen. Secondary actions are tonal or outlined.
+- Light, Dark, or System (follow the phone), chosen in Settings and saved on the phone.
 - Six room tints (seafoam, amber, rose, lavender, sky, sage). Each is a light/dark tonal pair, picked by a hash of the room name.
 - The drawer path is the signature: one spine, fixed 22dp tabs, a tinted room tab, and white slip-label inner tabs.
 - The device's system sans at stock Material roles. No bundled font.
@@ -231,11 +232,29 @@ The world is Material 3 tuned rather than replaced. Scheme roles, shapes, motion
 
 ## Colors
 
-The palette is a cool, low-chroma sea-glass neutral set, plus one deep teal accent and six pastel room tints that each carry their own ink.
+The palette is a cool, low-chroma sea-glass neutral set, plus one accent (deep teal by default, five others to choose from) and six pastel room tints that each carry their own ink.
 
 ### Primary
-- **Deep Teal** (`deep-teal`; dark theme `deep-teal-dark`): the one main action on a screen. That means the extended FAB (Add, New room, Box inside), the filled confirm button in a sheet (Move, Save, Yes, Go, Restore), and the launcher icon ground. Nothing decorative uses it.
+- **Deep Teal** (`deep-teal`; dark theme `deep-teal-dark`): the one main action on a screen. That means the extended FAB (Add, New room, Box inside), the filled confirm button in a sheet (Move, Save, Yes, Go, Restore), and the launcher icon ground. Nothing decorative uses it. When the user picks another accent it takes this role everywhere except the launcher icon, which stays teal.
 - **Sea-Glass Tonal** (`sea-glass-tonal`): the primary container. It also colours the spine and the room tab in the launcher icon.
+
+### User choices
+
+Settings offers the theme mode and the accent as cards, each a miniature of the app drawn from the real colour scheme it stands for.
+
+- **Theme mode:** System (follows the phone; its card is split half light, half dark), Light, or Dark. The status and navigation bar icons follow the chosen mode, not only the phone.
+- **Accent:** each one replaces `primary`, `primary-container`, the tonal `secondary-container` and `inverse-primary`, in matched light and dark pairs. The sea-glass ground, the neutrals and the room tints never change; they carry the drawers.
+
+| Accent | Light primary | Light tonal | Dark primary | Dark tonal |
+| --- | --- | --- | --- | --- |
+| Sea glass (default) | #0E5E58 | #CCE8E3 | #7FD3C6 | #324B47 |
+| Tangerine | #9A4A00 | #FFE2CC | #FFB77A | #5C3A1F |
+| Blueberry | #3654A8 | #DDE2F9 | #B3C5FF | #3E4759 |
+| Raspberry | #A3324F | #FFD9DF | #FFB1C0 | #5C3F43 |
+| Kale | #3F6B2E | #D8E7CB | #A5D68E | #3C4B35 |
+| Lavender | #6750A4 | #E8DEF8 | #CFBCFF | #4A4458 |
+
+Both choices are stored on the phone (`theme_mode`, `accent` in the app's preferences) and apply the moment they change.
 
 ### Secondary
 - **Mist Tonal** (`mist-tonal` / `on-mist-tonal`): the secondary container. It fills tonal buttons, the selected filter chip, and the navigation bar's active indicator. Use it for actions that matter but are not the screen's main one.
@@ -256,7 +275,7 @@ The palette is a cool, low-chroma sea-glass neutral set, plus one deep teal acce
 - **Error** (`error`): destructive text actions and the Declutter confirm button.
 
 ### Named Rules
-**The One Teal Rule.** Each screen has at most one deep-teal action: the FAB on a list, the filled confirm in a sheet. Everything else is tonal (`mist-tonal`), outlined, or a text button.
+**The One Accent Rule.** Each screen has at most one action in the accent colour: the FAB on a list, the filled confirm in a sheet. Everything else is tonal (`mist-tonal`), outlined, or a text button.
 
 **The Room Owns Its Colour Rule.** Tints identify rooms and never encode status or emphasis. An item's avatar, its room tab and its room's swatch always share one tint.
 
@@ -309,14 +328,14 @@ Corners are soft and step with size: 6dp for tabs and status labels, 10dp for ro
 
 ### Buttons
 - **Shape:** full pill, 52dp tall in sheets.
-- **Primary (filled, deep teal):** the one confirm per sheet: Move, Save, Yes, Go, Restore, Close.
+- **Primary (filled, accent):** the one confirm per sheet, and Sync now in Settings: Move, Save, Yes, Go, Restore, Close.
 - **Tonal (mist):** secondary but useful actions such as +1, Try again, and Add "query" on a no-match result.
 - **Outlined:** cancel or alternative actions (No, Keep it, Declutter, Search everything) with a spine-line stroke.
 - **Text:** low-weight actions such as Edit details. Delete takes the error colour as text.
 - **Destructive confirm:** the Declutter confirm is a filled button in error / on-error.
 
 ### Extended FAB
-- Deep teal with on-deep-teal ink, a leading Add icon, and a verb label ("Add", "New room", "Box inside"). It is the screen's single teal action. On Find it collapses to an icon once the list scrolls past its first item.
+- The accent with its on-accent ink, a leading Add icon, and a verb label ("Add", "New room", "Box inside"). It is the screen's single accent action. On Find it collapses to an icon once the list scrolls past its first item.
 
 ### Chips
 - **Style:** Material filter chips at 8dp spacing in a horizontally scrolling row: Your things, Decluttered, All.
@@ -329,6 +348,13 @@ Corners are soft and step with size: 6dp for tabs and status labels, 10dp for ro
 ### Navigation
 - **Top bar:** a small top app bar on the ground colour (no tint, no elevation colour shift), with a back arrow on pushed screens and trailing actions such as settings or the place menu. The House Shift notice hangs directly under it while a shift runs.
 - **Destinations:** a navigation suite with outlined icons and labels. The active indicator is mist tonal.
+
+### Settings choice cards
+
+- A Material clickable surface, 14dp corners, `surface-container-lowest`, a 1dp `outline-variant` border that becomes a 2dp accent border when chosen.
+- A 78dp miniature of the app on top (rail, an item with drawer tabs on a spine, the accent on the Add button), drawn from the actual scheme it offers; the name below in label-large, accent-coloured when chosen.
+- The chosen card carries a 20dp accent circle with a check in the miniature's top corner, so the name keeps the card's full width.
+- Three per row; the accent grid drops to two per row when text is enlarged past 1.15×. Announced to TalkBack as radio choices.
 
 ### Drawer Path (signature)
 A location shown as a stack of drawer tabs down one spine.
@@ -355,7 +381,7 @@ A location shown as a stack of drawer tabs down one spine.
 ## Do's and Don'ts
 
 ### Do:
-- **Do** give each screen exactly one deep-teal action: the extended FAB on lists, the filled confirm in sheets.
+- **Do** give each screen exactly one accent-coloured action: the extended FAB on lists, the filled confirm in sheets.
 - **Do** use tonal (mist) for secondary actions and outlined for cancel or alternative choices.
 - **Do** show every location as a Drawer Path: one 2dp spine, 22dp tabs, a 10dp indent per level (at most three steps), and the room tab tinted while inner tabs are slips.
 - **Do** show paths relative to the current place when listing inside a room or box.
@@ -366,7 +392,7 @@ A location shown as a stack of drawer tabs down one spine.
 
 ### Don't:
 - **Don't** turn on dynamic (wallpaper) colour. The palette and stable room tints are the identity.
-- **Don't** use deep teal for decoration, selection, or a second action on the same screen.
+- **Don't** use the accent for decoration or a second filled action on the same screen. (Selected chips and the active tab use the accent's tonal container, not the accent itself.)
 - **Don't** vary drawer tab height or text size to show depth. Depth is the indent, and the tab scale is fixed so paths compare at a glance.
 - **Don't** use room tints for status or emphasis. A tint means "this room".
 - **Don't** wrap rows in cards or add shadows to custom surfaces. Depth is tonal.

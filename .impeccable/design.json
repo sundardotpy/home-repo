@@ -933,10 +933,10 @@
   ],
   "narrative": {
     "northStar": "Clear Drawers",
-    "overview": "Every place is a frosted drawer you can see into, and a location path is the stack of drawers. The ground is pale sea-glass, cool and quiet. Colour belongs to rooms: each room carries one of six soft tints. Deep teal is the only loud colour, and it marks the one main action on each screen. The category default is a grey list with the path as a faint subtitle. This system turns that path into the picture itself: a short stack of same-height tabs hanging from one thin spine.\n\nThe world is Material 3 tuned rather than replaced. Scheme roles, shapes, motion and navigation come from the platform. Character comes from the palette, from drawer geometry repeated at every scale (list row, place header, app icon), and from a refusal to add boxes. Hierarchy comes from Material type size and weight in the device's own sans, so the app follows the user's font and font-size settings. Cards and dividers are not used for hierarchy. The density is calm: one item per row, generous 16dp gutters, and enough room under the list for the extended FAB.",
+    "overview": "Every place is a frosted drawer you can see into, and a location path is the stack of drawers. The ground is pale sea-glass, cool and quiet. Colour belongs to rooms: each room carries one of six soft tints. One accent is the only loud colour: deep teal by default, or whichever of six the user picks in Settings. It marks the one main action on each screen. The category default is a grey list with the path as a faint subtitle. This system turns that path into the picture itself: a short stack of same-height tabs hanging from one thin spine.\n\nThe world is Material 3 tuned rather than replaced. Scheme roles, shapes, motion and navigation come from the platform. Character comes from the palette, from drawer geometry repeated at every scale (list row, place header, app icon), and from a refusal to add boxes. Hierarchy comes from Material type size and weight in the device's own sans, so the app follows the user's font and font-size settings. Cards and dividers are not used for hierarchy. The density is calm: one item per row, generous 16dp gutters, and enough room under the list for the extended FAB.",
     "keyCharacteristics": [
       "Frosted sea-glass ground (light and dark), with tonal surface containers for depth and no card shadows.",
-      "Deep teal on exactly one main action per screen. Secondary actions are tonal or outlined.",
+      "The accent (deep teal by default) on exactly one main action per screen. Secondary actions are tonal or outlined.",
       "Six room tints (seafoam, amber, rose, lavender, sky, sage). Each is a light/dark tonal pair, picked by a hash of the room name.",
       "The drawer path is the signature: one spine, fixed 22dp tabs, a tinted room tab, and white slip-label inner tabs.",
       "The device's system sans at stock Material roles. No bundled font.",
@@ -944,7 +944,7 @@
     ],
     "rules": [
       {
-        "name": "The One Teal Rule",
+        "name": "The One Accent Rule",
         "body": "Each screen has at most one deep-teal action: the FAB on a list, the filled confirm in a sheet. Everything else is tonal (`mist-tonal`), outlined, or a text button.",
         "section": "colors"
       },
