@@ -1379,7 +1379,7 @@ const findScreen = {
       <h1 class="font-display font-bold tracking-tight leading-[1.04] mt-6 lg:mt-8 ${
         isRepo() ? 'text-[1.6rem]' : 'text-[clamp(2.1rem,9.5vw,2.6rem)] lg:text-[3.25rem]'
       }">${t('Where did I<br>put it?', 'where did I put it?')}</h1>
-      <div class="mt-5 flex items-center gap-2 h-14 pl-5 pr-2 bg-[var(--paper)] rounded-[var(--btn-radius)] ${
+      <div data-sticky-anchor class="mt-5 flex items-center gap-2 h-14 pl-5 pr-2 bg-[var(--paper)] rounded-[var(--btn-radius)] ${
         isRepo() ? 'border border-[var(--accent-ink)]' : 'shadow-[0_8px_24px_rgb(20_18_31/0.07)]'
       }">
         <button type="button" data-go-search class="flex-1 min-w-0 h-full flex items-center gap-3 text-left text-[var(--ink-faint)]">
@@ -3099,9 +3099,25 @@ function syncChrome() {
     .classList.toggle('hidden', current === settingsScreen || current === labelsScreen);
 }
 
+// On phones the header is sticky. A tall one (Find's headline) would pin a
+// third of the screen, so it sticks at a negative offset instead: the title
+// scrolls away and only the [data-sticky-anchor] row stays in view.
+function pinHeader() {
+  const head = headerEl();
+  const anchor = head.querySelector('[data-sticky-anchor]');
+  if (!anchor) {
+    head.style.top = '';
+    return;
+  }
+  const safeTop = parseFloat(getComputedStyle(head).paddingTop) || 0;
+  head.style.top = `${Math.min(0, safeTop + 8 - anchor.offsetTop)}px`;
+}
+addEventListener('resize', pinHeader);
+
 // The header is rebuilt from a string, so its listeners must be reattached.
 function rewireHeader() {
   const head = headerEl();
+  pinHeader();
   head.querySelector('[data-go-search]')?.addEventListener('click', () => {
     location.hash = '#/search';
   });

@@ -36,7 +36,7 @@
 
   --color-ink: #1a1812;
   --color-ink-soft: #5d584a;
-  --color-ink-faint: #8a8473;
+  --color-ink-faint: #6e6857;
 
   --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
@@ -70,7 +70,7 @@
     --line: #e5dfce;
     --ink: #1a1812;
     --ink-soft: #5d584a;
-    --ink-faint: #8a8473;
+    --ink-faint: #6e6857;
     --shadow-sheet: 0 -8px 30px rgb(26 24 18 / 0.14);
     --shadow-card: 0 1px 2px rgb(26 24 18 / 0.05);
 
@@ -108,7 +108,7 @@
     --line: #38352a;
     --ink: #f1ede0;
     --ink-soft: #b5ae9a;
-    --ink-faint: #837d6b;
+    --ink-faint: #9c9581;
     --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 0.5);
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
 
@@ -137,7 +137,7 @@
     --line: #d0d7de;
     --ink: #1f2328;
     --ink-soft: #59636e;
-    --ink-faint: #818b98;
+    --ink-faint: #646d76;
     --shadow-sheet: 0 -8px 30px rgb(31 35 40 / 0.16);
     --shadow-card: none;
 
@@ -181,7 +181,7 @@
     --line: #323847;
     --ink: #e6e9f2;
     --ink-soft: #9aa3b5;
-    --ink-faint: #6f7889;
+    --ink-faint: #8a93a5;
     --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 0.55);
 
     --btn-bg: #3fb27f;
@@ -682,7 +682,7 @@
     align-items: center;
     justify-content: center;
     gap: 2px;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 500;
     color: var(--nav-fg);
     transition: color 120ms ease;

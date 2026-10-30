@@ -54,6 +54,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -126,12 +127,17 @@ fun FindScreen(onOpenSettings: () -> Unit) {
         loading = true
         error = null
         try {
-            withContext(Dispatchers.IO) {
-                items = Db.items(query, status = filter.status)
+            // Assigned only after the IO returns, so a superseded query never lands.
+            val (found, today) = withContext(Dispatchers.IO) {
                 val startOfDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                todayIds = Db.recentMoves(40).filter { it.movedAt >= startOfDay && it.kind != "decluttered" }
-                    .map { it.itemId }.distinct()
+                Db.items(query, status = filter.status) to
+                    Db.recentMoves(40).filter { it.movedAt >= startOfDay && it.kind != "decluttered" }
+                        .map { it.itemId }.distinct()
             }
+            items = found
+            todayIds = today
+        } catch (e: CancellationException) {
+            throw e // the next keystroke took over; not an error
         } catch (e: Exception) {
             error = e.message
             items = emptyList()

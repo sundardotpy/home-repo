@@ -136,7 +136,7 @@ export function interfaceMarkup() {
     <button type="button" data-ui="${value}" aria-pressed="${ui === value}"
       class="text-left rounded-[var(--radius-xl)] border p-3 transition-colors
              ${ui === value ? 'border-[var(--ink)] bg-[var(--paper)]' : 'border-[var(--line)] hover:border-[var(--ink-faint)]'}">
-      ${preview}
+      <span aria-hidden="true">${preview}</span>
       <span class="mt-2.5 flex items-center gap-2 font-semibold text-[14px]">
         <span class="w-4 h-4 rounded-full border-2 ${ui === value ? 'border-[5px] border-[var(--ink)]' : 'border-[var(--ink-faint)]'}"></span>${label}
       </span>

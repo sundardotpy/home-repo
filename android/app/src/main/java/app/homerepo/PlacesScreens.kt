@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,6 +56,8 @@ private fun <T> rememberLoad(vararg keys: Any?, load: () -> T): Triple<T?, Strin
         error = null
         try {
             data = withContext(Dispatchers.IO) { load() }
+        } catch (e: CancellationException) {
+            throw e // keys changed and a newer load took over
         } catch (e: Exception) {
             error = e.message ?: "Couldn't reach the database"
         }
