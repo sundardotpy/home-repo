@@ -36,7 +36,16 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 strips the unused bulk of Compose and material-icons-extended
+            // (tens of thousands of vector icons the app never draws), so
+            // cold start loads a quarter of the classes and the APK shrinks
+            // proportionally. The keep rules pin pgjdbc's reflective surface.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 

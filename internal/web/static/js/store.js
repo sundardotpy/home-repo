@@ -273,6 +273,18 @@ function scheduleRetry(tries) {
   }, delay);
 }
 
+/**
+ * Unlocking the passcode unblocks this session's waiters: a 401 parks the
+ * queue in a retry backoff that no longer needs to run, so drop the timer and
+ * go again immediately. The unlock flow (lock.js + app.js) calls this once
+ * the server has handed out a fresh session cookie.
+ */
+export function resume() {
+  clearTimeout(retryTimer);
+  retryTimer = null;
+  flush();
+}
+
 addEventListener('online', () => {
   clearTimeout(retryTimer);
   retryTimer = null;

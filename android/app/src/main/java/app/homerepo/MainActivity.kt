@@ -10,6 +10,9 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import android.graphics.Color
 import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,6 +33,17 @@ class MainActivity : ComponentActivity() {
                 password = prefs.getString("password", "")!!,
                 ssl = prefs.getBoolean("ssl", true),
             )
+        }
+
+        // With a database on file, open it now instead of when the first
+        // query runs: driver class loading plus the connection handshake
+        // happen while Compose draws, and the Find screen's reads then land on
+        // a live socket. Every activity start warms it again, which is what
+        // keeps the connection fresh across returns to the app.
+        if (Db.profile != null) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                runCatching { Db.warmup() }
+            }
         }
 
         val appearance = Appearance(prefs)

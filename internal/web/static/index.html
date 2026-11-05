@@ -136,6 +136,15 @@
 
     <div id="sheet-root"></div>
 
+    <link rel="modulepreload" href="/static/js/lock.js" />
+    <script type="module">
+      // A locked app's first screen is the passcode, and it must not wait for
+      // the whole ~350 kB app bundle to arrive and parse. lock.js is 4 kB and
+      // stands alone, so it starts the session check from here; any later
+      // checkSession() from app.js is idempotent.
+      import { checkSession } from '/static/js/lock.js';
+      checkSession();
+    </script>
     <script type="module" src="/static/js/app.js"></script>
   </body>
 </html>

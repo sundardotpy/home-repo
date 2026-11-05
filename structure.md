@@ -35,6 +35,7 @@ The core server. Every module here is plain Node (ESM), no framework.
 | File | Responsibility |
 |---|---|
 | `lib/app.js` | Wiring shared by the dev server and the serverless entry: db pool, media stores, auth, router, routes |
+| `lib/compress.js` | Content negotiation and response compression (gzip/brotli) for static and JSON responses |
 | `lib/config.js` | All configuration, read from the environment (one place) |
 | `lib/db.js` | Postgres connection pooling and `withTransaction` |
 | `lib/errors.js` | Sentinel errors the API layer maps onto HTTP status codes |
@@ -154,6 +155,7 @@ mirrors the web home screen.
 | `android/app/src/main/java/app/homerepo/ItemIcons.kt` | **Generated** by `scripts/export-android-icons.mjs` — icon keys → bundled drawables |
 | `android/app/src/main/java/java/lang/management/*.java` | Stubs satisfying pgjdbc's one `java.lang.management` reference (Android has none) |
 | `android/app/src/main/res/drawable/ic_*.xml` | **Generated** — item line icons and brand marks as VectorDrawables |
+| `android/app/proguard-rules.pro` | R8 keep/dontwarn rules for the release build (pgjdbc's hand-written driver registration) |
 | `android/app/src/main/res/values/themes.xml` | App theme |
 
 ## Scripts — `scripts/`

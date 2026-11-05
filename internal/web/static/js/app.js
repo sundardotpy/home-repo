@@ -1571,7 +1571,8 @@ const placesScreen = {
 // this is where they pay off. Under the user's line is good value.
 const valueScreen = {
   filter: '',
-  paths: () => ['/items?has_price=true&limit=200'],
+  // total=false skips the paired COUNT query: nothing on this screen reads it.
+  paths: () => ['/items?has_price=true&limit=200&total=false'],
   header: () => `
     <div class="px-4 pt-4 pb-1 lg:pt-8">
       <h1 class="font-display font-bold tracking-tight leading-none ${isRepo() ? 'text-[1.6rem]' : 'text-[2.5rem]'}">
@@ -3185,6 +3186,14 @@ addEventListener('pageshow', () => closeAllSheets());
 onUIChange(() => {
   currentKey = '';
   render();
+});
+
+// Unlocking in place (lock.js) replaces the old full page reload: the session
+// cookie is live, so everything the lock refused simply runs again now.
+addEventListener('hsh-unlocked', () => {
+  store.resume();
+  store.revalidate();
+  loadShiftState().catch(() => {});
 });
 
 initTheme();

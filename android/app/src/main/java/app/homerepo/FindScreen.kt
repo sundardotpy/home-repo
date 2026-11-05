@@ -58,8 +58,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.LocalDate
-import java.time.ZoneId
 
 private enum class Filter(val label: String, val status: String) {
     Active("Your things", "active"), Decluttered("Decluttered", "decluttered"), All("All", "all")
@@ -126,11 +124,11 @@ fun FindScreen(onOpenSettings: () -> Unit) {
         loading = true
         error = null
         try {
+            // One round trip for both lists — they used to wait on each other.
             withContext(Dispatchers.IO) {
-                items = Db.items(query, status = filter.status)
-                val startOfDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                todayIds = Db.recentMoves(40).filter { it.movedAt >= startOfDay && it.kind != "decluttered" }
-                    .map { it.itemId }.distinct()
+                val feed = Db.homeFeed(query, status = filter.status)
+                items = feed.items
+                todayIds = feed.putAwayToday
             }
         } catch (e: Exception) {
             error = e.message

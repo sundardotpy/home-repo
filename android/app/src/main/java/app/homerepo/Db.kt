@@ -15,6 +15,8 @@ package app.homerepo
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.Properties
 
 data class Profile(
@@ -114,6 +116,16 @@ sealed interface ScanResult {
     data class NotFound(val code: String) : ScanResult
 }
 
+/**
+ * Everything FindScreen asks for at once. Both halves used to be two
+ * sequential round trips over the one socket; one statement carrying two
+ * result sets halves the visible wait on a slow link.
+ */
+data class HomeFeed(
+    val items: List<ItemRow>,
+    val putAwayToday: List<String>,
+)
+
 class DbException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
 /**
@@ -177,6 +189,19 @@ object Db {
         }
         conn = c
         return c
+    }
+
+    /**
+     * First-touch kick so cold start stops paying the whole database boot on
+     * the visible path. It registers the driver, opens the connection (TCP +
+     * TLS + SCRAM, several round trips over a phone link) and loads the
+     * default user id — all before any screen even asks. Run it on a
+     * background thread at activity start; a failure is swallowed, because the
+     * first real read reports the error through its usual channel anyway.
+     */
+    fun warmup() {
+        if (profile == null) return
+        runCatching { defaultUserId() }
     }
 
     /**
@@ -327,33 +352,88 @@ object Db {
              LIMIT 200"""
         return c.prepareStatement(sql).use { st ->
             bind(st)
-            st.executeQuery().use { rs ->
-                buildList {
-                    while (rs.next()) {
-                        val unitPath: List<String> =
-                            (rs.getArray(11)?.array as? Array<*>)?.map { it.toString() } ?: emptyList()
-                        val itemPath: List<String> =
-                            (rs.getArray(12)?.array as? Array<*>)?.map { it.toString() } ?: emptyList()
-                        add(
-                            ItemRow(
-                                id = rs.getString(1),
-                                name = rs.getString(2),
-                                icon = rs.getString(3) ?: "",
-                                quantity = rs.getInt(4),
-                                status = rs.getString(5),
-                                roomId = rs.getString(6),
-                                unitId = rs.getString(7),
-                                path = (listOf(rs.getString(10)) + unitPath + itemPath)
-                                    .filter { it != null && it.isNotEmpty() }
-                                    .joinToString(" > "),
-                                price = rs.getObject(8)?.let { (it as Number).toDouble() },
-                                purchasedOn = rs.getString(9),
-                                parentItemId = rs.getString(13),
-                            )
-                        )
+            st.executeQuery().use { rs -> readItemRows(rs) }
+        }
+    }
+
+    /** Turns the selectItems column layout into rows; shape is shared with homeFeed. */
+    private fun readItemRows(rs: java.sql.ResultSet): List<ItemRow> {
+        return buildList {
+            while (rs.next()) {
+                val unitPath: List<String> =
+                    (rs.getArray(11)?.array as? Array<*>)?.map { it.toString() } ?: emptyList()
+                val itemPath: List<String> =
+                    (rs.getArray(12)?.array as? Array<*>)?.map { it.toString() } ?: emptyList()
+                add(
+                    ItemRow(
+                        id = rs.getString(1),
+                        name = rs.getString(2),
+                        icon = rs.getString(3) ?: "",
+                        quantity = rs.getInt(4),
+                        status = rs.getString(5),
+                        roomId = rs.getString(6),
+                        unitId = rs.getString(7),
+                        path = (listOf(rs.getString(10)) + unitPath + itemPath)
+                            .filter { it != null && it.isNotEmpty() }
+                            .joinToString(" > "),
+                        price = rs.getObject(8)?.let { (it as Number).toDouble() },
+                        purchasedOn = rs.getString(9),
+                        parentItemId = rs.getString(13),
+                    )
+                )
+            }
+        }
+    }
+
+    /**
+     * The two reads the Find screen needs, fetched in one round trip: what you
+     * own, plus the ids of things put away since this morning (the "Put away
+     * today" shelf). Two prepared queries here are two full waits over the
+     * network before a single row can show.
+     *
+     * A multi-statement statement cannot take parameters, so the three
+     * interpolations are values this code produces verbatim: `status` is one
+     * of three fixed words, `limit` is an Int, and the search term is quoted
+     * by doubling any single quote (standard_conforming_strings stays on, so
+     * no escaping beyond that). The same invariants hold as in selectItems.
+     */
+    fun homeFeed(query: String, status: String = "active", limit: Int = 200): HomeFeed = db { c ->
+        val search = query.trim().replace("'", "''")
+        val active = when (status) {
+            "decluttered" -> "decluttered"
+            "all" -> "all"
+            else -> "active"
+        }
+        val sinceMorning =
+            LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val sql = """
+            SELECT i.id, i.name, i.icon, i.quantity, i.status, i.room_id, i.storage_unit_id,
+                   i.purchase_price::float8, to_char(i.purchased_on, 'YYYY-MM-DD'),
+                   r.name, p.path, ip.path, i.parent_item_id
+              FROM items i
+              JOIN rooms r ON r.id = i.room_id
+              LEFT JOIN storage_unit_paths p ON p.id = i.storage_unit_id
+              LEFT JOIN item_paths ip ON ip.id = i.id
+             WHERE i.status = '$active'
+               ${if (search.isNotBlank()) "AND i.name ILIKE '%$search%'" else ""}
+             ORDER BY i.created_at DESC, lower(i.name)
+             LIMIT $limit;
+             SELECT DISTINCT m.item_id
+               FROM item_moves m
+              WHERE m.moved_at >= to_timestamp($sinceMorning / 1000.0)
+                AND m.kind <> 'decluttered'
+        """.trimIndent()
+        c.createStatement().use { st ->
+            st.execute(sql)
+            val items = st.resultSet.use { rs -> readItemRows(rs) }
+            val today = if (st.moreResults) {
+                st.resultSet.use { rs ->
+                    buildList {
+                        while (rs.next()) add(rs.getString(1))
                     }
                 }
-            }
+            } else emptyList()
+            HomeFeed(items, today)
         }
     }
 
