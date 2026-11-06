@@ -4,18 +4,17 @@ import { api, get, post, qs } from './api.js';
 import { closeAnyPopup, createSelect, wireAccordions } from './components.js';
 import { BRAND_ICONS, BRAND_KEYS } from './brand-icons.js';
 import { MONOGRAMS, MONOGRAM_KEYS } from './brand-monograms.js';
-import { checkSession, lockNow, lockRequired } from './lock.js';
+import { checkSession, lockNow, lockRequired, showLock } from './lock.js';
 import { ICON_GROUPS, ICON_KEYS, ITEM_ICONS, iconLabel, isBrandKey, itemIconSVG, suggestIcon } from './item-icons.js';
 import { barcodeCaptureSheet, labelCard, qrSheet, scanSheet } from './labels.js';
 import { openVoiceSheet } from './voice.js';
-import { ago, currentUI, isRepo, pathText, rupees, rupeesPerDay, setValueLine, slug, t, valueLine } from './look.js';
+import { ago, pathText, rupees, rupeesPerDay, setValueLine, valueLine } from './look.js';
 import { attachPhoto, removePhoto } from './photos.js';
 import * as store from './store.js';
 import { manageTagSheet, propertyEditor, propertyList, tagChips, tagPickerSheet } from './taxonomy.js';
-import { appearanceMarkup, initTheme, interfaceMarkup, onUIChange, wireAppearance, wireInterface } from './theme.js';
+import { appearanceMarkup, initTheme, wireAppearance } from './theme.js';
 import {
   addRow,
-  breadcrumb,
   emptyState,
   esc,
   field,
@@ -30,7 +29,12 @@ import {
   closeAllSheets,
   plural,
   primaryButton,
+  tonalButton,
   roomBadge,
+  roomTint,
+  topBar,
+  barAction,
+  drawerPath,
   roomRow,
   sectionTitle,
   skeletonList,
@@ -140,7 +144,7 @@ function addItem({
     temp: id,
     record,
   });
-  toast(t(`Put away ${name}`, `Committed ${name}`));
+  toast(`Put away ${name}`);
   return id;
 }
 
@@ -315,7 +319,7 @@ function itemSheet({ item = null, roomId = null, unitId = null, barcode = '', fo
   let selectedUnit = item?.storage_unit_id || unitId || '';
 
   openSheet({
-    title: editing ? 'Edit item' : t('Add (bought)', 'add'),
+    title: editing ? 'Edit item' : 'Add (bought)',
     body: `
       <form data-form>
         <div class="flex items-end gap-3 mb-4">
@@ -330,14 +334,14 @@ function itemSheet({ item = null, roomId = null, unitId = null, barcode = '', fo
             }
           </button>
           <label class="flex-1 min-w-0">
-            <span class="block text-[13px] font-medium text-[var(--ink-soft)] mb-1.5">What is it?</span>
+            <span class="block text-sm font-medium text-[var(--ink-soft)] mb-1.5">What is it?</span>
             <input name="name" class="${inputCls}" required autocomplete="off"
               placeholder="Spare earphones" value="${esc(item?.name || '')}">
           </label>
         </div>
 
         <div class="mb-1">
-          <span class="block text-[13px] font-medium text-[var(--ink-soft)] mb-2">Where did it go?</span>
+          <span class="block text-sm font-medium text-[var(--ink-soft)] mb-2">Where did it go?</span>
           <div data-recent-places class="flex flex-wrap gap-2 mb-3 hidden"></div>
         </div>
         ${field('Room', `<div data-room-select></div>`)}
@@ -353,7 +357,7 @@ function itemSheet({ item = null, roomId = null, unitId = null, barcode = '', fo
         <p class="-mt-2 mb-4 text-xs text-[var(--ink-faint)]">Optional. With both, the app can tell you what it costs per day.</p>
 
         <details class="mb-5 group" ${editing ? 'open' : ''}>
-          <summary class="cursor-pointer list-none flex items-center justify-between h-11 text-[13px] font-semibold text-[var(--ink-soft)]">
+          <summary class="cursor-pointer list-none flex items-center justify-between h-11 text-sm font-semibold text-[var(--ink-soft)]">
             <span>More details: photo, tags, barcode, fields</span>
             <span class="transition-transform group-open:rotate-90">${icon('chevron', 'w-4 h-4')}</span>
           </summary>
@@ -403,7 +407,7 @@ function itemSheet({ item = null, roomId = null, unitId = null, barcode = '', fo
         </details>
 
         <div class="flex gap-2 pt-1">
-          ${primaryButton(editing ? t('Save', 'Commit') : t('Add', 'add'), 'data-save class="flex-1"')}
+          ${primaryButton(editing ? 'Save' : 'Add', 'data-save class="flex-1"')}
           ${editing ? ghostButton(icon('trash', 'w-5 h-5'), 'data-delete aria-label="Delete item"') : ''}
         </div>
       </form>`,
@@ -663,12 +667,12 @@ function iconPickerSheet(selected, onPick) {
     return `
       <button type="button" data-icon="${esc(key)}" title="${esc(iconLabel(key))}"
         class="aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 p-1
-               transition-all active:scale-95
+               transition-[transform,background-color] active:scale-95
                ${on
-                 ? 'border-[var(--ink)] bg-[var(--color-accent-soft)] text-[var(--ink)]'
+                 ? 'border-[var(--ink)] bg-[var(--accent-tonal)] text-[var(--ink)]'
                  : 'border-[var(--line)] text-[var(--ink-soft)] hover:border-[var(--ink-faint)]'}">
         ${itemIconSVG(key, 'w-6 h-6')}
-        <span class="text-[10px] leading-tight text-center truncate w-full px-0.5">${esc(iconLabel(key))}</span>
+        <span class="t-label-sm text-center truncate w-full px-0.5">${esc(iconLabel(key))}</span>
       </button>`;
   };
 
@@ -685,7 +689,7 @@ function iconPickerSheet(selected, onPick) {
   const content = () => {
     if (tab === 'brands') {
       const real = BRAND_KEYS.map((k) => `brand:${k}`).filter(matches);
-      const note = `<p class="text-[12px] text-[var(--ink-soft)] mt-5 mb-2">No official mark to ship for these, so each is a badge with the brand's initials, not its logo.</p>`;
+      const note = `<p class="text-xs text-[var(--ink-soft)] mt-5 mb-2">No official mark to ship for these, so each is a badge with the brand's initials, not its logo.</p>`;
       const mono = MONOGRAM_KEYS.filter((k) => !BRAND_ICONS[k]).map((k) => `brand:${k}`).filter(matches);
       if (!real.length && !mono.length) return nothing();
       return (
@@ -696,7 +700,7 @@ function iconPickerSheet(selected, onPick) {
               .map((g) => {
                 const ks = mono.filter((k) => MONOGRAMS[k.slice(6)].group === g);
                 return ks.length
-                  ? `<h3 class="text-[11px] font-bold tracking-[0.08em] uppercase text-[var(--ink-faint)] mt-4 mb-2">${esc(g)}</h3>${grid(ks)}`
+                  ? `<h3 class="section-title mt-4 mb-2">${esc(g)}</h3>${grid(ks)}`
                   : '';
               })
               .join('')
@@ -710,17 +714,17 @@ function iconPickerSheet(selected, onPick) {
     return ICON_GROUPS.map((g) => {
       const keys = ICON_KEYS.filter((k) => ITEM_ICONS[k].group === g);
       return keys.length
-        ? `<h3 class="text-[11px] font-bold tracking-[0.08em] uppercase text-[var(--ink-faint)] mt-5 mb-2">${esc(g)}</h3>${grid(keys)}`
+        ? `<h3 class="section-title mt-5 mb-2">${esc(g)}</h3>${grid(keys)}`
         : '';
     }).join('');
   };
   const nothing = () =>
-    `<p class="text-center text-[13px] text-[var(--ink-soft)] py-6">Nothing matches "${esc(query)}".</p>`;
+    `<p class="text-center text-sm text-[var(--ink-soft)] py-6">Nothing matches "${esc(query)}".</p>`;
 
   openSheet({
     title: 'Choose an icon',
     body: `
-      <div class="flex gap-1 p-1 bg-[var(--sunken)] rounded-[var(--radius-xl)] mb-3" data-tabs></div>
+      <div class="segmented mb-3" role="radiogroup" aria-label="Icon set" data-tabs></div>
       <input data-filter class="${inputCls}" placeholder="Filter icons" autocomplete="off">
       <div data-content class="-mt-2"></div>
       <button type="button" data-none class="btn btn-ghost w-full mt-5">No icon</button>`,
@@ -733,9 +737,7 @@ function iconPickerSheet(selected, onPick) {
           .map(
             ([id, label]) => `
           <button type="button" data-tab="${id}"
-            class="flex-1 h-11 rounded-[calc(var(--radius-lg)-2px)] text-[13px] transition-all ${
-              tab === id ? 'bg-[var(--ink)] text-[var(--paper)] font-bold' : 'text-[var(--ink-soft)] font-medium'
-            }">${label}</button>`,
+            role="radio" aria-checked="${tab === id}">${tab === id ? icon('check', 'w-4 h-4') : ''}${label}</button>`,
           )
           .join('');
         tabsEl.querySelectorAll('[data-tab]').forEach((b) =>
@@ -789,12 +791,12 @@ const recentChips = (places, activeKey = '') =>
   places
     .map(
       (p, i) => `
-    <button type="button" data-recent="${i}"
-      class="h-11 px-4 max-w-full truncate rounded-[var(--btn-radius)] text-[13px] t-path ${
+    <button type="button" data-recent="${i}" aria-pressed="${`${p.roomId}|${p.unitId}` === activeKey}"
+      class="h-10 px-3 max-w-full inline-flex items-center gap-2 rounded-[10px] text-sm font-medium t-path ${
         `${p.roomId}|${p.unitId}` === activeKey
-          ? 'bg-[var(--ink)] text-[var(--paper)] font-semibold'
-          : 'bg-[var(--sunken)] hover:bg-[var(--line)]'
-      }">${esc(pathText(p.path))}</button>`,
+          ? 'bg-[var(--accent-tonal)]'
+          : 'border border-[var(--line)] text-[var(--ink-soft)]'
+      }"><span class="room-badge ${roomTint(p.path?.[0])} w-3 h-3 rounded-[3px] shrink-0"></span><span class="truncate">${esc(pathText(p.path))}</span></button>`,
     )
     .join('');
 
@@ -808,14 +810,14 @@ function historyMarkup(moves) {
       <span class="journey-dot mt-1 ${i === 0 ? 'is-here' : ''}"></span>
       <span class="flex-1 min-w-0 pb-4">
         <span class="flex items-baseline justify-between gap-2">
-          <span class="font-semibold text-[14px]">${
-            m.kind === 'added' ? t('Added', 'Added')
-              : m.kind === 'decluttered' ? t('Decluttered', 'Removed')
-                : t('Moved', 'Moved')
+          <span class="font-semibold text-sm">${
+            m.kind === 'added' ? 'Added'
+              : m.kind === 'decluttered' ? 'Decluttered'
+                : 'Moved'
           }${m.quantity ? ` ×${m.quantity}` : ''}</span>
-          <span class="text-[12px] text-[var(--ink-faint)] shrink-0">${esc(ago(m.moved_at, { long: true }))}</span>
+          <span class="text-xs text-[var(--ink-faint)] shrink-0">${esc(ago(m.moved_at, { long: true }))}</span>
         </span>
-        <span class="block mt-1 text-[12px] leading-relaxed t-path">
+        <span class="block mt-1 text-xs leading-relaxed t-path">
           ${m.from_path?.length ? `<span class="block diff-del truncate">${esc(pathText(m.from_path))}</span>` : ''}
           <span class="block diff-add truncate">${esc(pathText(m.to_path))}</span>
         </span>
@@ -833,28 +835,20 @@ function itemDetailSheet(item) {
 
   const valueCard = v
     ? `
-      <section class="rounded-[var(--radius-card)] p-4 bg-[var(--color-accent-soft)]">
-        <div class="flex items-center justify-between">
-          <span class="text-[11px] font-bold tracking-[0.1em] text-[var(--ink-soft)]">VALUE SO FAR</span>
+      <section>
+        <h3 class="section-title">Value so far</h3>
+        <p class="mt-1 flex items-center gap-2 flex-wrap text-sm tabular-nums">
+          <span class="text-[var(--ink)] font-medium">${rupeesPerDay(v.per_day)} a day</span>
           <span class="pill ${under ? 'pill-good' : 'pill-warn'}">${under ? 'Under' : 'Over'} ${rupees(line)}/day</span>
-        </div>
-        <div class="flex items-baseline gap-1.5 mt-1">
-          <span class="font-display font-bold text-[2.5rem] leading-none tracking-tight">${rupeesPerDay(v.per_day)}</span>
-          <span class="text-[15px] text-[var(--ink-soft)]">per day</span>
-        </div>
-        <div class="mt-3 h-2 rounded-full bg-[var(--paper)] overflow-hidden">
-          <div class="h-full rounded-full" style="width:${Math.min(100, Math.round((v.per_day / line) * 100))}%;background:${
-            under ? 'var(--ink)' : 'var(--warn-fg)'
-          }"></div>
-        </div>
-        <p class="mt-2.5 text-[13px] text-[var(--ink-soft)]">
+        </p>
+        <p class="text-sm text-[var(--ink-soft)] tabular-nums">
           ${rupees(item.purchase_price)} · bought ${esc(fmtDate(item.purchased_on))} · ${plural(v.days, 'day', 'days')}
         </p>
       </section>`
     : `
       <button type="button" data-add-price
-        class="w-full text-left rounded-[var(--radius-card)] border-2 border-dashed border-[var(--line)] p-4 text-[13px] text-[var(--ink-soft)] leading-snug">
-        Add a price and date to see what this costs per day. <b class="text-[var(--ink)]">Add</b>
+        class="row-press w-full text-left rounded-[var(--radius-card)] border border-[var(--line)] p-4 text-sm text-[var(--ink-soft)] leading-snug">
+        Add a price and date to see what this costs per day. <b class="font-medium text-[var(--accent-ink)]">Add</b>
       </button>`;
 
   openSheet({
@@ -874,54 +868,35 @@ function itemDetailSheet(item) {
           <div class="min-w-0">
             <div class="flex flex-wrap gap-1.5">
               ${(item.tags || []).slice(0, 4).map((tag) => `<span class="pill pill-quiet">${esc(tag)}</span>`).join('') ||
-                '<span class="text-[13px] text-[var(--ink-faint)]">No tags</span>'}
+                '<span class="text-sm text-[var(--ink-faint)]">No tags</span>'}
             </div>
-            ${item.quantity > 1 ? `<p class="text-[13px] text-[var(--ink-soft)] mt-1.5">Quantity ${esc(item.quantity)}</p>` : ''}
+            ${item.quantity > 1 ? `<p class="text-sm text-[var(--ink-soft)] mt-1.5">Quantity ${esc(item.quantity)}</p>` : ''}
           </div>
         </div>
 
-        <section class="surface p-4">
-          <p class="text-[11px] font-bold tracking-[0.1em] text-[var(--ink-faint)]">${t('IT IS IN', 'HEAD')}</p>
-          <div class="journey mt-3 space-y-4">
-            ${parts
-              .map(
-                (p, i) => `
-              <div class="flex gap-3 items-start">
-                <span class="journey-dot mt-1 ${i === parts.length - 1 ? 'is-here' : ''}"></span>
-                <span class="min-w-0">
-                  <span class="block t-name ${i === parts.length - 1 ? 'font-bold text-[17px]' : 'font-semibold'}">${esc(
-                    isRepo() ? `${slug(p)}/` : p,
-                  )}</span>
-                  ${
-                    i === 0
-                      ? `<span class="block text-[13px] text-[var(--ink-soft)]">Room${
-                          multiFloor() ? ` · ${esc(item.location.floor_label)}` : ''
-                        }</span>`
-                      : ''
-                  }
-                </span>
-              </div>`,
-              )
-              .join('')}
-          </div>
-          <p class="mt-4 text-[13px] text-[var(--ink-soft)]" data-lastmoved></p>
+        <section>
+          <h3 class="section-title">Where it is${multiFloor() ? ` · ${esc(item.location.floor_label)}` : ''}</h3>
+          ${drawerPath(parts)}
+          <p class="mt-3 text-sm text-[var(--ink-soft)]" data-lastmoved></p>
         </section>
 
         <div class="flex gap-2">
-          ${primaryButton(t('Move it', 'git mv'), 'data-move class="flex-1"')}
+          ${primaryButton('Move it', 'data-move class="flex-1"')}
           ${
             item.status === 'decluttered'
-              ? ghostButton(t('Restore', 'restore'), 'data-declutter aria-label="Restore item" class="flex-1"')
-              : ghostButton(t('Decluttered', 'rm'), 'data-declutter aria-label="Mark decluttered" class="flex-1"')
+              ? ghostButton('Restore', 'data-declutter class="flex-1"')
+              : ghostButton('Declutter', 'data-declutter class="flex-1"')
           }
-          ${ghostButton(icon('pencil', 'w-5 h-5'), 'data-edit aria-label="Edit item"')}
-          ${ghostButton(icon('trash', 'w-5 h-5'), 'data-delete aria-label="Delete item"')}
+        </div>
+        <div class="flex gap-1 -mx-3 -mt-2">
+          <button type="button" data-edit class="btn btn-text">${icon('pencil', 'w-5 h-5')} Edit details</button>
+          <button type="button" data-delete class="btn btn-text !text-[var(--error)]">${icon('trash', 'w-5 h-5')} Delete</button>
         </div>
 
         ${
           item.status === 'decluttered'
-            ? `<div class="surface p-3 text-[13px] text-[var(--ink-soft)]">
-                 ${esc(t('Decluttered — out of the house, kept in the record.', 'decluttered — removed; record kept.'))}
+            ? `<div class="surface p-3 text-sm text-[var(--ink-soft)]">
+                 ${esc('Decluttered — out of the house, kept in the record.')}
                  ${item.declutter_note ? `<span class="font-medium">${esc(item.declutter_note)}</span>` : ''}
                </div>`
             : ''
@@ -934,17 +909,17 @@ function itemDetailSheet(item) {
             ? `<div class="surface p-3 flex items-center gap-3">
                  <span class="text-[var(--ink-soft)]">${icon('barcode', 'w-5 h-5')}</span>
                  <span class="flex-1 min-w-0">
-                   <span class="block text-[13px] text-[var(--ink-soft)]">Barcode</span>
+                   <span class="block text-sm text-[var(--ink-soft)]">Barcode</span>
                    <span class="block font-mono tracking-wider truncate">${esc(item.barcode)}</span>
                  </span>
                </div>`
             : ''
         }
         ${propertyList(item.properties)}
-        ${item.description ? `<div class="surface p-3"><div class="text-[13px] text-[var(--ink-soft)] mb-1">Notes</div><div>${esc(item.description)}</div></div>` : ''}
+        ${item.description ? `<div class="surface p-3"><div class="text-sm text-[var(--ink-soft)] mb-1">Notes</div><div>${esc(item.description)}</div></div>` : ''}
 
         <section data-history class="hidden">
-          <p class="text-[11px] font-bold tracking-[0.1em] text-[var(--ink-faint)] mb-3">${t('HISTORY', 'LOG')}</p>
+          <h3 class="section-title mb-3">History</h3>
           <div class="journey" data-history-body></div>
         </section>
       </div>`,
@@ -976,18 +951,18 @@ function itemDetailSheet(item) {
           api('PATCH', `/items/${item.id}`, { status: 'active' }).then(() => {
             close();
             store.revalidate();
-            toast(t('Restored', 'restored'));
+            toast('Restored');
           });
           return;
         }
         close();
         promptSheet({
-          title: t('Decluttered', 'rm'),
-          label: t('Note (optional)', 'note'),
+          title: 'Decluttered',
+          label: 'Note (optional)',
           value: '',
           onSubmit: (note) => {
             post(`/items/${item.id}/declutter`, { note }).then(() => store.revalidate());
-            toast(t(`${item.name} decluttered`, `${item.name}: removed`));
+            toast(`${item.name} decluttered`);
           },
         });
       });
@@ -1029,16 +1004,16 @@ function moveSheet(item) {
   const candidatesPath = () => `/items?room_id=${selectedRoom}&limit=500`;
 
   openSheet({
-    title: t('Move it', 'git mv'),
+    title: 'Move it',
     body: `
-      <p class="text-[13px] text-[var(--ink-soft)] mb-3">
+      <p class="text-sm text-[var(--ink-soft)] mb-3">
         Now in <b class="t-path text-[var(--ink)]">${esc(pathText(item.location?.path || []))}</b>
       </p>
       <div data-recent class="flex flex-wrap gap-2 mb-4"></div>
       ${field('Room', `<div data-room-select></div>`)}
       ${field('Storage unit', `<div data-unit-select></div>`, 'Leave as "Anywhere in the room" for things that are not in a box.')}
       ${field('Put inside another item', `<div data-container-select></div>`, 'A box inside a box, a case inside a bag. It goes wherever that item is.')}
-      ${primaryButton(t('Move here', 'Commit move'), 'data-save class="w-full"')}`,
+      ${primaryButton('Move here', 'data-save class="w-full"')}`,
     onMount(body, close) {
       const candidates = () =>
         (store.peek(candidatesPath()).data?.items || []).filter((i) => !blocked.has(i.id));
@@ -1244,15 +1219,15 @@ function confirmDeleteSheet({ kind, entity, count }) {
       ${
         count > 0
           ? `<label class="flex items-start gap-3 surface p-3 mb-4">
-               <input type="checkbox" data-cascade class="mt-1 w-4 h-4 accent-[var(--color-accent)]">
+               <input type="checkbox" data-cascade class="mt-1 w-4 h-4 accent-[var(--accent)]">
                <span>
                  <span class="block font-medium">Delete everything inside</span>
-                 <span class="block text-[13px] text-[var(--ink-soft)]">
+                 <span class="block text-sm text-[var(--ink-soft)]">
                    ${kind === 'room' ? 'All its storage units and items are removed.' : 'All nested units and their items are removed.'}
                  </span>
                </span>
              </label>
-             <p class="text-[13px] text-[var(--ink-soft)] mb-4">
+             <p class="text-sm text-[var(--ink-soft)] mb-4">
                ${kind === 'room' ? 'Without this, the delete is refused while the room has contents.' : 'Without this, everything inside moves up one level instead.'}
              </p>`
           : ''
@@ -1300,7 +1275,7 @@ function renderNav() {
   bottom.innerHTML = NAV.map((n) => {
     const on = n.on(hash);
     return `<button type="button" data-nav="${n.href}" class="nav-tab ${on ? 'is-active' : ''}"
-              ${on ? 'aria-current="page"' : ''}>${icon(n.icon, 'w-6 h-6')}<span>${n.label}</span></button>`;
+              ${on ? 'aria-current="page"' : ''}><span class="nav-ind">${icon(n.icon, 'w-6 h-6')}</span><span>${n.label}</span></button>`;
   }).join('');
   bottom.querySelectorAll('[data-nav]').forEach((b) =>
     b.addEventListener('click', () => {
@@ -1311,11 +1286,11 @@ function renderNav() {
   document.getElementById('topnav').innerHTML = NAV.map((n) => {
     const on = n.on(hash);
     return `<a href="${n.href}" class="${on ? 'is-active' : ''}" ${on ? 'aria-current="page"' : ''}>
-              ${icon(n.icon, 'w-5 h-5')}${n.label}</a>`;
+              <span class="nav-ind">${icon(n.icon, 'w-6 h-6')}</span>${n.label}</a>`;
   }).join('');
 
   const gear = document.getElementById('topbar-settings');
-  gear.innerHTML = icon('settings', 'w-5 h-5');
+  gear.innerHTML = icon('settings', 'w-6 h-6');
   gear.classList.toggle('is-active', hash.startsWith('#/settings'));
 }
 
@@ -1331,7 +1306,7 @@ function syncBanner() {
       <span class="text-[var(--accent-ink)]">${icon('cloud', 'w-5 h-5')}</span>
       <span class="flex-1">
         <span class="block font-medium">${failed.length} change${failed.length > 1 ? 's' : ''} could not be saved</span>
-        <span class="block text-[13px] text-[var(--ink-soft)]">${esc(failed[0].error || '')}</span>
+        <span class="block text-sm text-[var(--ink-soft)]">${esc(failed[0].error || '')}</span>
       </span>
       <button type="button" data-retry class="font-medium text-[var(--accent-ink)]">Retry</button>
       <button type="button" data-discard class="font-medium text-[var(--ink-soft)]">Discard</button>
@@ -1368,37 +1343,25 @@ const findScreen = {
   shown: [],
   paths: () => ['/activity?limit=10', '/rooms', `/items?limit=${findScreen.limit}&sort=recent`],
   header: () => `
-    <div class="px-4 pt-4 pb-1">
-      <div class="flex items-center justify-between lg:hidden">
-        <span class="flex items-center">
-          <img class="logo-light h-7 w-auto" src="/static/brand/wordmark.svg" alt="h/repo">
-          <img class="logo-dark h-7 w-auto" src="/static/brand/wordmark-dark.svg" alt="">
-        </span>
-        <a href="#/settings" class="topround" aria-label="Settings">${icon('settings', 'w-5 h-5')}</a>
+    <div class="px-4 pb-2">
+      <div class="flex items-center justify-between h-16 md:hidden">
+        <h1 class="flex items-center">
+          <img class="logo-light h-6 w-auto" src="/static/brand/wordmark.svg" alt="h/repo" width="64" height="24">
+          <img class="logo-dark h-6 w-auto" src="/static/brand/wordmark-dark.svg" alt="" width="64" height="24">
+        </h1>
+        <a href="#/settings" class="topround -mr-2" aria-label="Settings">${icon('settings', 'w-6 h-6')}</a>
       </div>
-      <h1 class="font-display font-bold tracking-tight leading-[1.04] mt-6 lg:mt-8 ${
-        isRepo() ? 'text-[1.6rem]' : 'text-[clamp(2.1rem,9.5vw,2.6rem)] lg:text-[3.25rem]'
-      }">${t('Where did I<br>put it?', 'where did I put it?')}</h1>
-      <div class="mt-5 flex items-center gap-2 h-14 pl-5 pr-2 bg-[var(--paper)] rounded-[var(--btn-radius)] ${
-        isRepo() ? 'border border-[var(--accent-ink)]' : 'shadow-[0_8px_24px_rgb(20_18_31/0.07)]'
-      }">
-        <button type="button" data-go-search class="flex-1 min-w-0 h-full flex items-center gap-3 text-left text-[var(--ink-faint)]">
-          ${
-            isRepo()
-              ? `<span class="font-mono text-[var(--good-fg)]">$</span>
-                 <span class="font-mono text-[var(--accent-ink)]">find</span>
-                 <span class="font-mono truncate">charger, pin, box code</span>`
-              : `<span class="text-[var(--ink)]">${icon('search', 'w-5 h-5')}</span>
-                 <span class="truncate">Charger, SIM pin, a box code…</span>`
-          }
+      <h1 class="hidden md:block t-title-lg pt-7 pb-4">Find</h1>
+      <div data-sticky-anchor class="search-well">
+        <button type="button" data-go-search class="flex-1 min-w-0 h-full flex items-center gap-4 text-left">
+          <span class="text-[var(--ink)]">${icon('search', 'w-6 h-6')}</span>
+          <span class="truncate text-base text-[var(--ink-soft)]">Where did I put it?</span>
         </button>
-        <button type="button" data-voice aria-label="Speak to put something away"
-          class="w-11 h-11 shrink-0 rounded-[var(--btn-radius)] bg-[var(--sunken)] text-[var(--ink)] grid place-items-center">
-          ${icon('mic', 'w-5 h-5')}
+        <button type="button" data-voice aria-label="Speak to put something away" class="topround">
+          ${icon('mic', 'w-6 h-6')}
         </button>
-        <button type="button" data-scan aria-label="Scan a code"
-          class="w-11 h-11 shrink-0 rounded-[var(--btn-radius)] bg-[var(--ink)] text-[var(--paper)] grid place-items-center">
-          ${icon('scan', 'w-5 h-5')}
+        <button type="button" data-scan aria-label="Scan a code" class="topround">
+          ${icon('scan', 'w-6 h-6')}
         </button>
       </div>
     </div>`,
@@ -1411,9 +1374,17 @@ const findScreen = {
     const body = document.getElementById('home-body');
     if (!body) return;
     const feed = store.peek('/activity?limit=10');
-    // The shelf only shows when something actually happened this week.
-    const weekAgo = Date.now() - 7 * 86_400_000;
-    const moves = (feed.data?.moves || []).filter((m) => new Date(m.moved_at).getTime() >= weekAgo);
+    // "Put away today" only shows when something went somewhere today, and
+    // each thing once, at its latest place.
+    const midnight = new Date().setHours(0, 0, 0, 0);
+    const seen = new Set();
+    const moves = (feed.data?.moves || []).filter(
+      (m) =>
+        new Date(m.moved_at).getTime() >= midnight &&
+        m.kind !== 'decluttered' &&
+        !seen.has(m.item_id) &&
+        seen.add(m.item_id),
+    );
     const { data: roomData, cached: roomsCached } = store.peek('/rooms');
     const list = roomData?.rooms || [];
     const { data: itemData, cached: fresh } = store.peek(this.paths()[2]);
@@ -1427,46 +1398,45 @@ const findScreen = {
       ${syncBanner()}
       ${
         moves.length
-          ? `${sectionTitle(t('Last put away', 'recent commits'))}
-             <div class="flex gap-2 overflow-x-auto snap-x snap-mandatory scroll-px-4 -mx-4 px-4 pb-1">
-               ${moves.map((m) => `<div class="surface shrink-0 w-[260px] snap-start overflow-hidden">${moveRow(m)}</div>`).join('')}
-             </div>`
+          ? `${sectionTitle('Put away today')}
+             <div class="list -mx-2">${moves.map(moveRow).join('')}</div>`
           : ''
       }
-      ${sectionTitle(t('Your things', 'files'))}
+      ${sectionTitle('Your things')}
       ${
         !itemsCached
           ? skeletonList(4)
           : items.length
-            ? `<div class="surface divide-y divide-[var(--line)] overflow-hidden stagger">
+            ? `<div class="list -mx-2">
                  ${items.map((it) => itemRow(it, { showLocation: true })).join('')}
                </div>
-               ${more ? `<div class="mt-3">${ghostButton(t('Show more', 'more'), 'data-more class="w-full"')}</div>` : ''}`
+               ${more ? `<div class="mt-3">${ghostButton('Show more', 'data-more class="w-full"')}</div>` : ''}`
             : emptyState(
-                t('Nothing tracked yet', 'no files'),
-                t('Add something with the + button and it shows up here.', 'add a file with +'),
-                primaryButton(t('Add something', 'add something'), 'data-add-first'),
+                'Nothing tracked yet',
+                'Add something with the + button and it shows up here.',
+                tonalButton('Add something', 'data-add-first'),
               )
       }
-      ${sectionTitle(t('Rooms', 'Folders'))}
+      ${sectionTitle('Rooms')}
       ${
         !roomsCached
-          ? `<div class="flex gap-2"><div class="skeleton h-11 w-24 rounded-full"></div><div class="skeleton h-11 w-24 rounded-full"></div></div>`
+          ? `<div class="flex gap-2"><div class="skeleton h-12 w-28 rounded-[10px]"></div><div class="skeleton h-12 w-28 rounded-[10px]"></div></div>`
           : list.length
             ? `<div class="flex flex-wrap gap-2">
                  ${list
                    .map(
                      (r) => `
                    <a href="#/room/${esc(r.id)}"
-                      class="h-11 px-4 inline-flex items-center gap-2 rounded-[var(--btn-radius)] bg-[var(--paper)] border border-[var(--line)] text-[14px] font-medium
-                             ${store.isTemp(r.id) ? 'is-pending' : ''}">
-                     <span class="t-path">${esc(isRepo() ? pathText([r.name]) : r.name)}</span>
-                     ${r.item_count ? `<span class="text-[var(--ink-faint)] font-normal">${r.item_count}</span>` : ''}
+                      class="h-12 pl-2 pr-4 inline-flex items-center gap-2 rounded-[10px] border border-[var(--line)] text-sm font-medium
+                             row-press ${store.isTemp(r.id) ? 'is-pending' : ''}">
+                     ${roomBadge(r, 'w-8 h-8 text-sm rounded-[8px]')}
+                     <span class="t-path">${esc(r.name)}</span>
+                     ${r.item_count ? `<span class="text-[var(--ink-soft)] font-normal">${r.item_count}</span>` : ''}
                    </a>`,
                    )
                    .join('')}
                </div>`
-            : `<p class="text-[14px] text-[var(--ink-soft)]">
+            : `<p class="text-sm text-[var(--ink-soft)]">
                  No rooms yet. <a class="underline font-medium" href="#/places">Start with Places.</a>
                </p>`
       }`;
@@ -1501,21 +1471,7 @@ addEventListener('keydown', (e) => {
 // Rooms and, inside them, the boxes. The old home screen, now one tab among three.
 const placesScreen = {
   paths: () => ['/rooms'],
-  header: () => `
-    <div class="px-4 pt-4 pb-1">
-      <div class="flex items-end justify-between gap-3 lg:pt-4">
-        <h1 class="font-display font-bold tracking-tight leading-none ${isRepo() ? 'text-[1.6rem]' : 'text-[2.5rem]'}">
-          ${t('Places', 'places/')}
-        </h1>
-        <button type="button" data-add-room class="btn btn-ghost !min-h-11 !px-4 text-[13px]">
-          ${icon('plus', 'w-4 h-4')} New room
-        </button>
-      </div>
-      <p class="mt-2 text-[14px] text-[var(--ink-soft)]">${t(
-        'Rooms and the boxes inside them.',
-        'Rooms are folders, boxes are folders, things are files.',
-      )}</p>
-    </div>`,
+  header: () => topBar({ title: 'Places' }),
   mount(el) {
     el.innerHTML = `<div id="places-body" class="px-4"></div>`;
     rewireHeader();
@@ -1541,10 +1497,10 @@ const placesScreen = {
                 ${sectionTitle(
                   showFloors ? roomsOnFloor[0].floor_label || floorLabel(floor) : 'Rooms',
                   showFloors
-                    ? `<span class="text-[11px] text-[var(--ink-faint)]">${plural(roomsOnFloor.length, 'room', 'rooms')}</span>`
+                    ? `<span class="t-label-sm text-[var(--ink-faint)]">${plural(roomsOnFloor.length, 'room', 'rooms')}</span>`
                     : '',
                 )}
-                <div class="room-grid stagger">
+                <div class="room-grid">
                   ${roomsOnFloor
                     .map((r) => roomRow(r, store.isTemp(r.id), { showFloor: false }))
                     .join('')}
@@ -1554,7 +1510,7 @@ const placesScreen = {
             : emptyState(
                 'No rooms yet',
                 'Start with the rooms in your home, then add the cupboards and boxes inside them.',
-                primaryButton('Add your first room', 'data-add-room'),
+                tonalButton('Add your first room', 'data-add-room'),
               )
       }`;
 
@@ -1572,16 +1528,9 @@ const placesScreen = {
 const valueScreen = {
   filter: '',
   paths: () => ['/items?has_price=true&limit=200'],
-  header: () => `
-    <div class="px-4 pt-4 pb-1 lg:pt-8">
-      <h1 class="font-display font-bold tracking-tight leading-none ${isRepo() ? 'text-[1.6rem]' : 'text-[2.5rem]'}">
-        ${t('Value', 'value/checks')}
-      </h1>
-      <p class="mt-2 text-[14px] text-[var(--ink-soft)]">${t(
-        `Cost per day since you bought it. Under ${rupees(valueLine())} is a good deal.`,
-        `A check passes when cost per day is under ${rupees(valueLine())}.`,
-      )}</p>
-    </div>`,
+  header: () =>
+    `${topBar({ title: 'Value' })}
+     <p class="px-4 -mt-1 pb-1 text-sm text-[var(--ink-soft)] text-pretty">Cost per day since you bought it. Under ${rupees(valueLine())} is a good deal.</p>`,
   mount(el) {
     el.innerHTML = `<div id="value-body" class="px-4"></div>`;
     rewireHeader();
@@ -1607,19 +1556,20 @@ const valueScreen = {
     const spent = items.reduce((sum, i) => sum + (i.purchase_price || 0), 0);
 
     const chip = (value, label) => `
-      <button type="button" data-filter="${esc(value)}"
-        class="h-11 px-4 shrink-0 rounded-[var(--btn-radius)] text-[14px] ${
+      <button type="button" data-filter="${esc(value)}" aria-pressed="${this.filter === value}"
+        class="h-10 px-4 shrink-0 inline-flex items-center gap-2 rounded-[10px] text-sm font-medium ${
           this.filter === value
-            ? 'bg-[var(--ink)] text-[var(--paper)] font-bold'
-            : 'bg-[var(--paper)] border border-[var(--line)] font-medium'
-        }">${esc(label)}</button>`;
+            ? 'bg-[var(--accent-tonal)] pl-2.5'
+            : 'border border-[var(--line)] text-[var(--ink-soft)]'
+        }">${this.filter === value ? icon('check', 'w-[18px] h-[18px]') : ''}${esc(label)}</button>`;
 
     const row = (i) => `
       <button type="button" data-item="${esc(i.id)}"
-         class="row-press w-full text-left flex items-center gap-3 px-4 py-3.5">
+         class="row-press w-full text-left flex items-center gap-3.5 px-2 py-3">
+        ${itemAvatar(i)}
         <span class="flex-1 min-w-0">
-          <span class="block font-semibold truncate t-name">${esc(i.name)}</span>
-          <span class="block text-[13px] text-[var(--ink-soft)] truncate">
+          <span class="block t-title-md truncate t-name">${esc(i.name)}</span>
+          <span class="block text-sm text-[var(--ink-soft)] truncate tabular-nums">
             ${rupees(i.purchase_price)} · ${plural(i.value.days, 'day', 'days')}
           </span>
         </span>
@@ -1633,40 +1583,21 @@ const valueScreen = {
           ? skeletonList(4)
           : all.length
             ? `
-        <div class="hero p-5 mt-2">
-          <div class="flex items-baseline gap-3 flex-wrap">
-            <span class="font-display font-bold text-[3.25rem] leading-none tracking-tight text-[var(--color-accent)] ${isRepo() ? '!font-mono !text-[var(--good-fg)] !text-[2.75rem]' : ''}">${good}${
-              isRepo() ? '' : ' of ' + items.length
-            }</span>
-            <span class="hero-soft text-[15px]">${
-              isRepo()
-                ? `/ ${items.length} checks passing`
-                : `item${items.length === 1 ? '' : 's'} under ${rupees(line)}/day`
-            }</span>
-          </div>
-          <div class="flex gap-1 mt-4">
-            ${items
-              .slice(0, 12)
-              .map(
-                (i) =>
-                  `<span class="flex-1 h-1.5 rounded-full" style="background:${
-                    i.value.per_day < line ? 'var(--color-accent)' : 'color-mix(in srgb, var(--hero-fg) 22%, transparent)'
-                  }"></span>`,
-              )
-              .join('')}
-          </div>
-          <p class="hero-soft text-[13px] mt-3">${rupees(spent)} spent on ${plural(items.length, 'tracked item', 'tracked items')}</p>
-        </div>
+        <p class="mt-2 t-body-lg">
+          <span class="font-medium tabular-nums">${good} of ${items.length}</span>
+          ${`thing${items.length === 1 ? '' : 's'}`} under ${rupees(line)} a day
+        </p>
+        <p class="text-sm text-[var(--ink-soft)] tabular-nums">${rupees(spent)} spent on ${plural(items.length, 'tracked item', 'tracked items')}</p>
         ${
           tags.length
             ? `<div class="flex gap-2 mt-4 overflow-x-auto pb-1 -mx-4 px-4">${chip('', 'All')}${tags.map((x) => chip(x, x)).join('')}</div>`
             : ''
         }
-        <div class="surface divide-y divide-[var(--line)] overflow-hidden mt-3 stagger">${items.map(row).join('')}</div>`
+        <div class="list -mx-2 mt-3">${items.map(row).join('')}</div>`
             : emptyState(
                 'Nothing priced yet',
                 'Add a price and a purchase date to something and it shows up here with what it costs per day.',
-                primaryButton(t('Add something', 'add something'), 'data-add-first'),
+                tonalButton('Add something', 'data-add-first'),
               )
       }`;
 
@@ -1690,34 +1621,22 @@ const roomScreen = {
   },
   header() {
     const room = roomById(this.id) || store.peek(`/rooms/${this.id}/tree`).data?.room;
-    return `
-      <div class="px-2 pt-2 pb-2 flex items-center gap-1">
-        <a href="#/places" class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)] transition-colors">
-          ${icon('back', 'w-5 h-5')}
-        </a>
-        ${room ? roomBadge(room, 'w-8 h-8 text-[12px] mr-1') : ''}
-        <div class="flex-1 min-w-0">
-          <h1 class="text-lg font-semibold truncate">
-            ${room ? esc(room.name) : '<span class="skeleton inline-block h-4 w-32 align-middle"></span>'}
-          </h1>
-          ${
-            room && multiFloor()
-              ? `<p class="text-[13px] text-[var(--ink-soft)] truncate">${esc(room.floor_label)}</p>`
-              : ''
-          }
-        </div>
-        <button type="button" data-rename class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Rename room">
-          ${icon('pencil', 'w-5 h-5')}
-        </button>
-        <button type="button" data-delete class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Delete room">
-          ${icon('trash', 'w-5 h-5')}
-        </button>
-      </div>`;
+    return topBar({
+      back: '#/places',
+      title: room
+        ? `<span class="inline-flex items-center gap-3 max-w-full">${roomBadge(room, 'w-8 h-8 text-sm rounded-[8px]')}<span class="truncate">${esc(room.name)}</span></span>`
+        : '<span class="skeleton inline-block h-5 w-32 align-middle"></span>',
+      sub:
+        room && multiFloor()
+          ? `<p class="text-sm text-[var(--ink-soft)] truncate">${esc(room.floor_label)}</p>`
+          : '',
+      actions: barAction('pencil', 'Rename room', 'data-rename') + barAction('trash', 'Delete room', 'data-delete'),
+    });
   },
   mount(el, params) {
     if (this.id !== params.id) this.openBranches = new Set(); // a different room, a fresh tree
     this.id = params.id;
-    el.innerHTML = `<div id="room-body" class="px-4 screen-in"></div>`;
+    el.innerHTML = `<div id="room-body" class="px-4"></div>`;
     rewireHeader();
     this.update();
   },
@@ -1737,16 +1656,16 @@ const roomScreen = {
       const kids = unit.children || [];
       const isOpen = open.has(unit.id);
       const row = `
-        <div class="flex items-stretch border-t border-[var(--line)]">
+        <div class="flex items-stretch">
           ${
             kids.length
               ? `<button type="button" data-acc-toggle aria-expanded="${isOpen}"
                    aria-label="Show what is inside ${esc(unit.name)}"
-                   class="w-8 shrink-0 grid place-items-center text-[var(--ink-faint)] active:bg-[var(--sunken)] transition-colors"
-                   style="margin-left:${depth * 18}px">
-                   <span data-caret ${isOpen ? 'style="transform:rotate(90deg)"' : ''}>${icon('chevron', 'w-4 h-4')}</span>
+                   class="w-8 shrink-0 grid place-items-center rounded-[14px] text-[var(--ink-soft)] active:bg-[var(--sunken)] transition-colors"
+                   style="margin-left:${Math.min(depth, 3) * 10}px">
+                   <span data-caret ${isOpen ? 'style="transform:rotate(180deg)"' : ''}>${icon('down', 'w-5 h-5')}</span>
                  </button>`
-              : `<span class="w-8 shrink-0" style="margin-left:${depth * 18}px"></span>`
+              : `<span class="w-8 shrink-0" style="margin-left:${Math.min(depth, 3) * 10}px"></span>`
           }
           <span class="flex-1 min-w-0">${unitRow(unit, { pending: store.isTemp(unit.id), depth: 0 })}</span>
         </div>`;
@@ -1765,20 +1684,20 @@ const roomScreen = {
       ${syncBanner()}
       ${sectionTitle(
         'Storage units',
-        `<a href="#/labels/${esc(this.id)}" class="text-[13px] font-medium text-[var(--accent-ink)]">QR labels</a>`,
+        `<a href="#/labels/${esc(this.id)}" class="btn btn-text !min-h-10 -mr-3">QR labels</a>`,
       )}
       ${
         !cached
           ? skeletonList(3)
           : tree.length
-            ? `<div class="surface overflow-hidden [&>.acc:first-child>div>div]:border-t-0">
+            ? `<div class="list -mx-2">
                  ${tree.map((u) => branch(u, 0)).join('')}
-                 ${addRow('New storage unit', 'data-add-unit class="border-t border-[var(--line)]"')}
+                 ${addRow('New storage unit', 'data-add-unit')}
                </div>`
             : emptyState(
                 'Nothing in here yet',
                 'Add a wardrobe, a shelf or a labelled box — they can nest as deep as you like.',
-                primaryButton('Add storage unit', 'data-add-unit'),
+                tonalButton('Add storage unit', 'data-add-unit'),
               )
       }
       ${sectionTitle('Loose in this room')}
@@ -1786,12 +1705,10 @@ const roomScreen = {
         !cached
           ? skeletonList(2)
           : loose.length
-            ? `<div class="surface divide-y divide-[var(--line)] overflow-hidden stagger">
+            ? `<div class="list -mx-2">
                  ${loose.map((i) => itemRow(i, { pending: store.isTemp(i.id) })).join('')}
                </div>`
-            : `<div class="surface px-4 py-5 text-[13px] text-[var(--ink-soft)] text-center">
-                 Nothing loose — everything here lives inside a storage unit.
-               </div>`
+            : `<p class="py-3 text-sm text-[var(--ink-soft)]">Nothing loose: everything here lives inside a storage unit.</p>`
       }`;
 
     wireSyncBanner(body);
@@ -1822,34 +1739,19 @@ const unitScreen = {
   header() {
     const data = store.peek(this.paths()[0]).data;
     const unit = data?.storage_unit;
-    return `
-      <div class="px-2 pt-2 pb-2 flex items-center gap-1">
-        <button type="button" data-back class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Back">
-          ${icon('back', 'w-5 h-5')}
-        </button>
-        <div class="flex-1 min-w-0">
-          <h1 class="text-lg font-semibold truncate">
-            ${unit ? esc(unit.name) : '<span class="skeleton inline-block h-4 w-28 align-middle"></span>'}
-          </h1>
-          ${
-            unit
-              ? breadcrumb([
-                  { label: unit.room_name, href: `#/room/${unit.room_id}` },
-                  ...(unit.path || []).slice(0, -1).map((p) => ({ label: p })),
-                ])
-              : '<span class="skeleton inline-block h-2.5 w-40"></span>'
-          }
-        </div>
-        <button type="button" data-qr class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="QR label">
-          ${icon('qr', 'w-5 h-5')}
-        </button>
-        <button type="button" data-rename class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Rename unit">
-          ${icon('pencil', 'w-5 h-5')}
-        </button>
-        <button type="button" data-delete class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Delete unit">
-          ${icon('trash', 'w-5 h-5')}
-        </button>
-      </div>`;
+    return `${topBar({
+      back: true,
+      title: unit ? esc(unit.name) : '<span class="skeleton inline-block h-5 w-28 align-middle"></span>',
+      actions:
+        barAction('qr', 'QR label', 'data-qr') +
+        barAction('pencil', 'Rename unit', 'data-rename') +
+        barAction('trash', 'Delete unit', 'data-delete'),
+    })}
+    <div class="px-4 pb-2 -mt-2">${
+      unit
+        ? drawerPath([unit.room_name, ...(unit.path || []).slice(0, -1)], { roomHref: `#/room/${unit.room_id}` })
+        : '<span class="skeleton block h-5 w-32 mt-1.5"></span>'
+    }</div>`;
   },
   mount(el, params) {
     this.id = params.id;
@@ -1881,7 +1783,7 @@ const unitScreen = {
       }
       ${sectionTitle(
         'Items',
-        `<button type="button" data-deep class="text-[13px] font-medium ${this.deep ? 'text-[var(--accent-ink)]' : 'text-[var(--ink-soft)]'}">
+        `<button type="button" data-deep class="text-sm font-medium ${this.deep ? 'text-[var(--accent-ink)]' : 'text-[var(--ink-soft)]'}">
            ${this.deep ? 'Showing nested' : 'Include nested'}
          </button>`,
       )}
@@ -1891,13 +1793,13 @@ const unitScreen = {
           : items.length
             ? listCard(
                 items
-                  .map((i) => itemRow(i, { pending: store.isTemp(i.id), showLocation: this.deep }))
+                  .map((i) => itemRow(i, { pending: store.isTemp(i.id), from: this.deep ? data?.storage_unit?.name : '' }))
                   .join('') + addRow('Add item here', 'data-add-item'),
               )
             : emptyState(
                 'Empty',
                 'Nothing is stored in here yet.',
-                primaryButton('Add item here', 'data-add-item'),
+                tonalButton('Add item here', 'data-add-item'),
               )
       }
       ${!children.length && cached ? `<div class="mt-3">${listCard(addRow('New unit in here', 'data-add-unit'))}</div>` : ''}`;
@@ -1941,18 +1843,11 @@ const labelsScreen = {
   },
   header() {
     const room = roomById(this.id) || store.peek(this.paths()[0]).data?.room;
-    return `
-      <div class="px-2 pt-2 pb-2 flex items-center gap-1 no-print">
-        <button type="button" data-back class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]" aria-label="Back">
-          ${icon('back', 'w-5 h-5')}
-        </button>
-        <h1 class="flex-1 text-lg font-semibold truncate">
-          Labels${room ? ` · ${esc(room.name)}` : ''}
-        </h1>
-        <button type="button" data-print class="h-11 px-3 rounded-lg font-medium text-[var(--accent-ink)] active:bg-[var(--sunken)]">
-          Print
-        </button>
-      </div>`;
+    return `<div class="no-print">${topBar({
+      back: true,
+      title: `Labels${room ? ` · ${esc(room.name)}` : ''}`,
+      actions: '<button type="button" data-print class="btn btn-text !min-h-10 mr-1">Print</button>',
+    })}</div>`;
   },
   mount(el, params) {
     this.id = params.id;
@@ -1981,7 +1876,7 @@ const labelsScreen = {
     }
 
     body.innerHTML = `
-      <p class="no-print text-[13px] text-[var(--ink-soft)] my-3">
+      <p class="no-print text-sm text-[var(--ink-soft)] my-3">
         ${plural(units.length, 'label', 'labels')} · print, cut along the dashed lines and stick each
         one on its box. Scanning a label opens the app at whatever is inside.
       </p>
@@ -2012,17 +1907,9 @@ const markBackup = () => {
 
 const settingsScreen = {
   paths: () => ['/storage-units', '/items?has_barcode=true&limit=200', '/rooms', '/tags', '/properties'],
-  header: () => `
-    <div class="px-4 pt-4 pb-1 flex items-center gap-3 lg:pt-8">
-      <a href="#/" class="w-11 h-11 grid place-items-center rounded-full bg-[var(--paper)] lg:hidden" aria-label="Back">
-        ${icon('back', 'w-5 h-5')}
-      </a>
-      <h1 class="font-display font-bold tracking-tight leading-none ${isRepo() ? 'text-[1.6rem]' : 'text-[2rem] lg:text-[2.5rem]'}">
-        ${t('Settings', 'settings/')}
-      </h1>
-    </div>`,
+  header: () => topBar({ back: '#/', title: 'Settings' }),
   mount(el) {
-    el.innerHTML = `<div id="settings-body" class="px-4 screen-in"></div>`;
+    el.innerHTML = `<div id="settings-body" class="px-4"></div>`;
     rewireHeader();
     this.update();
   },
@@ -2042,13 +1929,13 @@ const settingsScreen = {
         </span>
         <span class="flex-1 min-w-0">
           <span class="block font-medium truncate">${esc(u.name)}</span>
-          <span class="block text-[13px] text-[var(--ink-soft)] truncate">
+          <span class="block text-sm text-[var(--ink-soft)] truncate">
             ${esc([u.room_name, ...(u.path || []).slice(0, -1)].filter(Boolean).join(' › '))}
           </span>
-          <span class="block font-mono text-[12px] tracking-wider text-[var(--ink-faint)] mt-0.5">${esc(u.qr_slug)}</span>
+          <span class="block font-mono text-xs tracking-wider text-[var(--ink-faint)] mt-0.5">${esc(u.qr_slug)}</span>
         </span>
         <button type="button" data-edit-code="${esc(u.id)}"
-          class="h-11 px-3 rounded-lg text-[13px] font-medium text-[var(--accent-ink)] active:bg-[var(--sunken)] transition-colors">
+          class="h-11 px-3 rounded-lg text-sm font-medium text-[var(--accent-ink)] active:bg-[var(--sunken)] transition-colors">
           Edit
         </button>
       </div>`;
@@ -2058,61 +1945,54 @@ const settingsScreen = {
         ${itemAvatar(i)}
         <span class="flex-1 min-w-0">
           <span class="block font-medium truncate">${esc(i.name)}</span>
-          <span class="block text-[13px] text-[var(--ink-soft)] truncate">${esc(i.location?.path_string || '')}</span>
-          <span class="block font-mono text-[12px] tracking-wider text-[var(--ink-faint)] mt-0.5">${esc(i.barcode)}</span>
+          <span class="block text-sm text-[var(--ink-soft)] truncate">${esc(i.location?.path_string || '')}</span>
+          <span class="block font-mono text-xs tracking-wider text-[var(--ink-faint)] mt-0.5">${esc(i.barcode)}</span>
         </span>
         <button type="button" data-edit-item="${esc(i.id)}"
-          class="h-11 px-3 rounded-lg text-[13px] font-medium text-[var(--accent-ink)] active:bg-[var(--sunken)] transition-colors">
+          class="h-11 px-3 rounded-lg text-sm font-medium text-[var(--accent-ink)] active:bg-[var(--sunken)] transition-colors">
           Edit
         </button>
       </div>`;
 
     body.innerHTML = `
-      ${sectionTitle('Interface')}
-      <div class="surface p-4">
-        <p class="text-[13px] text-[var(--ink-soft)] mb-3">Same data, two looks. Switch any time.</p>
-        ${interfaceMarkup()}
-      </div>
 
-      <div class="hero p-5 mt-6">
-        <div class="flex items-center justify-between gap-3">
-          <span class="hero-soft text-[11px] font-bold tracking-[0.1em]">BACKUP</span>
-          ${
-            lastBackup()
-              ? `<span class="pill pill-good">Backed up ${esc(ago(lastBackup(), { long: true }))}</span>`
-              : `<span class="pill pill-warn">Never backed up</span>`
-          }
-        </div>
-        <p class="font-display font-bold text-[1.35rem] leading-tight mt-3">Everything lives in one database.</p>
-        <p class="hero-soft text-[13px] mt-1.5">Keep a copy so a mistake never costs you your list.</p>
+      ${sectionTitle(
+        'Backup',
+        lastBackup()
+          ? `<span class="pill pill-good">Backed up ${esc(ago(lastBackup(), { long: true }))}</span>`
+          : `<span class="pill pill-warn">Never backed up</span>`,
+      )}
+      <div class="surface p-4">
+        <p class="t-body-lg">Everything lives in one database.</p>
+        <p class="text-sm text-[var(--ink-soft)] mt-1">Keep a copy so a mistake never costs you your list.</p>
         <div class="flex gap-2 mt-4">
-          <button type="button" data-export-all class="btn flex-1 bg-[var(--color-accent)] text-[var(--on-accent)]">Download my data</button>
-          <button type="button" data-import class="btn border border-[color-mix(in_srgb,var(--hero-fg)_30%,transparent)]">Restore</button>
+          <button type="button" data-export-all class="btn btn-primary flex-1">Download my data</button>
+          <button type="button" data-import class="btn btn-ghost">Restore</button>
         </div>
       </div>
 
       ${sectionTitle('Good value line')}
       <div class="surface p-4 flex items-center justify-between gap-4">
-        <p class="text-[13px] text-[var(--ink-soft)]">A thing is good value when it costs less than this per day.</p>
+        <p class="text-sm text-[var(--ink-soft)]">A thing is good value when it costs less than this per day.</p>
         <div class="flex items-center gap-2 shrink-0">
           <button type="button" data-line-dec aria-label="Lower the line" class="w-11 h-11 rounded-full bg-[var(--sunken)] grid place-items-center">${icon('minus', 'w-4 h-4')}</button>
-          <span class="min-w-[4rem] text-center font-display font-bold text-[1.4rem]" data-line-value>${rupees(valueLine())}</span>
+          <span class="min-w-[4rem] text-center t-title-lg tabular-nums" data-line-value>${rupees(valueLine())}</span>
           <button type="button" data-line-inc aria-label="Raise the line" class="w-11 h-11 rounded-full bg-[var(--sunken)] grid place-items-center">${icon('plus', 'w-4 h-4')}</button>
         </div>
       </div>
 
       ${sectionTitle('Appearance')}
-      <div class="surface p-4" data-appearance>${appearanceMarkup()}</div>
+      <div data-appearance>${appearanceMarkup()}</div>
 
       ${sectionTitle('House shift')}
       <div class="surface p-4 flex items-center justify-between gap-3">
-        <p class="text-[13px] text-[var(--ink-soft)] flex-1">
+        <p class="text-sm text-[var(--ink-soft)] flex-1">
           Reorganise the whole house in a throwaway copy of the inventory.
         </p>
         <a href="#/shift" class="btn btn-ghost shrink-0" data-shift-open>
           ${shiftState.active
-            ? t('Open — on', 'open — on')
-            : t('Open', 'open')}
+            ? 'Open — on'
+            : 'Open'}
         </a>
       </div>
 
@@ -2121,7 +2001,7 @@ const settingsScreen = {
         <button type="button" data-labels class="row-press w-full flex items-center gap-3 px-4 py-3.5">
           <span class="flex-1 text-left">
             <span class="block font-semibold">Print QR labels</span>
-            <span class="block text-[13px] text-[var(--ink-soft)]">For boxes you want to scan</span>
+            <span class="block text-sm text-[var(--ink-soft)]">For boxes you want to scan</span>
           </span>
           <span class="text-[var(--ink-faint)]">${icon('chevron', 'w-4 h-4')}</span>
         </button>`)}
@@ -2133,7 +2013,7 @@ const settingsScreen = {
         <button type="button" data-lock-now class="row-press w-full flex items-center gap-3 px-4 py-3.5">
           <span class="flex-1 text-left">
             <span class="block font-semibold">Lock this device</span>
-            <span class="block text-[13px] text-[var(--ink-soft)]">Ask for the passcode again next time</span>
+            <span class="block text-sm text-[var(--ink-soft)]">Ask for the passcode again next time</span>
           </span>
           <span class="text-[var(--ink-faint)]">${icon('chevron', 'w-4 h-4')}</span>
         </button>`)
@@ -2141,15 +2021,15 @@ const settingsScreen = {
       }
 
       <details class="mt-6 group">
-        <summary class="cursor-pointer list-none px-1 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[var(--ink-faint)]">
+        <summary class="cursor-pointer list-none min-h-12 flex items-center justify-between section-title">
           <span>Advanced: tags, fields, codes</span>
           <span class="transition-transform group-open:rotate-90">${icon('chevron', 'w-4 h-4')}</span>
         </summary>
       ${sectionTitle(
         'Tags',
-        `<button type="button" data-add-tag class="text-[13px] font-medium text-[var(--accent-ink)]">New tag</button>`,
+        `<button type="button" data-add-tag class="text-sm font-medium text-[var(--accent-ink)]">New tag</button>`,
       )}
-      <p class="px-1 mb-2 text-[13px] text-[var(--ink-soft)]">
+      <p class="px-1 mb-2 text-sm text-[var(--ink-soft)]">
         Rename a tag and every item using it follows. Deleting one removes it from them.
       </p>
       ${
@@ -2159,31 +2039,31 @@ const settingsScreen = {
                  .map(
                    (t) => `
                  <button type="button" data-edit-tag="${esc(t.name)}" class="text-left">
-                   ${tagChips([t.name])}<span class="ml-1 text-[11px] text-[var(--ink-faint)]">${t.count}</span>
+                   ${tagChips([t.name])}<span class="ml-1 t-label-sm text-[var(--ink-faint)]">${t.count}</span>
                  </button>`,
                  )
                  .join('')}
              </div>`
-          : `<div class="surface px-4 py-5 text-[13px] text-[var(--ink-soft)] text-center">No tags yet.</div>`
+          : `<div class="surface px-4 py-5 text-sm text-[var(--ink-soft)] text-center">No tags yet.</div>`
       }
 
       ${sectionTitle(
         'Custom fields',
-        `<span class="text-[11px] text-[var(--ink-faint)]">${plural(propKeys.length, 'field', 'fields')}</span>`,
+        `<span class="t-label-sm text-[var(--ink-faint)]">${plural(propKeys.length, 'field', 'fields')}</span>`,
       )}
-      <p class="px-1 mb-2 text-[13px] text-[var(--ink-soft)]">
+      <p class="px-1 mb-2 text-sm text-[var(--ink-soft)]">
         Every field name in use. Tap a value to see everything that shares it.
       </p>
       ${
         propKeys.length
-          ? `<div class="surface divide-y divide-[var(--line)] overflow-hidden">
+          ? `<div class="list">
                ${propKeys
                  .map(
                    (p) => `
                  <div class="px-4 py-3">
                    <div class="flex items-baseline gap-2">
                      <span class="font-medium">${esc(p.key)}</span>
-                     <span class="text-[12px] text-[var(--ink-faint)]">${plural(p.count, 'item', 'items')}</span>
+                     <span class="text-xs text-[var(--ink-faint)]">${plural(p.count, 'item', 'items')}</span>
                    </div>
                    <div class="mt-1.5 flex flex-wrap gap-1.5">
                      ${p.values
@@ -2191,7 +2071,7 @@ const settingsScreen = {
                        .map(
                          (v) => `
                        <a href="#/search?q=${encodeURIComponent(v)}"
-                          class="px-2 py-0.5 rounded-full bg-[var(--sunken)] text-[12px] text-[var(--ink-soft)] hover:text-[var(--accent-ink)] transition-colors">${esc(v)}</a>`,
+                          class="px-2 py-0.5 rounded-full bg-[var(--sunken)] text-xs text-[var(--ink-soft)] hover:text-[var(--accent-ink)] transition-colors">${esc(v)}</a>`,
                        )
                        .join('')}
                    </div>
@@ -2199,35 +2079,35 @@ const settingsScreen = {
                  )
                  .join('')}
              </div>`
-          : `<div class="surface px-4 py-5 text-[13px] text-[var(--ink-soft)] text-center">
+          : `<div class="surface px-4 py-5 text-sm text-[var(--ink-soft)] text-center">
                No custom fields yet. Add one while editing an item.
              </div>`
       }
 
       ${sectionTitle(
         'Storage unit codes',
-        `<span class="text-[11px] text-[var(--ink-faint)]">${plural(units.length, 'unit', 'units')}</span>`,
+        `<span class="t-label-sm text-[var(--ink-faint)]">${plural(units.length, 'unit', 'units')}</span>`,
       )}
-      <p class="px-1 mb-2 text-[13px] text-[var(--ink-soft)]">
+      <p class="px-1 mb-2 text-sm text-[var(--ink-soft)]">
         Override a printed code, or issue a new one if a label is lost or reused.
       </p>
       ${
         units.length
-          ? `<div class="surface divide-y divide-[var(--line)] overflow-hidden">${units.map(unitRowMarkup).join('')}</div>`
-          : `<div class="surface px-4 py-5 text-[13px] text-[var(--ink-soft)] text-center">No storage units yet.</div>`
+          ? `<div class="list">${units.map(unitRowMarkup).join('')}</div>`
+          : `<div class="surface px-4 py-5 text-sm text-[var(--ink-soft)] text-center">No storage units yet.</div>`
       }
 
       ${sectionTitle(
         'Item barcodes',
-        `<span class="text-[11px] text-[var(--ink-faint)]">${plural(coded.length, 'item', 'items')}</span>`,
+        `<span class="t-label-sm text-[var(--ink-faint)]">${plural(coded.length, 'item', 'items')}</span>`,
       )}
-      <p class="px-1 mb-2 text-[13px] text-[var(--ink-soft)]">
+      <p class="px-1 mb-2 text-sm text-[var(--ink-soft)]">
         Products whose own barcode is stored — these need no QR label.
       </p>
       ${
         coded.length
-          ? `<div class="surface divide-y divide-[var(--line)] overflow-hidden">${coded.map(itemRowMarkup).join('')}</div>`
-          : `<div class="surface px-4 py-5 text-[13px] text-[var(--ink-soft)] text-center">
+          ? `<div class="list">${coded.map(itemRowMarkup).join('')}</div>`
+          : `<div class="surface px-4 py-5 text-sm text-[var(--ink-soft)] text-center">
                Nothing has a barcode yet. Add one while editing an item.
              </div>`
       }
@@ -2236,7 +2116,6 @@ const settingsScreen = {
 
       <div class="h-6"></div>`;
 
-    wireInterface(body);
     wireAppearance(body.querySelector('[data-appearance]'));
     body.querySelector('[data-export-all]').addEventListener('click', () => exportDataSheet());
     body.querySelector('[data-import]').addEventListener('click', () => importDataSheet());
@@ -2305,7 +2184,7 @@ function codeSheet(unit) {
              autocomplete="off" autocapitalize="characters" value="${esc(unit.qr_slug)}">`,
           '4 to 24 characters, A-Z and 0-9. Must be unique across the house.',
         )}
-        <div class="surface is-failed px-3 py-2.5 text-[13px] mb-4">
+        <div class="surface is-failed px-3 py-2.5 text-sm mb-4">
           Changing this retires any label already printed with the old code.
         </div>
         <div class="flex gap-2">
@@ -2391,12 +2270,12 @@ function codeMatchCard(data) {
     const trail = [unit.room_name, ...(unit.path || []).slice(0, -1)].filter(Boolean).join(' › ');
     return listCard(`
       <a href="#/unit/${esc(unit.id)}" class="row-press flex items-center gap-3 px-4 py-3.5">
-        <span class="w-9 h-9 rounded-lg bg-[var(--color-accent-soft)] text-[var(--accent-ink)] grid place-items-center shrink-0">
+        <span class="w-9 h-9 rounded-lg bg-[var(--accent-tonal)] text-[var(--accent-ink)] grid place-items-center shrink-0">
           ${icon('box', 'w-4.5 h-4.5')}
         </span>
         <span class="flex-1 min-w-0">
           <span class="block font-medium truncate">${esc(unit.name)}</span>
-          <span class="block text-[13px] text-[var(--ink-soft)] truncate">${esc(trail || unit.room_name || '')}</span>
+          <span class="block text-sm text-[var(--ink-soft)] truncate">${esc(trail || unit.room_name || '')}</span>
         </span>
         <span class="text-[var(--ink-faint)]">${icon('chevron', 'w-4 h-4')}</span>
       </a>`);
@@ -2411,20 +2290,16 @@ const searchScreen = {
     return path ? [path] : [];
   },
   header: () => `
-    <div style="display: flex; align-items: center; gap: 0.25rem; padding: 0.5rem; background: var(--canvas);">
-      <a href="#/" style="width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border-radius: 0.5rem; color: var(--ink-soft); flex-shrink: 0;">
-        ${icon('back', 'w-5 h-5')}
-      </a>
-      <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; height: 2.75rem; padding: 0 0.75rem; border-radius: 0.5rem; background: var(--sunken); border: 1px solid transparent;">
-        <span style="color: var(--ink-faint); flex-shrink: 0;">${icon('search', 'w-4.5 h-4.5')}</span>
+    <div class="flex items-center gap-1 px-2 py-2 md:pt-5">
+      <a href="#/" class="topround shrink-0" aria-label="Back">${icon('back', 'w-6 h-6')}</a>
+      <label class="search-well flex-1 min-w-0 !pl-4">
+        <span class="sr-only">Search</span>
+        <span class="text-[var(--ink-soft)] shrink-0">${icon('search', 'w-6 h-6')}</span>
         <input id="search-input" type="search" autocomplete="off" enterkeyhint="search"
-          placeholder="Search items and tags"
-          style="flex: 1; background: transparent; outline: none; border: none; color: var(--ink); font: inherit;">
-      </div>
-      <button id="search-filters" type="button" aria-label="Filters"
-        style="width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border-radius: 0.5rem; color: var(--ink-soft); border: none; background: transparent; cursor: pointer; flex-shrink: 0;">
-        ${icon('settings', 'w-5 h-5')}
-      </button>
+          placeholder="Where did I put it?"
+          class="flex-1 min-w-0 h-full bg-transparent outline-none border-0 text-base text-[var(--ink)] placeholder:text-[var(--ink-soft)] pl-3">
+        <button id="search-filters" type="button" aria-label="Filters" class="topround shrink-0">${icon('settings', 'w-6 h-6')}</button>
+      </label>
     </div>`,
   mount(el) {
     el.innerHTML = `<div id="search-body" class="px-4"></div>`;
@@ -2470,13 +2345,15 @@ const searchScreen = {
     const best = results.length && searchQuery.length >= 2 ? results[0] : null;
     const rest = best ? results.slice(1) : results;
     const hero = best
-      ? `<button type="button" data-item="${esc(best.id)}" class="hero p-5 w-full text-left block mb-3">
-           <span class="pill bg-[var(--color-accent)] text-[var(--on-accent)]">${t('Best match', 'best match')}</span>
-           <span class="block font-display font-bold text-[1.6rem] leading-tight mt-3 t-name">${esc(best.name)}</span>
-           <span class="block text-[11px] font-bold tracking-[0.1em] hero-soft mt-4">${t('IT IS IN', 'HEAD')}</span>
-           <span class="block mt-1.5 font-bold text-[1.15rem] leading-snug t-path" style="color:var(--color-accent)">${esc(
-             pathText(best.location?.path || []),
-           )}</span>
+      ? `<button type="button" data-item="${esc(best.id)}" class="hero row-press p-4 w-full text-left flex gap-3.5 items-start mb-3">
+           ${itemAvatar(best)}
+           <span class="flex-1 min-w-0">
+             <span class="flex items-center gap-2">
+               <span class="t-title-lg truncate t-name">${esc(best.name)}</span>
+               <span class="pill pill-quiet shrink-0">Best match</span>
+             </span>
+             ${drawerPath(best.location?.path || [])}
+           </span>
          </button>`
       : '';
 
@@ -2498,7 +2375,7 @@ const searchScreen = {
       }
       ${
         cached && results.length
-          ? `<p class="text-[13px] text-[var(--ink-faint)] text-center mt-4">${data.total} match${data.total === 1 ? '' : 'es'}</p>`
+          ? `<p class="text-sm text-[var(--ink-faint)] text-center mt-4">${data.total} match${data.total === 1 ? '' : 'es'}</p>`
           : ''
       }`;
 
@@ -2513,21 +2390,21 @@ function searchFilterSheet(screen) {
     body: `
       <div class="space-y-4">
         <div>
-          <label class="block text-[13px] font-medium text-[var(--ink-soft)] mb-1.5">Room</label>
-          <select id="filter-room" class="${inputCls}">
+          <label class="block text-sm font-medium text-[var(--ink-soft)] mb-1.5">Room</label>
+          <select id="filter-room" class="${inputCls} !bg-[var(--canvas)] text-[var(--ink)]">
             <option value="">All rooms</option>
             ${rooms().map((r) => `<option value="${r.id}" ${searchFilters.room_id === r.id ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label class="block text-[13px] font-medium text-[var(--ink-soft)] mb-1.5">Tags</label>
+          <label class="block text-sm font-medium text-[var(--ink-soft)] mb-1.5">Tags</label>
           <input type="text" id="filter-tags" placeholder="Comma-separated tags" value="${esc(searchFilters.tags)}"
             class="${inputCls}">
         </div>
         <label class="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" id="filter-barcode" ${searchFilters.has_barcode ? 'checked' : ''}
             class="w-4 h-4 rounded border-[var(--line)]">
-          <span class="text-[13px] text-[var(--ink)]">Has barcode</span>
+          <span class="text-sm text-[var(--ink)]">Has barcode</span>
         </label>
       </div>`,
     onMount(body) {
@@ -2579,7 +2456,7 @@ function exportDataSheet() {
   openSheet({
     title: 'Download my data',
     body: `
-      <p class="text-[13px] text-[var(--ink-soft)] mb-4">
+      <p class="text-sm text-[var(--ink-soft)] mb-4">
         JSON is a complete backup you can restore from. CSV is a spreadsheet of your items.
         Photos are not included in either.
       </p>
@@ -2655,13 +2532,13 @@ function importDataSheet() {
   openSheet({
     title: 'Restore from a backup',
     body: `
-      <p class="text-[13px] text-[var(--ink-soft)] mb-4">
+      <p class="text-sm text-[var(--ink-soft)] mb-4">
         Choose a JSON backup. Anything already here is left alone and only what is missing is added, so
         restoring twice is safe. Photos are not part of a backup.
       </p>
       <input type="file" id="import-file" accept=".json,application/json" class="hidden">
       ${primaryButton('Choose backup file', 'data-choose-file class="w-full"')}
-      <div id="import-status" class="mt-4 text-[13px]" role="status"></div>`,
+      <div id="import-status" class="mt-4 text-sm" role="status"></div>`,
     onMount(body, close) {
       const fileInput = body.querySelector('#import-file');
       const status = body.querySelector('#import-status');
@@ -2780,8 +2657,8 @@ function labelRoomSheet() {
   openSheet({
     title: 'Print QR labels',
     body: list.length
-      ? `<p class="text-[13px] text-[var(--ink-soft)] mb-3">Pick a room. Its boxes are laid out ready to print.</p>
-         <div class="surface divide-y divide-[var(--line)] overflow-hidden">
+      ? `<p class="text-sm text-[var(--ink-soft)] mb-3">Pick a room. Its boxes are laid out ready to print.</p>
+         <div class="list">
            ${list
              .map(
                (r) => `
@@ -2789,7 +2666,7 @@ function labelRoomSheet() {
                 class="row-press flex items-center gap-3 px-4 py-3.5">
                ${roomBadge(r)}
                <span class="flex-1 font-semibold">${esc(r.name)}</span>
-               <span class="text-[13px] text-[var(--ink-soft)]">${plural(r.storage_unit_count || 0, 'box', 'boxes')}</span>
+               <span class="text-sm text-[var(--ink-soft)]">${plural(r.storage_unit_count || 0, 'box', 'boxes')}</span>
              </a>`,
              )
              .join('')}
@@ -2834,10 +2711,8 @@ function paintShiftBanner() {
   if (!shiftState.active || current === shiftScreen) return;
   head.insertAdjacentHTML('afterbegin', `
     <a href="#/shift" data-shift-banner
-       class="block mx-4 mt-3 px-3 py-2 rounded-lg text-[13px] font-medium fade-in"
-       style="background:color-mix(in srgb, #d97706 16%, var(--paper)); color:#92400e;">
-      ${t(`Shift mode on — ${shiftState.changes ?? 0} change(s) live in a copy. Tap to open.`,
-          'shift mode — working copy')}
+       class="flex items-center min-h-12 mx-4 mt-2 px-3.5 py-3 rounded-[14px] text-sm fade-in bg-[var(--shift-bg)] text-[var(--shift-fg)]">
+      ${`Shift mode on — ${shiftState.changes ?? 0} change(s) live in a copy. Tap to open.`}
     </a>`);
 }
 
@@ -2848,7 +2723,7 @@ const shiftRow = (i) => `
     <div class="flex items-center gap-2">
       <span class="flex-1 min-w-0">
         <span class="block font-semibold truncate t-name">${esc(i.name)}</span>
-        <span class="block text-[13px] text-[var(--ink-soft)] truncate t-path">${esc(i.location.path_string)}</span>
+        <span class="block text-sm text-[var(--ink-soft)] truncate t-path">${esc(i.location.path_string)}</span>
       </span>
     </div>
     <div class="mt-2 grid grid-cols-2 gap-2">
@@ -2859,13 +2734,9 @@ const shiftRow = (i) => `
 
 const shiftScreen = {
   paths: () => ['/shift', '/rooms'],
-  header: () => `
-    <div class="px-4 pt-4">
-      <h1 class="font-display font-bold tracking-tight text-[1.7rem]">${t('House Shift', 'house shift')}</h1>
-      <p class="text-[13px] text-[var(--ink-soft)] mt-1">
-        ${t('Reorganise in a copy; commit when it looks right.', 'reorganise in a copy; commit when it looks right.')}
-      </p>
-    </div>`,
+  header: () =>
+    `${topBar({ back: '#/settings', title: 'House Shift' })}
+     <p class="px-4 -mt-1 text-sm text-[var(--ink-soft)]">Reorganise in a copy; commit when it looks right.</p>`,
   mount(el) {
     el.innerHTML = '<div id="shift-body" class="px-4 pb-8"></div>';
     this.update();
@@ -2884,9 +2755,9 @@ const shiftScreen = {
     if (!data.active) {
       body.innerHTML = `
         ${emptyState(
-          t('Reorganise without touching the real thing', 'reorganise in a copy'),
-          t('House Shift copies your inventory. Move and pack freely, then commit the result back — or throw the copy away.', 'copy, reorganise, commit or discard.'),
-          primaryButton(t('Start House Shift', 'init shift'), 'data-shift-start'),
+          'Reorganise without touching the real thing',
+          'House Shift copies your inventory. Move and pack freely, then commit the result back — or throw the copy away.',
+          primaryButton('Start House Shift', 'data-shift-start'),
         )}`;
       body.querySelector('[data-shift-start]').addEventListener('click', async () => {
         await post('/shift/enter', {});
@@ -2903,24 +2774,22 @@ const shiftScreen = {
     const group = (type) => items.filter((i) => i.pack_type === type);
 
     body.innerHTML = `
-      <div class="surface p-3 flex items-center gap-2 text-[13px]">
-        <span class="flex-1">${t(
-          `${data.item_count} items in the copy · ${data.changes} change(s) · ${data.unsure} unsure`,
-          `${data.item_count} files · ${data.changes} changes`)}</span>
+      <div class="surface p-3 flex items-center gap-2 text-sm">
+        <span class="flex-1">${`${data.item_count} items in the copy · ${data.changes} change(s) · ${data.unsure} unsure`}</span>
       </div>
       <div class="mt-3 flex gap-2 items-stretch">
-        <div class="flex-1">${primaryButton(t('Commit changes', 'merge'), 'data-shift-commit')}</div>
-        <div class="flex-1">${ghostButton(t('Discard', 'reset --hard'), 'data-shift-discard')}</div>
+        <div class="flex-1">${primaryButton('Commit changes', 'data-shift-commit')}</div>
+        <div class="flex-1">${ghostButton('Discard', 'data-shift-discard')}</div>
       </div>
       ${PACK_TYPES.map((type) => `
         <div class="mt-5">
-          <p class="text-[11px] font-bold tracking-[0.1em] text-[var(--ink-faint)] mb-2">${type.toUpperCase()}</p>
+          <h3 class="section-title mb-2">${esc(type[0].toUpperCase() + type.slice(1))}</h3>
           ${
             group(type).length
-              ? `<div class="surface divide-y divide-[var(--line)] overflow-hidden">
+              ? `<div class="list">
                    ${group(type).map(shiftRow).join('')}
                  </div>`
-              : `<p class="text-[13px] text-[var(--ink-faint)] px-1">—</p>`
+              : `<p class="text-sm text-[var(--ink-faint)] px-1">—</p>`
           }
         </div>`).join('')}`;
 
@@ -2930,16 +2799,16 @@ const shiftScreen = {
       createSelect(row.querySelector('[data-pack-type]'), {
         options: PACK_TYPES.map((p) => ({ value: p, label: p })),
         value: item.pack_type,
-        placeholder: t('Pack as…', 'pack as…'),
+        placeholder: 'Pack as…',
         onChange: (v) => patchShiftItem(item.id, { pack_type: v }),
       });
       createSelect(row.querySelector('[data-pack-room]'), {
         options: [
-          { value: '', label: t('Pack for… (room)', 'pack for…') },
+          { value: '', label: 'Pack for… (room)' },
           ...rooms.map((r) => ({ value: r.id, label: r.name })),
         ],
         value: item.pack_room_id ?? '',
-        placeholder: t('Pack for… (room)', 'pack for…'),
+        placeholder: 'Pack for… (room)',
         onChange: (v) => patchShiftItem(item.id, { pack_room_id: v || null }),
       });
     });
@@ -2960,16 +2829,16 @@ async function patchShiftItem(id, patch) {
 
 function exitConfirm(commit) {
   openSheet({
-    title: commit ? t('Commit the shift?', 'merge shift?') : t('Discard the shift?', 'reset shift?'),
+    title: commit ? 'Commit the shift?' : 'Discard the shift?',
     body: `
-      <p class="text-[14px] leading-relaxed">${
+      <p class="text-sm leading-relaxed">${
         commit
-          ? t('Every move and addition made in the copy is replayed onto the real inventory, oldest first.', 'replays moves and adds onto live data, oldest first.')
-          : t('The copy and everything in it is thrown away. The real inventory was never touched.', 'the copy is dropped; live data untouched.')
+          ? 'Every move and addition made in the copy is replayed onto the real inventory, oldest first.'
+          : 'The copy and everything in it is thrown away. The real inventory was never touched.'
       }</p>
       <div class="mt-4 flex gap-2 items-stretch">
-        <div class="flex-1">${primaryButton(commit ? t('Commit', 'merge') : t('Discard', 'reset'), 'data-shift-go')}</div>
-        <div class="flex-1">${ghostButton(t('Cancel', 'cancel'), 'data-shift-cancel')}</div>
+        <div class="flex-1">${primaryButton(commit ? 'Commit' : 'Discard', 'data-shift-go')}</div>
+        <div class="flex-1">${ghostButton('Cancel', 'data-shift-cancel')}</div>
       </div>`,
     onMount(body, close) {
       body.querySelector('[data-shift-cancel]').addEventListener('click', close);
@@ -2979,7 +2848,7 @@ function exitConfirm(commit) {
         await loadShiftState();
         await store.load('/shift', { force: true }).catch(() => {});
         shiftScreen.update();
-        toast(commit ? t('Shift committed', 'shift merged') : t('Shift discarded', 'shift discarded'));
+        toast(commit ? 'Shift committed' : 'Shift discarded');
       });
     },
   });
@@ -3047,6 +2916,7 @@ function render() {
   closeAnyPopup(); // a portalled dropdown must not outlive its screen
 
   if (key !== currentKey) {
+    const from = currentKey ? current : null;
     currentKey = key;
     current = route.screen;
     if (route.screen === searchScreen && query.get('q')) searchQuery = query.get('q');
@@ -3056,6 +2926,7 @@ function render() {
     headerEl().innerHTML = lastHeader;
     current.mount(screenEl(), params);
     scrollTo({ top: 0 });
+    if (from) playMotion(from, current);
 
     // A camera that scanned a retired or mistyped label lands here.
     if (query.get('unknown_code')) {
@@ -3071,6 +2942,28 @@ function render() {
   }
   syncChrome();
 }
+
+// Two motions, as on the phone: into or out of a room or box pulls a drawer
+// (rising going in, dropping coming back), everything else fades through.
+const placeDepth = (screen) => (screen === roomScreen ? 1 : screen === unitScreen ? 2 : 0);
+function playMotion(from, to) {
+  const a = placeDepth(from);
+  const b = placeDepth(to);
+  const cls = !a && !b ? 'motion-fade' : b < a ? 'motion-drawer-back' : 'motion-drawer';
+  for (const el of [headerEl().firstElementChild, screenEl()]) {
+    if (!el) continue;
+    el.classList.remove('motion-fade', 'motion-drawer', 'motion-drawer-back');
+    void el.offsetWidth; // restart the animation on a reused element
+    el.classList.add(cls);
+  }
+}
+
+// Past the first row, Find's extended FAB folds to its icon, as on the phone.
+addEventListener(
+  'scroll',
+  () => document.getElementById('fab').classList.toggle('is-collapsed', current === findScreen && scrollY > 120),
+  { passive: true },
+);
 
 // Re-render the header only when its data arrives, so the title stops being a
 // skeleton without rebuilding (and unfocusing) the screen below it.
@@ -3094,14 +2987,36 @@ function syncChrome() {
   document.getElementById('sync-pip').classList.toggle('hidden', store.pendingCount() === 0);
   // Adding an item makes no sense on the label sheet or in settings, and the
   // floating button would sit on top of their controls.
-  document
-    .getElementById('fab')
-    .classList.toggle('hidden', current === settingsScreen || current === labelsScreen);
+  // The FAB says what it does: a new room on Places, otherwise adding a thing
+  // into wherever you are (the common job, so it stays one tap away).
+  const fab = document.getElementById('fab');
+  const verb = current === placesScreen ? ['New room', 'Add a room'] : ['Add', 'Add something'];
+  fab.querySelector('[data-fab-label]').textContent = verb[0];
+  fab.setAttribute('aria-label', verb[1]);
+  document.getElementById('topbar-add').setAttribute('aria-label', verb[1]);
+  fab.classList.toggle('hidden', current === settingsScreen || current === labelsScreen);
+  if (current !== findScreen) fab.classList.remove('is-collapsed');
 }
+
+// On phones the header is sticky. A tall one (Find's headline) would pin a
+// third of the screen, so it sticks at a negative offset instead: the title
+// scrolls away and only the [data-sticky-anchor] row stays in view.
+function pinHeader() {
+  const head = headerEl();
+  const anchor = head.querySelector('[data-sticky-anchor]');
+  if (!anchor) {
+    head.style.top = '';
+    return;
+  }
+  const safeTop = parseFloat(getComputedStyle(head).paddingTop) || 0;
+  head.style.top = `${Math.min(0, safeTop + 8 - anchor.offsetTop)}px`;
+}
+addEventListener('resize', pinHeader);
 
 // The header is rebuilt from a string, so its listeners must be reattached.
 function rewireHeader() {
   const head = headerEl();
+  pinHeader();
   head.querySelector('[data-go-search]')?.addEventListener('click', () => {
     location.hash = '#/search';
   });
@@ -3150,6 +3065,11 @@ function rewireHeader() {
 // ----------------------------------------------------------------- boot ----
 
 addEventListener('hashchange', render);
+// The hash is the router, so the skip link moves focus instead of navigating.
+document.querySelector('.skip-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  screenEl().focus();
+});
 store.subscribe(refresh);
 
 // A code nothing recognises is an opportunity, not an error: offer to file it.
@@ -3165,7 +3085,9 @@ function scanWithFallback() {
 }
 
 document.getElementById('fab').addEventListener('click', () => {
-  if (current === unitScreen) {
+  if (current === placesScreen) {
+    roomSheet();
+  } else if (current === unitScreen) {
     const unit = store.peek(current.paths()[0]).data?.storage_unit;
     itemSheet({ roomId: unit?.room_id, unitId: unit?.id });
   } else if (current === roomScreen) {
@@ -3180,15 +3102,15 @@ document.getElementById('topbar-add').addEventListener('click', () => document.g
 // Escape hatch while the sheet is open on iOS, where scroll can get stuck.
 addEventListener('pageshow', () => closeAllSheets());
 
-// Wording and path formats are written into the markup, so a change of
-// interface rebuilds the current screen from scratch.
-onUIChange(() => {
-  currentKey = '';
-  render();
-});
-
 initTheme();
-checkSession();
-store.load('/rooms').catch(() => {});
-loadShiftState().catch(() => {});
-render();
+// The server marks the shell when a passcode is needed and this visitor has
+// none: go straight to the passcode screen, and ask for no data that would
+// only come back 401.
+if (document.documentElement.hasAttribute('data-locked')) {
+  showLock();
+} else {
+  checkSession();
+  store.load('/rooms').catch(() => {});
+  loadShiftState().catch(() => {});
+  render();
+}

@@ -181,15 +181,21 @@ object Db {
 
     /**
      * Runs `block` against the shared connection. A connection-level failure
-     * retires the connection and retries once, so a phone that changed
-     * networks heals instead of erroring until restart.
+     * (SQLState class 08) retires the connection and, for reads, retries once,
+     * so a phone that changed networks heals instead of erroring until restart.
+     * Write transactions never retry: a connection lost during COMMIT may have
+     * committed, and running the block again would add the item twice.
      */
-    private fun <T> db(block: (Connection) -> T): T = synchronized(lock) {
+    private fun <T> db(retry: Boolean = true, block: (Connection) -> T): T = synchronized(lock) {
         try {
             block(connection())
         } catch (e: SQLException) {
-            runCatching { conn?.close() }
-            conn = null
+            val lost = e.sqlState?.startsWith("08") == true
+            if (lost) {
+                runCatching { conn?.close() }
+                conn = null
+            }
+            if (!retry || !lost) throw DbException(root(e), e)
             try {
                 block(connection())
             } catch (e2: Exception) {
@@ -201,7 +207,7 @@ object Db {
     }
 
     /** A write transaction: all-or-nothing, on the shared connection. */
-    private fun <T> tx(block: (Connection) -> T): T = db { c ->
+    private fun <T> tx(block: (Connection) -> T): T = db(retry = false) { c ->
         val wasAuto = c.autoCommit
         c.autoCommit = false
         try {
@@ -492,25 +498,49 @@ object Db {
         }
     }
 
-    fun declutterItem(id: String, note: String?): Unit = tx { c ->
-        val from = locationOf(c, id)
-        c.prepareStatement(
-            """UPDATE items SET status = 'decluttered', decluttered_at = now(),
-                      declutter_note = ?, updated_at = now() WHERE id = ?"""
-        ).use { st ->
-            st.setString(1, note)
-            st.setUuid(2, id)
-            if (st.executeUpdate() == 0) throw DbException("item not found")
-        }
-        recordMove(c, id, "decluttered", from, from.roomId, from.unitId, actor(c))
-    }
-
-    fun restoreItem(id: String): Unit = db { c ->
-        c.prepareStatement(
-            """UPDATE items SET status = 'active', decluttered_at = NULL,
-                      declutter_note = NULL, updated_at = now() WHERE id = ?"""
+    /**
+     * Declutters the item and everything still active inside it, as the
+     * server's cascade does — a decluttered box never holds active things.
+     * Answers the ids it changed, so Undo restores exactly those.
+     */
+    fun declutterItem(id: String, note: String?): List<String> = tx { c ->
+        val ids = c.prepareStatement(
+            """WITH RECURSIVE sub AS (
+                   SELECT id, status FROM items WHERE id = ?
+                   UNION ALL
+                   SELECT ch.id, ch.status FROM items ch JOIN sub ON ch.parent_item_id = sub.id
+                 )
+                 SELECT id FROM sub WHERE status = 'active'"""
         ).use { st ->
             st.setUuid(1, id)
+            st.executeQuery().use { rs -> buildList { while (rs.next()) add(rs.getString(1)) } }
+        }
+        if (ids.isEmpty()) {
+            locationOf(c, id) // "item not found" when it is gone
+            return@tx emptyList()
+        }
+        val before = ids.map { locationOf(c, it) }
+        c.prepareStatement(
+            """UPDATE items SET status = 'decluttered', decluttered_at = now(),
+                      declutter_note = ?, updated_at = now() WHERE id = ANY(?)"""
+        ).use { st ->
+            st.setString(1, note)
+            st.setArray(2, c.createArrayOf("uuid", ids.toTypedArray()))
+            st.executeUpdate()
+        }
+        val a = actor(c)
+        before.forEach { recordMove(c, it.id, "decluttered", it, it.roomId, it.unitId, a) }
+        ids
+    }
+
+    fun restoreItem(id: String): Unit = restoreItems(listOf(id))
+
+    fun restoreItems(ids: List<String>): Unit = if (ids.isEmpty()) Unit else db { c ->
+        c.prepareStatement(
+            """UPDATE items SET status = 'active', decluttered_at = NULL,
+                      declutter_note = NULL, updated_at = now() WHERE id = ANY(?)"""
+        ).use { st ->
+            st.setArray(1, c.createArrayOf("uuid", ids.toTypedArray()))
             if (st.executeUpdate() == 0) throw DbException("item not found")
         }
     }

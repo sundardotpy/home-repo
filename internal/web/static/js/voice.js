@@ -4,7 +4,6 @@
 // text, which is also how it is tested.
 
 import { get, post } from './api.js';
-import { isRepo, t } from './look.js';
 import { esc, icon, ghostButton, primaryButton, openSheet, toast } from './ui.js';
 import { revalidate } from './store.js';
 import { parseUtterance } from './voice-parse.js';
@@ -129,7 +128,7 @@ async function moveItem(item, place) {
         : { parent_item_id: place.id };
   await post(`/items/${item.id}/move`, body);
   revalidate();
-  toast(t(`Moved ${item.name} to ${place.name}`, `git mv ${item.name} ${place.name}`));
+  toast(`Moved ${item.name} to ${place.name}`);
 }
 
 async function createInto(name, place) {
@@ -139,7 +138,7 @@ async function createInto(name, place) {
         : { name, parent_item_id: place.id };
   await post('/items', body);
   revalidate();
-  toast(t(`Added ${name} to ${place.name}`, `add ${name} → ${place.name}`));
+  toast(`Added ${name} to ${place.name}`);
 }
 
 // ------------------------------------------------------------------ speech
@@ -178,13 +177,13 @@ export function listenOnce(timeoutMs = 6000) {
 // -------------------------------------------------------------------- UI
 
 const INPUT_CLS =
-  'w-full h-11 px-4 bg-[var(--sunken)] rounded-[var(--btn-radius)] text-[15px] outline-none ' +
+  'w-full h-11 px-4 bg-[var(--sunken)] rounded-[var(--btn-radius)] text-base outline-none ' +
   'border border-transparent focus:border-[var(--line)]';
 
 const shell = (inner) => `
   <div data-voice>
-    <p class="text-[13px] text-[var(--ink-soft)] mb-3">
-      ${esc(t('Try: “Helmet is in living room”', 'try: helmet is in living room'))}
+    <p class="text-sm text-[var(--ink-soft)] mb-3">
+      ${esc('Try: “Helmet is in living room”')}
     </p>
     ${inner}
   </div>`;
@@ -195,16 +194,16 @@ const micButton = (listening) => `
                  flex items-center justify-center gap-2 text-sm font-medium
                  ${listening ? 'bg-[var(--sunken)] animate-pulse' : 'bg-[var(--paper)]'}">
     ${icon(listening ? 'close' : 'mic', 'w-5 h-5')}
-    ${esc(listening ? t('Listening… tap to stop', 'recording…') : t('Speak now', 'speak'))}
+    ${esc(listening ? 'Listening… tap to stop' : 'Speak now')}
   </button>`;
 
 const typeBox = (value = '') => `
   <div class="mt-3 flex items-center gap-2">
     <input data-voice-text type="text" value="${esc(value)}" class="${INPUT_CLS} flex-1 min-w-0"
-           placeholder="${esc(t('or type it here', 'or type it'))}" />
+           placeholder="${esc('or type it here')}" />
     <button type="button" data-voice-parse
-            class="h-11 px-4 rounded-[var(--btn-radius)] bg-[var(--ink)] text-[var(--paper)] text-sm font-medium shrink-0">
-      ${esc(t('Go', 'run'))}
+            class="btn btn-primary !min-h-14 shrink-0">
+      ${esc('Go')}
     </button>
   </div>`;
 
@@ -253,8 +252,8 @@ export function openVoiceSheet() {
     } catch (err) {
       if (mine === session) {
         home(err.message === 'not-allowed'
-          ? t('Microphone permission is off — type it instead', 'mic denied — type it')
-          : t('Could not hear that — try again or type it', 'nothing heard'));
+          ? 'Microphone permission is off — type it instead'
+          : 'Could not hear that — try again or type it');
       }
     }
   };
@@ -267,14 +266,14 @@ export function openVoiceSheet() {
     try {
       a = await resolveAction(parsed);
     } catch {
-      if (mine === session) home(t('Could not reach the database — try again', 'unreachable'), transcript);
+      if (mine === session) home('Could not reach the database — try again', transcript);
       return;
     }
     if (mine !== session) return;
     try {
       render(a, transcript);
     } catch (err) {
-      home(`${t('Could not work that out', 'parse failed')} — ${err.message}`, transcript);
+      home(`${'Could not work that out'} — ${err.message}`, transcript);
     }
   }
 
@@ -284,7 +283,7 @@ export function openVoiceSheet() {
       await applyAction(a);
       close();
     } catch {
-      home(t('That did not go through — try again', 'failed'));
+      home('That did not go through — try again');
     }
   };
 
@@ -298,8 +297,8 @@ export function openVoiceSheet() {
         label: c.label ?? `${c.name} — ${c.location?.path_string ?? ''}`,
       }));
       draw(`
-        <p class="text-[15px] font-medium">${esc(t(`Which “${which}”?`, `which ${which}?`))}</p>
-        <div class="mt-2 surface divide-y divide-[var(--line)] overflow-hidden">
+        <p class="text-base font-medium">${esc(`Which “${which}”?`)}</p>
+        <div class="mt-2 list">
           ${choices.map((c, i) => `
             <button type="button" data-choice="${i}"
                     class="w-full text-left px-4 py-3 text-sm hover:bg-[var(--sunken)]">${esc(c.label)}</button>`).join('')}
@@ -319,16 +318,16 @@ export function openVoiceSheet() {
 
     if (a.status === 'empty' || a.status === 'ambiguous') {
       draw(`
-        <p class="text-[15px]">${esc(t('I heard something like:', 'parsed:'))}
+        <p class="text-base">${esc('I heard something like:')}
            <span class="font-medium">${esc(a.text ?? a.raw ?? '')}</span></p>
-        <p class="text-[13px] text-[var(--ink-soft)] mt-1">${esc(t('Split it into the thing and the place:', 'item and place:'))}</p>
+        <p class="text-sm text-[var(--ink-soft)] mt-1">${esc('Split it into the thing and the place:')}</p>
         <div class="mt-2 space-y-2">
-          <input data-amb-item type="text" class="${INPUT_CLS}" placeholder="${esc(t('the thing', 'item'))}"
+          <input data-amb-item type="text" class="${INPUT_CLS}" placeholder="${esc('the thing')}"
                  value="${esc(a.item ?? '')}" />
-          <input data-amb-place type="text" class="${INPUT_CLS}" placeholder="${esc(t('the place', 'place'))}"
+          <input data-amb-place type="text" class="${INPUT_CLS}" placeholder="${esc('the place')}"
                  value="${esc(a.place ?? '')}" />
         </div>
-        <div class="mt-3">${primaryButton(t('Look it up', 'resolve'), 'data-amb-go')}</div>
+        <div class="mt-3">${primaryButton('Look it up', 'data-amb-go')}</div>
         ${typeBox(transcript)}`);
       el.querySelector('[data-amb-go]').addEventListener('click', () => {
         const item = el.querySelector('[data-amb-item]').value.trim();
@@ -343,24 +342,20 @@ export function openVoiceSheet() {
     // accesses, and each status leaves different fields undefined.
     let headline;
     if (a.status === 'confirm') {
-      headline = t(`Move <b>${esc(a.item.name)}</b> to <b>${esc(a.place.name)}</b>?`,
-        `git mv <b>${esc(a.item.name)}</b> <b>${esc(a.place.name)}</b>?`);
+      headline = `Move <b>${esc(a.item.name)}</b> to <b>${esc(a.place.name)}</b>?`;
     } else if (a.status === 'create-item') {
-      headline = t(`Nothing called “${esc(a.parsed.item)}” — add it to <b>${esc(a.place.name)}</b>?`,
-        `no file ${esc(a.parsed.item)} — create in <b>${esc(a.place.name)}</b>?`);
+      headline = `Nothing called “${esc(a.parsed.item)}” — add it to <b>${esc(a.place.name)}</b>?`;
     } else if (a.status === 'create-place') {
-      headline = t(`No place called “${esc(a.parsed.place)}” — create it and move <b>${esc(a.item.name)}</b> there?`,
-        `no folder ${esc(a.parsed.place)} — create and move?`);
+      headline = `No place called “${esc(a.parsed.place)}” — create it and move <b>${esc(a.item.name)}</b> there?`;
     } else {
-      headline = t(`Add “${esc(a.parsed.item)}” in a new <b>${esc(a.parsed.place)}</b>?`,
-        `create <b>${esc(a.parsed.place)}</b> and add ${esc(a.parsed.item)}?`);
+      headline = `Add “${esc(a.parsed.item)}” in a new <b>${esc(a.parsed.place)}</b>?`;
     }
 
     draw(`
-      <div class="text-[15px] leading-relaxed">${headline}</div>
+      <div class="text-base leading-relaxed">${headline}</div>
       <div class="mt-4 flex gap-2 items-stretch">
-        <div class="flex-1">${primaryButton(t('Yes', 'yes'), 'data-voice-yes')}</div>
-        <div class="flex-1">${ghostButton(t('No', 'no'), 'data-voice-no')}</div>
+        <div class="flex-1">${primaryButton('Yes', 'data-voice-yes')}</div>
+        <div class="flex-1">${ghostButton('No', 'data-voice-no')}</div>
       </div>
       ${typed}`);
     el.querySelector('[data-voice-yes]').addEventListener('click', () => runAction(a));
@@ -369,7 +364,7 @@ export function openVoiceSheet() {
   }
 
   close = openSheet({
-    title: t('Where did it go?', 'where did it go?'),
+    title: 'Where did it go?',
     body: shell(spinner),
     onMount(bodyEl) {
       el = bodyEl;

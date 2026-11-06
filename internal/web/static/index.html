@@ -6,8 +6,8 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"
     />
-    <meta name="theme-color" content="#f6f2e7" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#171610" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f4f7f6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#101615" media="(prefers-color-scheme: dark)" />
     <meta name="color-scheme" content="light dark" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -20,8 +20,6 @@
     <link rel="manifest" href="/static/manifest.json" />
     <link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png" />
     <link rel="mask-icon" href="/static/brand/mask-icon.svg" color="#1e2533" />
-    <!-- The body font is on the first paint's critical path. -->
-    <link rel="preload" href="/static/fonts/dm-sans.woff2" as="font" type="font/woff2" crossorigin />
     <!-- app.js imports these; without preloading, the browser finds them one
          request deep at a time. -->
     <link rel="modulepreload" href="/static/js/store.js" />
@@ -36,103 +34,89 @@
     <link rel="modulepreload" href="/static/js/labels.js" />
     <link rel="modulepreload" href="/static/js/photos.js" />
     <link rel="modulepreload" href="/static/js/theme.js" />
+    <link rel="modulepreload" href="/static/js/taxonomy.js" />
+    <link rel="modulepreload" href="/static/js/voice.js" />
+    <link rel="modulepreload" href="/static/js/voice-parse.js" />
+    <link rel="modulepreload" href="/static/js/lock.js" />
+    <link rel="modulepreload" href="/static/js/brand-monograms.js" />
     <script>
-      // Before first paint, so a chosen look never flashes the default.
+      // Before first paint, so a chosen look never flashes the default. The
+      // same rules as theme.js: dark lifts the accent 35% toward white, and the
+      // ink on it is white or near-black, whichever has more contrast.
       try {
         var d = document.documentElement;
-        var ui = localStorage.getItem('hsh.ui');
-        if (ui === 'repo') d.classList.add('ui-repo');
-        var a = localStorage.getItem('hsh.accent');
-        if (a && ui !== 'repo') {
-          d.style.setProperty('--color-accent', a);
-        }
         var m = localStorage.getItem('hsh.theme') || 'system';
-        var dark = m === 'dark' || (m === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        var dark = m === 'dark' || (m === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
         if (dark) d.classList.add('dark');
-        // The system bar takes the app's own background, so the two read as one.
-        var bg = getComputedStyle(d).getPropertyValue('--canvas').trim();
-        if (bg) document.querySelectorAll('meta[name=theme-color]').forEach(function (m) { m.setAttribute('content', bg); });
+        var a = localStorage.getItem('hsh.accent');
+        if (a && /^#[0-9a-f]{6}$/.test(a)) {
+          var c = [1, 3, 5].map(function (i) { var v = parseInt(a.slice(i, i + 2), 16); return dark ? v + (255 - v) * 0.35 : v; });
+          var L = c.map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+          L = 0.2126 * L[0] + 0.7152 * L[1] + 0.0722 * L[2];
+          d.style.setProperty('--accent', 'rgb(' + c.map(Math.round).join(' ') + ')');
+          d.style.setProperty('--on-accent', 1.05 / (L + 0.05) >= (L + 0.05) / 0.0618 ? '#ffffff' : '#1a1c1e');
+        }
       } catch (e) {}
     </script>
   </head>
   <body class="min-h-dvh">
+    <a href="#screen" class="skip-link">Skip to content</a>
     <!-- Desktop: the same destinations as the phone's bottom bar, up top. -->
+    <!-- Desktop: a navigation rail with the add button at its top. -->
     <header id="topbar" class="no-print">
-      <div class="mx-auto max-w-5xl flex items-center gap-4 flex-wrap">
-        <a href="#/" class="flex items-center shrink-0" aria-label="h/repo, home">
-          <img class="logo-light h-8 w-auto" src="/static/brand/wordmark.svg" alt="h/repo" />
-          <img class="logo-dark h-8 w-auto" src="/static/brand/wordmark-dark.svg" alt="" />
-        </a>
-        <div class="flex-1"></div>
-        <nav class="topnav" aria-label="Main" id="topnav"></nav>
-        <div class="flex-1"></div>
-        <button type="button" id="topbar-add" class="btn btn-primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" class="w-5 h-5" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-          <span>Put it away</span>
-        </button>
-        <a href="#/settings" id="topbar-settings" class="topround" aria-label="Settings" data-nav-match="#/settings"></a>
-      </div>
+      <a href="#/" class="grid place-items-center w-12 h-12" aria-label="h/repo, home">
+        <img class="logo-light w-9 h-9" src="/static/brand/mark.svg" alt="" width="36" height="36" />
+        <img class="logo-dark w-9 h-9" src="/static/brand/mark-dark.svg" alt="" width="36" height="36" />
+      </a>
+      <button type="button" id="topbar-add" aria-label="Add something">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="w-6 h-6" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <nav class="topnav" aria-label="Main" id="topnav"></nav>
+      <div class="flex-1"></div>
+      <a href="#/settings" id="topbar-settings" class="topround" aria-label="Settings" data-nav-match="#/settings"></a>
     </header>
 
     <div id="app-shell">
       <div class="mx-auto w-full max-w-3xl lg:max-w-4xl">
         <header
           id="header"
-          class="sticky top-0 lg:static z-20 bg-[var(--canvas)]/90 backdrop-blur-md"
+          class="sticky top-0 md:static z-20 bg-[var(--canvas)]"
           style="padding-top: env(safe-area-inset-top)"
         >
           <!-- First paint, before any JS: the shape of the screen, already there. -->
-          <div class="px-4 pt-4 pb-2">
-            <div class="skeleton h-9 w-52"></div>
-            <div class="skeleton h-14 w-full mt-4 rounded-[1.75rem]"></div>
+          <div class="px-4 pt-2 pb-2">
+            <div class="skeleton h-7 w-24 my-3.5"></div>
+            <div class="skeleton h-14 w-full rounded-[1.75rem]"></div>
           </div>
         </header>
 
-        <main id="screen" class="pb-32 lg:pb-12">
+        <main id="screen" tabindex="-1" class="pb-44 md:pb-12 outline-none">
           <div class="px-4">
-            <div class="skeleton h-3 w-24 mt-6 mb-3"></div>
-            <div class="surface overflow-hidden">
-              <div class="flex items-center gap-3 px-4 py-3.5">
-                <div class="skeleton w-11 h-11 rounded-full"></div>
-                <div class="flex-1 space-y-2">
-                  <div class="skeleton h-3.5 w-1/2"></div>
-                  <div class="skeleton h-2.5 w-1/4"></div>
-                </div>
-              </div>
-              <div class="flex items-center gap-3 px-4 py-3.5 border-t border-[var(--line)]">
-                <div class="skeleton w-11 h-11 rounded-full"></div>
-                <div class="flex-1 space-y-2">
-                  <div class="skeleton h-3.5 w-2/3"></div>
-                  <div class="skeleton h-2.5 w-1/3"></div>
-                </div>
-              </div>
-              <div class="flex items-center gap-3 px-4 py-3.5 border-t border-[var(--line)]">
-                <div class="skeleton w-11 h-11 rounded-full"></div>
-                <div class="flex-1 space-y-2">
-                  <div class="skeleton h-3.5 w-2/5"></div>
-                  <div class="skeleton h-2.5 w-1/5"></div>
-                </div>
-              </div>
-            </div>
+            <div class="skeleton h-4 w-24 mt-7 mb-3"></div>
+            <div class="flex items-center gap-3.5 py-3"><div class="skeleton w-10 h-10 rounded-[14px]"></div><div class="flex-1 space-y-2"><div class="skeleton h-4 w-1/2"></div><div class="skeleton h-5 w-1/4"></div></div></div>
+            <div class="flex items-center gap-3.5 py-3"><div class="skeleton w-10 h-10 rounded-[14px]"></div><div class="flex-1 space-y-2"><div class="skeleton h-4 w-2/3"></div><div class="skeleton h-5 w-1/3"></div></div></div>
+            <div class="flex items-center gap-3.5 py-3"><div class="skeleton w-10 h-10 rounded-[14px]"></div><div class="flex-1 space-y-2"><div class="skeleton h-4 w-2/5"></div><div class="skeleton h-5 w-1/5"></div></div></div>
           </div>
         </main>
       </div>
     </div>
 
-    <!-- Toasts sit above the nav bar, out of the thumb's way. -->
+    <!-- Snackbars sit above the nav bar and the FAB, out of the thumb's way. -->
     <div
       id="toast-root"
-      class="no-print fixed inset-x-0 bottom-28 lg:bottom-6 z-40 mx-auto w-full max-w-md px-4 pointer-events-none"
+      aria-live="polite"
+      class="no-print fixed inset-x-0 bottom-[calc(10rem+env(safe-area-inset-bottom))] md:bottom-6 z-40 mx-auto w-full max-w-md px-4 pointer-events-none"
     ></div>
 
-    <!-- The add button floats beside the bar, always one tap away. -->
-    <button id="fab" type="button" aria-label="Add something" class="no-print lg:hidden">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" class="w-7 h-7" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    <!-- The extended FAB: the screen's one accent action, above the bar. -->
+    <button id="fab" type="button" aria-label="Add something" class="no-print md:hidden">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="w-6 h-6" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      <span data-fab-label aria-hidden="true">Add</span>
       <!-- Lights up while writes are still on their way to the server. -->
-      <span id="sync-pip" class="hidden absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[var(--ink)] border-2 border-[var(--canvas)] animate-pulse"></span>
+      <span id="sync-pip" class="hidden absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[var(--on-accent)] border-2 border-[var(--accent)]"></span>
     </button>
 
-    <nav id="app-nav" class="no-print lg:hidden" aria-label="Main"></nav>
+    <nav id="app-nav" class="no-print md:hidden" aria-label="Main"></nav>
 
     <div id="sheet-root"></div>
 

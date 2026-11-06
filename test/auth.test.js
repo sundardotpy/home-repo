@@ -139,3 +139,10 @@ test('session reports required and authed', () => {
   const open = gated('');
   assert.equal(open.enabled, false);
 });
+
+test('login refuses an oversized body instead of buffering it', async () => {
+  const auth = new Auth('correct horse battery');
+  const big = fakeExchange({ method: 'POST', path: '/api/login', body: `{"passcode":"${'x'.repeat(10_000)}"}` });
+  await auth.login(big.req, big.res);
+  assert.equal(big.res.statusCode, 400);
+});

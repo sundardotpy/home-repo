@@ -113,3 +113,7 @@ test('cookie round trip', () => {
     'hr_session=a%20b; Path=/; Max-Age=60; HttpOnly; Secure; SameSite=Lax');
   assert.ok(serializeCookie('hr_session', '', { maxAge: -1 }).includes('Max-Age=-1'));
 });
+
+test('a cookie that is not valid percent-encoding is skipped, not thrown', () => {
+  assert.deepEqual(parseCookies('junk=%E0; hr_session=v1.1.abc'), { hr_session: 'v1.1.abc' });
+});

@@ -33,8 +33,8 @@ export function qrSheet(unit) {
         <img src="${esc(qrSVGUrl(unit.qr_slug))}" alt="QR code for ${esc(unit.name)}"
              class="w-56 h-56 mx-auto rounded-xl border border-[var(--line)] bg-white p-2">
         <div class="mt-3 font-mono tracking-[0.2em] text-lg">${esc(unit.qr_slug)}</div>
-        <p class="mt-1 text-[13px] text-[var(--ink-soft)] break-all">${esc(scanURLFor(unit.qr_slug))}</p>
-        <p class="mt-3 text-[13px] text-[var(--ink-soft)]">
+        <p class="mt-1 text-sm text-[var(--ink-soft)] break-all">${esc(scanURLFor(unit.qr_slug))}</p>
+        <p class="mt-3 text-sm text-[var(--ink-soft)]">
           Stick this on the box. Any phone camera opens it straight to what is inside.
         </p>
       </div>
@@ -143,11 +143,11 @@ export function barcodeCaptureSheet(onCode) {
           ? `<div class="relative aspect-[4/3] rounded-xl overflow-hidden bg-black mb-4">
                <video data-video playsinline muted class="w-full h-full object-cover"></video>
                <div class="absolute inset-x-6 top-1/2 -translate-y-1/2 h-20 border-2 border-white/70 rounded-lg"></div>
-               <p data-status class="absolute inset-x-0 bottom-2 text-center text-white/80 text-[13px]">
+               <p data-status class="absolute inset-x-0 bottom-2 text-center text-white/80 text-sm">
                  Line up the barcode
                </p>
              </div>`
-          : `<p class="text-[13px] text-[var(--ink-soft)] mb-4">
+          : `<p class="text-sm text-[var(--ink-soft)] mb-4">
                This browser cannot use the camera. Type the digits printed under the barcode.
              </p>`
       }
@@ -226,11 +226,11 @@ export function scanSheet({ onUnknown } = {}) {
           ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-black mb-4">
                <video data-video playsinline muted class="w-full h-full object-cover"></video>
                <div class="absolute inset-8 border-2 border-white/70 rounded-xl"></div>
-               <p data-status class="absolute inset-x-0 bottom-2 text-center text-white/80 text-[13px]">
+               <p data-status class="absolute inset-x-0 bottom-2 text-center text-white/80 text-sm">
                  Point at a QR label or a product barcode
                </p>
              </div>`
-          : `<p class="text-[13px] text-[var(--ink-soft)] mb-4">
+          : `<p class="text-sm text-[var(--ink-soft)] mb-4">
                This browser cannot use the camera for scanning. Point your phone's camera app at
                a QR label instead — it opens the same link — or type the code below.
              </p>`

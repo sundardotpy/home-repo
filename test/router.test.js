@@ -167,3 +167,21 @@ test('a throwing middleware produces a 500 rather than a hang', async () => {
   await assert.rejects(() => r.handle(req('GET', '/x'), out));
   assert.equal(out.statusCode, 500);
 });
+
+test('a percent sign in a param is decoded once, not twice', async () => {
+  const r = new Router();
+  let got;
+  r.patch('/api/tags/{tag}', (req, res) => { got = req.params.tag; res.end(); });
+  await r.handle(req('PATCH', '/api/tags/50%25%20off'), res());
+  assert.equal(got, '50% off');
+});
+
+test('malformed percent-encoding is a 400, not a crash', async () => {
+  const r = new Router();
+  r.get('/api/rooms/{roomID}', (req, res) => res.end('ok'));
+  for (const path of ['/%E0', '/api/rooms/%E0']) {
+    const out = res();
+    await r.handle(req('GET', path), out);
+    assert.equal(out.statusCode, 400, path);
+  }
+});
