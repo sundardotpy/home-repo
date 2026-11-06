@@ -2,13 +2,28 @@
 // internal/web/static/icons/brands/*.svg and writes the name index the app
 // imports. Run inside a node container; see the README.
 //   docker run --rm -v "$PWD:/repo" -w /repo/tmp/brands node:22-alpine sh -c "npm i simple-icons && cp ../../scripts/gen-brand-icons.mjs gen.mjs && node gen.mjs"
+// Or anywhere simple-icons is installed, pointing REPO at the checkout:
+//   REPO=/path/to/home-repo node gen-brand-icons.mjs
+// Then run scripts/export-android-icons.mjs so the phone gets them too.
 import * as si from 'simple-icons';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const slugs = ["apple","samsung","sony","lg","xiaomi","ikea","dell","hp","lenovo","asus","acer","huawei","nokia","motorola","oneplus","oppo","vivo","google","bosch","panasonic","toshiba","tplink","netgear","garmin","fitbit","jbl","bose","sennheiser","beats","sonos","roku","ring","epson","intel","amd","nvidia","razer","corsair","steelseries","seagate","nikon","fujifilm","leica","dji","insta360","audiotechnica","playstation","raspberrypi","arduino","3m","nike","adidas","puma","tata","havells","boat","amul","unilever","vim","tide","wipro","hitachi","jio","airtel","bata","bigbasket","swiggy","zomato","honda","suzuki","hyundai","kia","toyota","mahindra"];
+const slugs = ["apple","samsung","sony","lg","xiaomi","ikea","dell","hp","lenovo","asus","acer","huawei","nokia","motorola","oneplus","oppo","vivo","google","bosch","panasonic","toshiba","tplink","netgear","garmin","fitbit","jbl","bose","sennheiser","beats","sonos","roku","ring","epson","intel","amd","nvidia","razer","corsair","steelseries","seagate","nikon","fujifilm","leica","dji","insta360","audiotechnica","playstation","raspberrypi","arduino","3m","nike","adidas","puma","tata","havells","boat","amul","unilever","vim","tide","wipro","hitachi","jio","airtel","bata","bigbasket","swiggy","zomato","honda","suzuki","hyundai","kia","toyota","mahindra",
+  // Electronics, appliances and home (added Nov 2026, Simple Icons 16.36).
+  "kodak","honor","msi","alienware","kingstontechnology","synology","ubiquiti","hyperx","appletv","steam",
+  "siemens","mitsubishi","irobot","ecovacs","philipshue",
+  // Beauty, clothing and lifestyle.
+  "dior","zara","handm","uniqlo_ja","reebok","underarmour","newbalance","fila","thenorthface",
+  // Cards and payment devices kept at home.
+  "paytm","phonepe","googlepay","hdfcbank","icicibank","axisbank"];
+// The key stored on an item ("brand:<key>") where the Simple Icons slug reads
+// badly. Same-named but different companies are deliberately absent: Simple
+// Icons' Safari is Apple's browser (not the luggage), Max is music software,
+// sharp an image library, Pandora the music service, Hermes a parcel carrier.
+const KEY = { uniqlo_ja: 'uniqlo', kingstontechnology: 'kingston' };
 const by = Object.fromEntries(Object.values(si).filter((x) => x && x.slug).map((x) => [x.slug, x]));
 
-const root = '/repo/internal/web';
+const root = `${process.env.REPO ?? '/repo'}/internal/web`;
 mkdirSync(`${root}/static/icons/brands`, { recursive: true });
 
 let index = `// Product brand marks, for the things whose brand is the quickest way to
@@ -29,9 +44,10 @@ export const BRAND_ICONS = {\n`;
 for (const s of slugs) {
   const i = by[s];
   if (!i) { console.error('missing', s); continue; }
-  writeFileSync(`${root}/static/icons/brands/${s}.svg`,
+  const key = KEY[s] ?? s;
+  writeFileSync(`${root}/static/icons/brands/${key}.svg`,
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><title>${i.title}</title><path d="${i.path}"/></svg>\n`);
-  index += `  ${JSON.stringify(s)}: ${JSON.stringify(i.title)},\n`;
+  index += `  ${JSON.stringify(key)}: ${JSON.stringify(i.title)},\n`;
 }
 index += `};\n\nexport const BRAND_KEYS = Object.keys(BRAND_ICONS);\n`;
 writeFileSync(`${root}/static/js/brand-icons.js`, index);
