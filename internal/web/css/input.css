@@ -1092,6 +1092,11 @@
     padding-bottom: 0 !important;
   }
 
+  /* The rail's gutter has no rail to make room for on paper. */
+  #app-shell {
+    padding-left: 0 !important;
+  }
+
   html,
   body {
     background: #fff !important;
