@@ -31,9 +31,9 @@ export function createSelect(host, { options = [], value = '', placeholder = 'Se
     const chosen = opts.find((o) => o.value === current);
     host.innerHTML = `
       <button type="button" data-trigger aria-haspopup="listbox" aria-expanded="false"
-        class="w-full h-11 px-3 rounded-lg bg-[var(--paper)] border border-[var(--line)]
+        class="w-full h-14 px-4 rounded-[6px] border border-[var(--outline)]
                flex items-center gap-2 text-left transition-colors
-               hover:border-[var(--ink-faint)] focus:border-[var(--ink)] focus:outline-none">
+               hover:border-[var(--ink)] focus:border-[var(--accent-ink)] focus:shadow-[inset_0_0_0_1px_var(--accent-ink)] focus:outline-none">
         ${chosen?.prefix || ''}
         <span class="flex-1 truncate ${chosen ? '' : 'text-[var(--ink-faint)]'}">
           ${esc(chosen ? chosen.label : placeholder)}
@@ -54,7 +54,7 @@ export function createSelect(host, { options = [], value = '', placeholder = 'Se
       ${o.prefix || ''}
       <span class="flex-1 min-w-0">
         <span class="block truncate">${esc(o.label)}</span>
-        ${o.hint ? `<span class="block text-[12px] text-[var(--ink-faint)] truncate">${esc(o.hint)}</span>` : ''}
+        ${o.hint ? `<span class="block text-xs text-[var(--ink-faint)] truncate">${esc(o.hint)}</span>` : ''}
       </span>
       ${o.value === current ? icon('check', 'w-4 h-4') : ''}
     </button>`;
@@ -217,7 +217,7 @@ export function wireAccordions(root, { onToggle } = {}) {
       panel.classList.toggle('is-open', nowOpen);
       btn.setAttribute('aria-expanded', String(nowOpen));
       const caret = btn.querySelector('[data-caret]');
-      if (caret) caret.style.transform = nowOpen ? 'rotate(90deg)' : '';
+      if (caret) caret.style.transform = nowOpen ? 'rotate(180deg)' : '';
       onToggle?.(acc.dataset.key, nowOpen);
     });
   });

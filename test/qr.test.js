@@ -50,3 +50,12 @@ test('barcode normalisation matches the scanner handlers', () => {
   assert.equal(normaliseBarcode('4-006-38323'), '400638323');
   assert.equal(normaliseBarcode(''), '');
 });
+
+test('the svg is well-formed XML, so an <img> can show it', async () => {
+  // A repeated attribute is fatal in XML: the browser draws a broken image
+  // and every printed label comes out blank.
+  const root = (await svg(TARGET)).match(/^<svg[^>]*>/)[0];
+  const names = [...root.matchAll(/\s([a-zA-Z:-]+)=/g)].map((m) => m[1]);
+  assert.deepEqual(names, [...new Set(names)], `repeated attribute in ${root}`);
+  assert.equal(names.filter((n) => n === 'shape-rendering').length, 1);
+});

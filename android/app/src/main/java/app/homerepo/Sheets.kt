@@ -284,7 +284,7 @@ fun DeclutterSheet(item: ItemRow, onDismiss: () -> Unit) {
     Sheet(onDismiss = { if (!busy) onDismiss() }) {
         SheetTitle("Declutter ${item.name}?")
         Text(
-            "It leaves the house but stays in the record, with its history. You can restore it any time.",
+            "It leaves the house but stays in the record, with its history. Anything inside it goes too. You can restore it any time.",
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         OutlinedTextField(note, { note = it }, label = { Text("Note (optional): sold, given away…") },
@@ -297,8 +297,11 @@ fun DeclutterSheet(item: ItemRow, onDismiss: () -> Unit) {
                     busy = true
                     scope.launch {
                         try {
-                            withContext(Dispatchers.IO) { Db.declutterItem(item.id, note.trim().ifBlank { null }) }
-                            ui.done("Decluttered ${item.name}") { Db.restoreItem(item.id) }
+                            val gone = withContext(Dispatchers.IO) { Db.declutterItem(item.id, note.trim().ifBlank { null }) }
+                            val inside = gone.size - 1
+                            ui.done(
+                                if (inside > 0) "Decluttered ${item.name} and $inside inside it" else "Decluttered ${item.name}"
+                            ) { Db.restoreItems(gone) }
                             onDismiss()
                         } catch (e: Exception) {
                             error = e.message

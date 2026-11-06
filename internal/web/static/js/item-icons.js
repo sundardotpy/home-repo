@@ -317,6 +317,11 @@ export const ICON_KEYS = Object.keys(ITEM_ICONS);
 // mask, so they follow the text colour. Everything else is an inline line icon.
 export const isBrandKey = (key) => typeof key === 'string' && key.startsWith('brand:');
 
+// Brand names carry "&" and apostrophes (H&M, Johnson's). ui.js imports this
+// module, so it keeps its own escape rather than importing esc back.
+const html = (s) =>
+  String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
 export const iconLabel = (key) =>
   isBrandKey(key)
     ? BRAND_ICONS[key.slice(6)] || MONOGRAMS[key.slice(6)]?.label || ''
@@ -326,13 +331,13 @@ export const itemIconSVG = (key, cls = 'w-5 h-5') => {
   if (isBrandKey(key)) {
     const slug = key.slice(6);
     if (BRAND_ICONS[slug]) {
-      return `<span class="brand-glyph ${cls}" role="img" aria-label="${BRAND_ICONS[slug]}"
+      return `<span class="brand-glyph ${cls}" role="img" aria-label="${html(BRAND_ICONS[slug])}"
         style="--u:url(/static/icons/brands/${slug}.svg)"></span>`;
     }
     const mono = MONOGRAMS[slug];
     if (!mono) return '';
-    return `<span class="monogram ${cls}" role="img" aria-label="${mono.label}"
-      data-len="${mono.mono.length}">${mono.mono}</span>`;
+    return `<span class="monogram ${cls}" role="img" aria-label="${html(mono.label)}"
+      data-len="${mono.mono.length}">${html(mono.mono)}</span>`;
   }
   const def = ITEM_ICONS[key];
   if (!def) return '';

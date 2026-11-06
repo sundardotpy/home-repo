@@ -2,209 +2,117 @@
 
 @source "../static/**/*.{html,js}";
 
-/* Self-hosted: the app makes no third-party requests. Variable fonts, latin
-   subset. JetBrains Mono only downloads when something on screen uses it,
-   which in practice means the Repo interface. */
-@font-face {
-  font-family: "DM Sans";
-  src: url("/static/fonts/dm-sans.woff2") format("woff2");
-  font-weight: 400 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Bricolage Grotesque";
-  src: url("/static/fonts/bricolage-grotesque.woff2") format("woff2");
-  font-weight: 600 800;
-  font-display: swap;
-}
-@font-face {
-  font-family: "JetBrains Mono";
-  src: url("/static/fonts/jetbrains-mono.woff2") format("woff2");
-  font-weight: 400 800;
-  font-display: swap;
-}
-
 @theme {
-  /* The one colour the user controls. theme.js overrides it at runtime with an
-     inline style on :root, and everything below re-derives from it. */
-  --color-accent: #efe34a;
+  /* The device's own sans, as on Android: the app follows the user's font and
+     size settings and downloads no fonts at all. */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-sans);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --color-paper: #fffefb;
-  --color-canvas: #f6f2e7;
-  --color-sunken: #ede8da;
-  --color-line: #e5dfce;
-
-  --color-ink: #1a1812;
-  --color-ink-soft: #5d584a;
-  --color-ink-faint: #8a8473;
-
-  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  --font-display: "Bricolage Grotesque", "DM Sans", -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-
-  /* Utilities read these at run time, so the Repo interface can tighten every
-     rounded-* in the app by overriding them on <html>. */
+  /* Utilities read these at run time. */
   --radius-lg: 0.875rem;
   --radius-xl: 1.25rem;
   --radius-2xl: 1.75rem;
   --radius-card: 1.25rem;
 }
 
-/* Two skins over the same markup. Classic is the default; Repo (html.ui-repo)
-   borrows the look of a code host: monospace names, hairline borders, tighter
-   corners, a green primary action. Each has a light and a dark ground. */
+/* Clear Drawers, the same system as the Android app (DESIGN.md): a frosted
+   sea-glass ground, depth by tonal steps rather than shadows, one accent spent
+   on the screen's main action, and a tint per room. The names are roles:
+   canvas is the ground, paper the slip (surface-container-lowest), sheet the
+   raised tonal step, sunken the search well, line the outline-variant. */
 @layer base {
   :root {
-    --color-accent-hover: color-mix(in srgb, var(--color-accent) 86%, #000);
-    --color-accent-soft: color-mix(in srgb, var(--color-accent) 24%, transparent);
-    /* Text on an accent fill, and the accent used as text on a plain ground.
-       theme.js sets --on-accent from the chosen colour's luminance. */
-    --on-accent: #1a1812;
-    --accent-ink: color-mix(in srgb, var(--color-accent) 42%, #1a1812);
-
     color-scheme: light dark;
-    --paper: #fffefb;
-    --canvas: #f6f2e7;
-    --sunken: #ede8da;
-    --line: #e5dfce;
-    --ink: #1a1812;
-    --ink-soft: #5d584a;
-    --ink-faint: #8a8473;
-    --shadow-sheet: 0 -8px 30px rgb(26 24 18 / 0.14);
-    --shadow-card: 0 1px 2px rgb(26 24 18 / 0.05);
+    --canvas: #f4f7f6;
+    --ground: var(--canvas);
+    --paper: #ffffff;
+    --sheet: #eef3f2;
+    --bar: #e8eeed;
+    --sunken: #e2e9e7;
+    --status-well: #dce3e1;
+    --line: #c3ccca;
+    --outline: #6f7a79;
+    --ink: #1c2326;
+    --ink-soft: #4a5557;
+    --ink-faint: #5f6c6b;
+    --inverse: #2d3433;
+    --on-inverse: #ecf2f0;
 
-    --btn-bg: var(--ink);
-    --btn-fg: var(--paper);
+    /* theme.js sets --accent, --on-accent, --accent-ink and --accent-inverse
+       from the chosen accent; these are the sea-glass defaults. */
+    --accent: #0e5e58;
+    --on-accent: #ffffff;
+    --accent-ink: #0e5e58;
+    --accent-inverse: #7fd3c6;
+    --accent-container: color-mix(in oklab, var(--accent) 25%, var(--canvas));
+    --accent-tonal: color-mix(in oklab, var(--accent) 18%, var(--canvas));
+
+    --shift-bg: #f6e0b5;
+    --shift-fg: #261a00;
+    --error: #b3261e;
+    --on-error: #ffffff;
+    --good-bg: #d3ebdd;
+    --good-fg: #145c36;
+    --warn-bg: #f6e0b5;
+    --warn-fg: #5c4300;
+    --del: var(--error);
+    --add: var(--good-fg);
+
     --btn-radius: 9999px;
-    --fab-bg: var(--color-accent);
-    --fab-fg: var(--on-accent);
-
-    --nav-bg: #1a1812;
-    --nav-fg: #b5ae9a;
-    --nav-active-bg: #2f2b20;
-    --nav-active-fg: #ffffff;
-
-    --hero-bg: #1a1812;
-    --hero-fg: #ffffff;
-    --hero-soft: #b5ae9a;
-
-    --good-bg: #d9f2e3;
-    --good-fg: #146c3f;
-    --warn-bg: #fbe6b8;
-    --warn-fg: #7a4b00;
-    --del: #c0392b;
-    --add: #146c3f;
+    --shadow-sheet: 0 -2px 12px rgb(28 35 38 / 0.12);
+    --shadow-fab: 0 3px 8px rgb(28 35 38 / 0.18), 0 1px 3px rgb(28 35 38 / 0.12);
   }
 
   html.dark {
     color-scheme: dark;
-    --color-accent-soft: color-mix(in srgb, var(--color-accent) 22%, transparent);
-    --accent-ink: var(--color-accent);
+    --canvas: #101615;
+    --paper: #0b100f;
+    --sheet: #181e1d;
+    --bar: #1c2221;
+    --sunken: #262d2b;
+    --status-well: #313836;
+    --line: #3f4947;
+    --outline: #899391;
+    --ink: #dee4e2;
+    --ink-soft: #bfc9c7;
+    --ink-faint: #8f9a98;
+    --inverse: #dee4e2;
+    --on-inverse: #2d3433;
+    --accent-container: color-mix(in oklab, var(--accent) 45%, var(--canvas));
+    --accent-tonal: color-mix(in oklab, var(--accent) 30%, var(--canvas));
 
-    --paper: #211f17;
-    --canvas: #171610;
-    --sunken: #2c2a20;
-    --line: #38352a;
-    --ink: #f1ede0;
-    --ink-soft: #b5ae9a;
-    --ink-faint: #837d6b;
-    --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 0.5);
-    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
-
-    --nav-bg: #0f0e0a;
-    --nav-active-bg: #2f2b20;
-    --hero-bg: #0f0e0a;
-
-    --good-bg: #1c3a2d;
-    --good-fg: #56d39a;
-    --warn-bg: #3a2e14;
-    --warn-fg: #e0a93b;
-    --del: #e5736b;
-    --add: #56d39a;
+    --shift-bg: #5d4300;
+    --shift-fg: #f6e0b5;
+    --error: #f2b8b5;
+    --on-error: #601410;
+    --good-bg: #1d3a2b;
+    --good-fg: #9ed8b4;
+    --warn-bg: #4a3a16;
+    --warn-fg: #f6e0b5;
+    --shadow-sheet: 0 -2px 12px rgb(0 0 0 / 0.5);
+    --shadow-fab: 0 3px 8px rgb(0 0 0 / 0.5);
   }
 
-  /* ------------------------------------------------------------ repo skin */
-  html.ui-repo {
-    --color-accent: #3b5bdb;
-    --on-accent: #ffffff;
-    --accent-ink: #3b5bdb;
-    --color-accent-soft: color-mix(in srgb, #3b5bdb 12%, transparent);
-
-    --paper: #ffffff;
-    --canvas: #f6f8fa;
-    --sunken: #eef1f5;
-    --line: #d0d7de;
-    --ink: #1f2328;
-    --ink-soft: #59636e;
-    --ink-faint: #818b98;
-    --shadow-sheet: 0 -8px 30px rgb(31 35 40 / 0.16);
-    --shadow-card: none;
-
-    --radius-lg: 0.5rem;
-    --radius-xl: 0.75rem;
-    --radius-2xl: 0.75rem;
-    --radius-card: 0.75rem;
-    --font-display: var(--font-mono);
-
-    --btn-bg: #1f883d;
-    --btn-fg: #ffffff;
-    --btn-radius: 0.5rem;
-    --fab-bg: #1f883d;
-    --fab-fg: #ffffff;
-
-    --nav-bg: transparent;
-    --nav-fg: #59636e;
-    --nav-active-bg: #eef1f5;
-    --nav-active-fg: #1f2328;
-
-    --hero-bg: #ffffff;
-    --hero-fg: #1f2328;
-    --hero-soft: #59636e;
-    --good-bg: #dafbe1;
-    --good-fg: #1a7f37;
-    --warn-bg: #fff8c5;
-    --warn-fg: #7d4e00;
-    --del: #cf222e;
-    --add: #1a7f37;
-  }
-
-  html.ui-repo.dark {
-    --color-accent: #7f93f5;
-    --on-accent: #0f1117;
-    --accent-ink: #7f93f5;
-    --color-accent-soft: color-mix(in srgb, #7f93f5 16%, transparent);
-
-    --paper: #1a1d26;
-    --canvas: #14161d;
-    --sunken: #20242f;
-    --line: #323847;
-    --ink: #e6e9f2;
-    --ink-soft: #9aa3b5;
-    --ink-faint: #6f7889;
-    --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 0.55);
-
-    --btn-bg: #3fb27f;
-    --btn-fg: #08150f;
-    --fab-bg: #3fb27f;
-    --fab-fg: #08150f;
-
-    --nav-fg: #9aa3b5;
-    --nav-active-bg: #2b3040;
-    --nav-active-fg: #e6e9f2;
-
-    --hero-bg: #1a1d26;
-    --hero-fg: #e6e9f2;
-    --hero-soft: #9aa3b5;
-    --good-bg: #1c3a2d;
-    --good-fg: #56d39a;
-    --warn-bg: #3a2e14;
-    --warn-fg: #e0a93b;
-    --del: #e5736b;
-    --add: #56d39a;
-  }
+  /* Six room tints, each a light/dark pair with its own ink; picked by the
+     same name hash as the phone, so a room is one colour on both. */
+  .tint-0 { --tint: #cdebe1; --on-tint: #0f3d33; }
+  .tint-1 { --tint: #f6e0b5; --on-tint: #4a3405; }
+  .tint-2 { --tint: #f6d3da; --on-tint: #5a1d2b; }
+  .tint-3 { --tint: #ded8f5; --on-tint: #2e2463; }
+  .tint-4 { --tint: #d3e5f6; --on-tint: #12344f; }
+  .tint-5 { --tint: #dce6cf; --on-tint: #2c3a1c; }
+  html.dark .tint-0 { --tint: #24453c; --on-tint: #c6ebdd; }
+  html.dark .tint-1 { --tint: #4a3a16; --on-tint: #f6e0b5; }
+  html.dark .tint-2 { --tint: #52303a; --on-tint: #f6d3da; }
+  html.dark .tint-3 { --tint: #3a3458; --on-tint: #ded8f5; }
+  html.dark .tint-4 { --tint: #2a3d52; --on-tint: #d3e5f6; }
+  html.dark .tint-5 { --tint: #38432b; --on-tint: #dce6cf; }
 
   html {
+    /* The sticky header must never sit on top of the field that has focus. */
+    scroll-padding-top: 6rem;
+    scroll-padding-bottom: 7rem;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
   }
@@ -249,75 +157,134 @@
   }
 }
 
-/* Per-room colour, hue supplied inline as --room-h. Saturation and lightness
-   are fixed here so every room reads at the same weight, and so the palette is
-   independent of the user's accent colour. */
 @layer components {
-  .room-badge,
+  /* A room's swatch wears the room's tint (.tint-n); a tag is a plain slip. */
+  .room-badge {
+    background: var(--tint);
+    color: var(--on-tint);
+  }
   .tag-chip {
-    background: hsl(var(--room-h) 58% 92%);
-    color: hsl(var(--room-h) 55% 32%);
-  }
-  html.dark .room-badge,
-  html.dark .tag-chip {
-    background: hsl(var(--room-h) 30% 22%);
-    color: hsl(var(--room-h) 62% 72%);
-  }
-
-  /* Rooms are a joined list on a phone and a two-column grid of cards from sm
-     up, where a single narrow column of full-width rows looks lost. */
-  .room-grid {
-    display: grid;
     background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-card);
-    box-shadow: var(--shadow-card);
-    overflow: hidden;
-  }
-  .room-grid > * + * {
-    border-top: 1px solid var(--line);
-  }
-  @media (min-width: 640px) {
-    .room-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.75rem;
-      background: transparent;
-      border: 0;
-      border-radius: 0;
-      box-shadow: none;
-      overflow: visible;
-    }
-    .room-grid > * {
-      border: 1px solid var(--line);
-      border-radius: var(--radius-card);
-      background: var(--paper);
-      box-shadow: var(--shadow-card);
-    }
-    .room-grid > * + * {
-      border-top: 1px solid var(--line);
-    }
+    color: var(--ink);
+    border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   }
 
-  /* Keyboard focus needs to be visible, but the browser's default ring sits
-     awkwardly on rounded controls and shows up on mouse clicks too. The ink
-     colour is used rather than the accent: a pale accent is not a visible ring. */
+  /* Lists sit on the ground: one item per row, no cards, no dividers. The
+     rhythm of the rows separates them. */
+  .list > * + * {
+    margin-top: 0;
+  }
+  /* ---------------------------------------------------------- grids ----
+     One system for every grid. Columns come from a minimum track width in
+     rem, not from breakpoints, so a grid reflows with its container and with
+     the user's text size. auto-fill (not auto-fit) keeps tracks the same width
+     when only one or two cells are left, as after filtering. Spacing belongs
+     to the grid: nothing relies on a neighbour's margin, and nothing is pulled
+     up with a negative one.
+
+       .grid-tiles    icon and brand tiles        min 4.75rem, gap 8px
+       .grid-choices  Settings miniature cards    min 6.5rem,  gap 8px
+       .grid-rows     list rows set in columns    min 18rem,   column gap 12px
+       .grid-fields   form fields side by side    min 9rem,    gap 12px
+       .grid-heading  a group title inside a gridded section */
+  .grid-tiles,
+  .grid-choices,
+  .grid-rows,
+  .grid-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(var(--track), 100%), 1fr));
+  }
+  .grid-tiles {
+    --track: 4.75rem;
+    gap: 0.5rem;
+  }
+  .grid-choices {
+    --track: 6.5rem;
+    gap: 0.5rem;
+  }
+  .grid-rows {
+    --track: 18rem;
+    column-gap: 0.75rem;
+  }
+  /* Fields keep each other's company until one would be too narrow to type in. */
+  .grid-fields {
+    --track: 9rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(var(--track), 100%), 1fr));
+    column-gap: 0.75rem;
+  }
+  .grid-heading {
+    margin: 1.25rem 0 0.5rem;
+  }
+  .grid-heading:first-child {
+    margin-top: 0;
+  }
+
+  /* A tile: an icon over its name. Square at rest, and free to grow taller
+     when text is enlarged (aspect-ratio yields to content). */
+  .tile {
+    aspect-ratio: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.25rem;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    transition: background-color 150ms ease;
+  }
+  .tile > :last-child {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tile:active {
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+  }
+  @media (hover: hover) {
+    .tile:hover {
+      background: color-mix(in srgb, var(--ink) 5%, transparent);
+    }
+  }
+  .tile[aria-pressed="true"] {
+    border: 2px solid var(--accent);
+    background: var(--accent-tonal);
+    color: var(--ink);
+  }
+
+  /* The section title: sentence case, title-small, muted. */
+  .section-title {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    letter-spacing: 0.1px;
+    color: var(--ink-soft);
+  }
+
   :focus-visible {
-    outline: 2px solid var(--ink);
+    outline: 2px solid var(--accent-ink);
     outline-offset: 2px;
-    border-radius: 0.5rem;
+    border-radius: 10px;
   }
   :focus:not(:focus-visible) {
     outline: none;
   }
+  ::selection {
+    background: var(--accent-container);
+    color: var(--ink);
+  }
+  input,
+  textarea {
+    caret-color: var(--accent-ink);
+  }
 
-  /* Pointer devices get hover affordances; touch devices would keep them stuck
-     on after a tap. */
+  /* Pointer devices get a state layer on hover; touch keeps the pressed one. */
   @media (hover: hover) {
     .row-press:hover {
-      background: color-mix(in srgb, var(--sunken) 60%, transparent);
-    }
-    .room-grid > *:hover {
-      border-color: color-mix(in srgb, var(--ink-faint) 40%, var(--line));
+      background: color-mix(in srgb, var(--ink) 5%, transparent);
     }
   }
 
@@ -327,50 +294,71 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    min-height: 3rem;
-    padding: 0 1.25rem;
-    font-size: 15px;
-    font-weight: 600;
+    min-height: 3.25rem;
+    padding: 0 1.5rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    letter-spacing: 0.1px;
     white-space: nowrap;
     border-radius: var(--btn-radius);
     transition:
-      background-color 120ms ease,
-      filter 120ms ease,
-      transform 120ms ease;
+      background-color 150ms ease,
+      box-shadow 150ms ease;
   }
   .btn:active {
-    transform: scale(0.98);
+    box-shadow: inset 0 0 0 100px color-mix(in srgb, currentColor 12%, transparent);
+  }
+  @media (hover: hover) {
+    .btn:hover {
+      box-shadow: inset 0 0 0 100px color-mix(in srgb, currentColor 8%, transparent);
+    }
+  }
+  .btn:disabled {
+    opacity: 0.38;
+    pointer-events: none;
   }
   /* Icon-only: a square 48px target that never shrinks in a flex row. */
   .btn-icon {
     width: 3rem;
+    min-height: 3rem;
     padding: 0;
     flex-shrink: 0;
   }
+  /* The screen's one accent action. */
   .btn-primary {
-    background: var(--btn-bg);
-    color: var(--btn-fg);
+    background: var(--accent);
+    color: var(--on-accent);
   }
-  .btn-primary:active {
-    filter: brightness(0.92);
+  /* Secondary but useful. */
+  .btn-tonal {
+    background: var(--accent-tonal);
+    color: var(--ink);
   }
+  /* Cancel or the alternative. */
   .btn-ghost {
     border: 1px solid var(--line);
-    background: var(--paper);
+    color: var(--ink-soft);
   }
-  .btn-ghost:active {
-    background: var(--sunken);
+  .btn-text {
+    padding: 0 0.75rem;
+    color: var(--accent-ink);
+  }
+  .btn-danger {
+    background: var(--error);
+    color: var(--on-error);
   }
 
-  /* Small status labels: a tone, not a decoration. */
+  /* Status labels: a slip in the status well, or a value tone. */
   .pill {
     display: inline-flex;
     align-items: center;
-    height: 1.5rem;
-    padding: 0 0.625rem;
-    border-radius: 9999px;
-    font-size: 12px;
-    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
     white-space: nowrap;
   }
   .pill-good {
@@ -382,47 +370,241 @@
     color: var(--warn-fg);
   }
   .pill-quiet {
-    background: var(--sunken);
+    background: var(--status-well);
     color: var(--ink-soft);
-    font-weight: 500;
   }
 
-  .avatar {
+  /* Theme mode as a Material segmented button. */
+  .segmented {
+    display: flex;
+    border: 1px solid var(--outline);
     border-radius: 9999px;
+    overflow: hidden;
   }
-  html.ui-repo .avatar {
-    border-radius: var(--radius-lg);
+  .segmented > button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 3rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .segmented > button + button {
+    border-left: 1px solid var(--outline);
+  }
+  .segmented > [aria-checked="true"] {
+    background: var(--accent-tonal);
   }
 
-  /* Names and paths read as code in the Repo interface and as plain text in
-     Classic. One class, two looks. */
+  /* Settings choice cards: a miniature of the app over the choice's name.
+     Sized in rem so enlarged text drops the grid to fewer columns. */
+  .choice {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem 0.5rem 0.625rem;
+    border-radius: 14px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    text-align: left;
+  }
+  .choice[aria-checked="true"] {
+    border: 2px solid var(--accent);
+    padding: calc(0.5rem - 1px) calc(0.5rem - 1px) calc(0.625rem - 1px);
+  }
+  .choice-name {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    letter-spacing: 0.1px;
+  }
+  .choice[aria-checked="true"] .choice-name {
+    color: var(--accent-ink);
+  }
+  .choice-check {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    display: grid;
+    place-items: center;
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  .mini {
+    display: flex;
+    height: 78px;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .mini-rail {
+    width: 16px;
+    flex: none;
+    display: flex;
+    justify-content: center;
+    padding-top: 8px;
+  }
+  .mini-rail > span {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+  .mini-body {
+    position: relative;
+    flex: 1;
+    padding: 10px 8px;
+  }
+  .mini-name {
+    display: block;
+    width: 60%;
+    height: 5px;
+    border-radius: 9999px;
+    opacity: 0.85;
+  }
+  .mini-path {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 6px;
+    padding-left: 5px;
+    border-left: 2px solid;
+  }
+  .mini-path > span {
+    width: 26px;
+    height: 7px;
+    border-radius: 2px;
+    border: 1px solid;
+  }
+  .mini-path > span + span {
+    margin-left: 4px;
+  }
+  .mini-add {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    width: 22px;
+    height: 14px;
+    border-radius: 5px;
+  }
+  .mini-split {
+    display: flex;
+    height: 78px;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .mini-split > span {
+    width: 50%;
+    overflow: hidden;
+  }
+  .mini-split .mini {
+    width: 200%;
+    border-radius: 0;
+  }
+  .mini-split > span + span .mini {
+    margin-left: -100%;
+  }
+
+  /* Material type roles, in rem so the browser's text size carries through
+     (the web's version of following the phone's font size). */
+  .t-title-lg {
+    font-size: 1.375rem;
+    line-height: 1.75rem;
+  }
+  .t-title-md {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    font-weight: 500;
+    letter-spacing: 0.15px;
+  }
+  .t-body-lg {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+  .t-label-md {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+  .t-label-sm {
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  /* An item's avatar is a 40px tile on its room's tint. */
+  .avatar {
+    border-radius: 14px;
+    background: var(--tint, var(--sunken));
+    color: var(--on-tint, var(--ink-soft));
+  }
+
   .t-name,
   .t-path {
     overflow-wrap: anywhere;
   }
-  html.ui-repo .t-name,
-  html.ui-repo .t-path {
-    font-family: var(--font-mono);
-    letter-spacing: -0.01em;
-  }
-  html.ui-repo .t-name {
-    font-size: 0.9em;
-  }
-  html.ui-repo .t-path {
-    font-size: 0.85em;
-  }
 
-  /* The dark summary card on Find, Value and the best search match. */
+  /* A summary block (Value, the best search match): the accent's container,
+     tonal, never a dark card. */
   .hero {
-    background: var(--hero-bg);
-    color: var(--hero-fg);
-    border-radius: var(--radius-card);
+    background: var(--accent-container);
+    color: var(--ink);
+    border-radius: 20px;
   }
   .hero .hero-soft {
-    color: var(--hero-soft);
+    color: var(--ink-soft);
   }
-  html.ui-repo .hero {
-    border: 1px solid var(--line);
+
+  /* ---------------------------------------------------- the drawer path --
+     The signature: a location as a stack of same-height tabs down one spine.
+     The room's tab carries its tint; every drawer inside is a white slip.
+     Depth is the indent (10px a level, three at most), never tab size. */
+  .drawers {
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+    margin-top: 6px;
+  }
+  .drawers::before {
+    content: "";
+    width: 2px;
+    flex: none;
+    border-radius: 9999px;
+    background: var(--line);
+  }
+  .drawers > span {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    min-width: 0;
+  }
+  .drawer-tab {
+    max-width: calc(100% - var(--indent, 0px));
+    margin-left: var(--indent, 0px);
+    min-height: 22px;
+    padding: 2px 9px;
+    border-radius: 6px;
+    border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .drawer-tab.is-room {
+    background: var(--tint);
+    color: var(--on-tint);
   }
 
   /* An item's journey: dots on a line, the current place filled. */
@@ -446,17 +628,14 @@
     width: 14px;
     height: 14px;
     border-radius: 9999px;
-    border: 2px solid var(--ink-faint);
-    background: var(--paper);
+    border: 2px solid var(--outline);
+    background: var(--canvas);
     flex-shrink: 0;
   }
   .journey-dot.is-here {
-    border-color: var(--color-accent);
-    background: var(--color-accent);
-    box-shadow: 0 0 0 4px var(--color-accent-soft);
-  }
-  html.ui-repo .journey-dot {
-    border-radius: 3px;
+    border-color: var(--accent);
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-tonal);
   }
 
   /* A line in a move log, in diff colours. */
@@ -495,20 +674,81 @@
     -webkit-mask: var(--u) center / contain no-repeat;
     mask: var(--u) center / contain no-repeat;
   }
+
+  /* The search field: a 28px-radius well with the icons inside it. */
+  .search-well {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: 3.5rem;
+    padding: 0 0.25rem 0 1rem;
+    border-radius: 1.75rem;
+    background: var(--sunken);
+    color: var(--ink-soft);
+  }
+
+  .search-well:focus-within {
+    outline: 2px solid var(--accent-ink);
+    outline-offset: 2px;
+  }
+  .search-well :focus-visible {
+    outline-offset: -2px;
+  }
+
+  /* Locked out: no skeleton promising content that will not come. The
+     passcode screen draws over the ground as soon as the script runs. */
+  html[data-locked] #topbar,
+  html[data-locked] #app-shell,
+  html[data-locked] #app-nav,
+  html[data-locked] #fab,
+  html[data-locked] .skip-link {
+    display: none;
+  }
+
+  /* Visible only when a keyboard user tabs to it. */
+  .skip-link {
+    position: fixed;
+    left: 1rem;
+    top: -4rem;
+    z-index: 100;
+    padding: 0.75rem 1rem;
+    border-radius: 9999px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 500;
+  }
+  .skip-link:focus {
+    top: calc(1rem + env(safe-area-inset-top));
+  }
+
+  /* Snackbar: Material's inverse surface. */
+  .snackbar {
+    background: var(--inverse);
+    color: var(--on-inverse);
+    border-radius: 6px;
+    box-shadow: var(--shadow-fab);
+  }
+  .snackbar button {
+    color: var(--accent-inverse);
+  }
 }
 
+/* A raised group (a settings block, a form section): the next tonal step,
+   no border, no shadow. */
 @utility surface {
-  background: var(--paper);
-  border: 1px solid var(--line);
+  background: var(--sheet);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+}
+
+@utility list {
+  display: block;
 }
 
 @utility row-press {
-  transition: background-color 120ms ease, transform 120ms ease;
+  border-radius: 14px;
+  transition: background-color 150ms ease;
   &:active {
-    background: var(--sunken);
-    transform: scale(0.995);
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
   }
 }
 
@@ -518,7 +758,7 @@
   background: linear-gradient(
     90deg,
     var(--sunken) 25%,
-    color-mix(in srgb, var(--sunken) 60%, var(--paper)) 37%,
+    color-mix(in srgb, var(--sunken) 50%, var(--canvas)) 37%,
     var(--sunken) 63%
   );
   background-size: 400% 100%;
@@ -542,7 +782,7 @@
 
 @utility is-failed {
   opacity: 1;
-  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  background: color-mix(in srgb, var(--error) 10%, transparent);
 }
 
 @keyframes pop-in {
@@ -570,7 +810,7 @@
 }
 
 @utility sheet-up {
-  animation: sheet-up 220ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  animation: sheet-up 300ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
 }
 
 @keyframes fade-in {
@@ -587,9 +827,10 @@
 }
 
 /* ---------------------------------------------------------------- motion --
-   House rules: nothing longer than 260ms, nothing that moves more than a few
-   pixels, and everything is switched off under prefers-reduced-motion (below).
-   Motion here is for orientation — where a thing came from — not decoration. */
+   Two motions only, as on the phone. Opening or leaving a room or box pulls a
+   drawer: a shared-axis Y over 300ms, the new screen rising a tenth while it
+   fades in. Everything else fades through: in over 210ms after a 90ms beat,
+   scaling up from 0.92. */
 
 @keyframes popup-in {
   from {
@@ -606,11 +847,30 @@
   animation: popup-in 140ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
 
-/* Screens slide in the direction you travelled. */
-@keyframes screen-in {
+@keyframes drawer-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10vh);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes drawer-back {
+  from {
+    opacity: 0;
+    transform: translateY(-10vh);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-through {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
   }
   to {
     opacity: 1;
@@ -618,22 +878,16 @@
   }
 }
 
-@utility screen-in {
-  animation: screen-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-/* Rows arrive in sequence, capped so a long list never feels slow. */
 @layer components {
-  .stagger > * {
-    animation: screen-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  .motion-drawer {
+    animation: drawer-in 300ms cubic-bezier(0.2, 0, 0, 1) both;
   }
-  .stagger > *:nth-child(1) { animation-delay: 0ms; }
-  .stagger > *:nth-child(2) { animation-delay: 25ms; }
-  .stagger > *:nth-child(3) { animation-delay: 50ms; }
-  .stagger > *:nth-child(4) { animation-delay: 75ms; }
-  .stagger > *:nth-child(5) { animation-delay: 100ms; }
-  .stagger > *:nth-child(6) { animation-delay: 125ms; }
-  .stagger > *:nth-child(n + 7) { animation-delay: 150ms; }
+  .motion-drawer-back {
+    animation: drawer-back 300ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .motion-fade {
+    animation: fade-through 210ms cubic-bezier(0.2, 0, 0, 1) 90ms both;
+  }
 
   /* Accordion: grid-template-rows animates to the content's real height,
      which max-height cannot do without hard-coding a guess. */
@@ -656,84 +910,83 @@
 }
 
 /* ------------------------------------------------------------ navigation --
-   Phones: a floating dark pill with the add button beside it (Classic), or a
-   full-width tab bar (Repo). From lg up the same destinations live in a top bar. */
+   Phones: a Material navigation bar and an extended FAB above it. From lg up
+   the same destinations live in a navigation rail, the FAB at its top. */
 @layer components {
   #app-nav {
     position: fixed;
-    left: 1rem;
-    right: 5.75rem;
-    bottom: calc(1rem + env(safe-area-inset-bottom));
-    height: 4rem;
-    z-index: 30;
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    padding: 0 0.5rem;
-    border-radius: 2rem;
-    background: var(--nav-bg);
-    box-shadow: 0 10px 30px rgb(26 24 18 / 0.28);
-  }
-  .nav-tab {
-    width: 4rem;
-    height: 3rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--nav-fg);
-    transition: color 120ms ease;
-  }
-  .nav-tab.is-active {
-    color: var(--color-accent);
-    font-weight: 700;
-  }
-  #fab {
-    position: fixed;
-    right: 1rem;
-    bottom: calc(1rem + env(safe-area-inset-bottom));
-    z-index: 30;
-    width: 4rem;
-    height: 4rem;
-    border-radius: 9999px;
-    display: grid;
-    place-items: center;
-    background: var(--fab-bg);
-    color: var(--fab-fg);
-    box-shadow: 0 10px 30px rgb(26 24 18 / 0.28);
-    transition: transform 120ms ease;
-  }
-  #fab:active {
-    transform: scale(0.95);
-  }
-
-  html.ui-repo #app-nav {
     left: 0;
     right: 0;
     bottom: 0;
-    height: calc(4.75rem + env(safe-area-inset-bottom));
-    padding: 0 0.5rem env(safe-area-inset-bottom);
-    border-radius: 0;
-    background: var(--paper);
-    border-top: 1px solid var(--line);
-    box-shadow: none;
+    z-index: 30;
+    display: flex;
+    justify-content: space-around;
+    height: calc(5rem + env(safe-area-inset-bottom));
+    padding: 0.75rem 0.5rem env(safe-area-inset-bottom);
+    background: var(--bar);
   }
-  html.ui-repo .nav-tab {
+  .nav-tab {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    color: var(--ink-soft);
   }
-  html.ui-repo #fab {
-    bottom: calc(5.75rem + env(safe-area-inset-bottom));
-    border-radius: 1rem;
-    width: 3.5rem;
-    height: 3.5rem;
+  .nav-ind {
+    display: grid;
+    place-items: center;
+    width: 4rem;
+    height: 2rem;
+    border-radius: 9999px;
+    transition: background-color 200ms ease;
+  }
+  .nav-tab.is-active {
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .nav-tab.is-active .nav-ind {
+    background: var(--accent-tonal);
   }
 
-  #topbar {
+  #fab {
+    position: fixed;
+    right: 1rem;
+    bottom: calc(6rem + env(safe-area-inset-bottom));
+    z-index: 30;
+    height: 3.5rem;
+    min-width: 3.5rem;
+    padding: 0 1.25rem 0 1rem;
+    border-radius: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.1px;
+    box-shadow: var(--shadow-fab);
+    transition:
+      padding 200ms cubic-bezier(0.2, 0, 0, 1),
+      box-shadow 150ms ease;
+  }
+  #fab:active {
+    box-shadow: inset 0 0 0 100px color-mix(in srgb, currentColor 12%, transparent), var(--shadow-fab);
+  }
+  /* Past the first row, Find's FAB folds to its icon. */
+  #fab.is-collapsed {
+    padding: 0;
+  }
+  #fab.is-collapsed [data-fab-label] {
     display: none;
   }
+
   .logo-dark {
     display: none;
   }
@@ -743,114 +996,95 @@
   html.dark .logo-light {
     display: none;
   }
-  .topnav {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    height: 3.5rem;
-    padding: 0 6px;
-    border-radius: 1.75rem;
-    background: var(--nav-bg);
-  }
-  .topnav a {
-    height: 2.75rem;
-    padding: 0 1.25rem;
-    border-radius: 1.375rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    color: var(--nav-fg);
-    transition:
-      background-color 120ms ease,
-      color 120ms ease;
-  }
-  .topnav a.is-active {
-    background: var(--nav-active-bg);
-    color: var(--nav-active-fg);
-    font-weight: 700;
-  }
-  .topnav a.is-active svg {
-    color: var(--color-accent);
-  }
+
+  /* A round icon button in a top bar. */
   .topround {
     width: 3rem;
     height: 3rem;
     border-radius: 9999px;
     display: grid;
     place-items: center;
-    background: var(--paper);
-    color: var(--ink);
-    transition: background-color 120ms ease;
+    color: var(--ink-soft);
+    transition: background-color 150ms ease;
   }
+  .topround:active,
   .topround.is-active {
-    background: var(--nav-bg);
-    color: var(--color-accent);
+    background: var(--accent-tonal);
+    color: var(--ink);
   }
-
-  /* Lists scroll under the floating bar, so a soft fade behind it keeps rows
-     from running into the pills. The Repo bar is solid and needs none. */
-  @media (max-width: 1023.98px) {
-    html:not(.ui-repo) body::after {
-      content: "";
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: calc(6.75rem + env(safe-area-inset-bottom));
-      background: linear-gradient(to top, var(--canvas) 42%, transparent);
-      pointer-events: none;
-      z-index: 25;
+  @media (hover: hover) {
+    .topround:hover {
+      background: color-mix(in srgb, var(--ink) 8%, transparent);
     }
   }
 
-  @media (min-width: 1024px) {
+  #topbar {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
     #app-nav,
     #fab {
       display: none;
     }
+    #app-shell {
+      padding-left: 5rem;
+    }
     #topbar {
-      display: block;
-      position: sticky;
-      top: 0;
+      position: fixed;
+      inset: 0 auto 0 0;
       z-index: 30;
+      width: 5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1.25rem 0 1rem;
       background: var(--canvas);
-      padding: 1rem 2rem 0.25rem;
     }
-    html.ui-repo #topbar {
-      background: var(--paper);
-      border-bottom: 1px solid var(--line);
-      padding: 0 2rem;
+    .topnav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
     }
-    html.ui-repo .topnav {
-      height: 4rem;
-      padding: 0;
-      border-radius: 0;
-      background: transparent;
-    }
-    html.ui-repo .topnav a {
-      height: 2.25rem;
-      padding: 0 0.75rem;
-      border-radius: 0.5rem;
+    .topnav a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      width: 5rem;
+      font-size: 0.75rem;
+      line-height: 1rem;
+      font-weight: 500;
+      letter-spacing: 0.5px;
       color: var(--ink-soft);
     }
-    html.ui-repo .topnav a.is-active {
-      background: var(--sunken);
+    .topnav a.is-active {
       color: var(--ink);
+      font-weight: 700;
     }
-    html.ui-repo .topnav a.is-active svg {
-      color: var(--accent-ink);
+    .topnav a.is-active .nav-ind {
+      background: var(--accent-tonal);
     }
-    html.ui-repo .topround {
-      border-radius: 0.5rem;
-      width: 2.25rem;
-      height: 2.25rem;
-      background: transparent;
+    @media (hover: hover) {
+      .topnav a:hover .nav-ind {
+        background: color-mix(in srgb, var(--ink) 8%, transparent);
+      }
+      .topnav a.is-active:hover .nav-ind {
+        background: var(--accent-tonal);
+      }
     }
-    html.ui-repo .topround.is-active {
-      background: var(--sunken);
-      color: var(--ink);
+    /* The rail's FAB: the accent, icon only, 56px. */
+    #topbar-add {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 1.25rem;
+      display: grid;
+      place-items: center;
+      background: var(--accent);
+      color: var(--on-accent);
+      box-shadow: var(--shadow-fab);
     }
   }
 }
@@ -920,9 +1154,6 @@
   }
 
   /* App chrome has no business on paper. */
-  body::after {
-    display: none !important;
-  }
   .no-print,
   #header,
   #topbar,
@@ -937,6 +1168,11 @@
     padding-bottom: 0 !important;
   }
 
+  /* The rail's gutter has no rail to make room for on paper. */
+  #app-shell {
+    padding-left: 0 !important;
+  }
+
   html,
   body {
     background: #fff !important;
@@ -948,12 +1184,23 @@
   }
 }
 
+/* Reduced motion keeps the state change and drops the travel: screens and
+   sheets still fade, nothing slides or scales. */
 @media (prefers-reduced-motion: reduce) {
+  .motion-drawer,
+  .motion-drawer-back,
+  .motion-fade,
+  .sheet-up,
+  .pop-in,
+  .popup-in {
+    animation: fade-in 150ms ease both;
+  }
+  .skeleton {
+    animation: none;
+  }
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }

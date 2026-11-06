@@ -1,5 +1,5 @@
 ---
-name: h/repo (Android)
+name: h/repo
 description: Clear Drawers. Every place is a frosted drawer you can see into, and a location path is the stack of drawers.
 colors:
   deep-teal: "#0E5E58"
@@ -211,7 +211,7 @@ components:
 
 # Design System: h/repo (Android)
 
-> **Scope.** This file covers the native Android client only (`android/`, Jetpack Compose + Material 3). The web app under `internal/web/` has its own, older look. That look is not described here, and nothing here applies to it.
+> **Scope.** This file covers both clients: the native Android app (`android/`, Jetpack Compose + Material 3) and the web app (`internal/web/`, ES modules + Tailwind). Every rule applies to both. Where the web differs, [Web client](#web-client) says how and why. Android sizes are in dp and sp; on the web, one dp is one CSS px and type roles are set in rem.
 
 ## Overview
 
@@ -310,7 +310,7 @@ Both choices are stored on the phone (`theme_mode`, `accent` in the app's prefer
 
 The app is a single column with one item per row. Horizontal gutters are 16dp throughout: list rows, the search field, section titles, the shift notice, and a drawer path set as a header. A list row is 12dp padding top and bottom, a 40dp avatar, a 14dp gap, then a column holding the name and the drawer path 6dp apart. Section titles sit 20dp above their rows and 4dp below. Lists carry 96dp of bottom clearance so the extended FAB never covers the last row (24dp on History, which has no FAB). Sheet actions are 52dp tall and spaced 8dp apart, and the field-adjacent Go button is 56dp to match the text field. Empty and error notices are centred, with 32dp horizontal and 40dp vertical padding and a 40dp outline icon.
 
-Navigation is `NavigationSuiteScaffold` with three destinations: Find, Places, History. It shows a bottom bar on phones and adapts to a rail on wider windows. Tapping a tab returns to that tab's root, with Find underneath.
+Navigation is `NavigationSuiteScaffold` with three destinations: Find, Places, History. It shows a bottom bar on phones and adapts to a rail on wider windows. Tapping a tab returns to that tab's root, with Find underneath. The web's destinations are Find, Places and Value (see [Web client](#web-client)).
 
 **Motion.** Opening or leaving a room or box is a drawer pull: a shared-axis Y over 300ms (`tween(300)`), where the incoming screen rises a tenth of its height while fading in and the outgoing one moves the opposite tenth while fading out. The pop and predictive-back gestures reverse it. Every other change fades through: the old screen fades out over 90ms, then the new one fades in over 210ms (after a 90ms delay) while scaling from 0.92.
 
@@ -392,6 +392,24 @@ A location shown as a stack of drawer tabs down one spine.
 - **Notice:** a centred 40dp outline icon in outline colour, a title-medium heading, body-medium muted copy, and an optional tonal action 4dp below.
 - **Shift notice:** a 14dp-radius shift-amber surface at the gutter, at least 48dp tall, in body-medium.
 - **Snackbar:** every write ends with a snackbar in the product's words. A write with a safe way back offers Undo, with a long duration.
+
+## Web client
+
+The web app is the same world. These are the places where a browser, or a feature only the web has, changes the detail.
+
+- **Tokens.** Colour roles are CSS custom properties on `:root`, with dark values under `html.dark`: `--canvas` (ground), `--paper` (slip), `--sheet` (raised tonal step), `--sunken` (search well), `--line` (outline-variant), `--outline`, `--ink`, `--ink-soft`, `--ink-faint`. Room tints are `.tint-0` to `.tint-5`, each setting `--tint` and `--on-tint`.
+- **Accent.** `theme.js` computes the accent from the same seven hexes: the fill, lifted 35% toward white in dark mode; the ink on it, white or #1A1C1E by contrast; and `--accent-ink`, the accent as text, stepped toward the ink until it reaches 4.5:1 on the ground (Tangerine needs this). CSS derives `--accent-container` and `--accent-tonal` with `color-mix(in oklab, …)` at the same 25/18% (light) and 45/30% (dark). The choice is stored in the browser (`hsh.accent`, `hsh.theme`).
+- **Room tint.** `roomTint()` runs Java's `String.hashCode` on the trimmed, lowercased name (32-bit overflow, UTF-16 units), then floor-mod six. A room is the same colour on both clients.
+- **Type.** System sans. Material roles are classes in rem (`t-title-lg`, `t-title-md`, `t-body-lg`, `t-label-md`, `t-label-sm`), alongside Tailwind's `text-sm`/`text-xs`, so the browser's text size carries through as the phone's font scale does. Form inputs stay at 16px so iOS Safari does not zoom on focus.
+- **Grids.** One system in `input.css`, in rem tracks rather than breakpoints, so a grid reflows with its container and the text size: `grid-tiles` (icon and brand tiles, at least 4.75rem, 8px gaps), `grid-choices` (Settings cards, at least 6.5rem), `grid-rows` (list rows in columns, at least 18rem, 12px column gap) and `grid-fields` (fields side by side, one column when one would be under 9rem). `auto-fill` keeps tiles the same width when a filter leaves a few. `grid-heading` titles a group inside a gridded section and has no top margin when it comes first. Spacing belongs to the grid: never pull a grid up with a negative margin. A `tile` is square at rest, grows when text is enlarged, and when chosen gets the accent border and tonal fill, like the choice cards.
+- **Destinations.** Find, Places, Value. Value (cost per day since purchase) is web-only and stands in History's slot: the web shows history inside each item's sheet. A Material navigation bar sits below 768px. From 768px up there is a navigation rail, with the mark at the top, the FAB under it, and Settings at the foot.
+- **FAB.** The extended FAB reads "New room" on Places. Everywhere else it reads "Add" and adds a thing into the room or box on screen. Android's FAB says "New box" or "Box inside" there; the web keeps adding a thing because PRODUCT.md principle 3 keeps the common job within two taps. New boxes come from the "New storage unit" and "New unit in here" rows. On Find the FAB folds to its icon past 120px of scroll.
+- **Find.** Find adds a row of room chips, each with its swatch, below "Your things", as a shortcut into Places.
+- **Place header.** A box screen draws its drawer path (room and the boxes above it) under the top bar. The room tab links back to the room.
+- **Value summary.** One plain line ("2 of 8 things under ₹10 a day", then the amount spent). No metric card. The item sheet's value is one line too.
+- **Motion.** The same two motions, as CSS animations chosen by place depth (other screens 0, room 1, box 2): going deeper rises, going back drops, and every other change fades through. Under `prefers-reduced-motion` screens and sheets only fade.
+- **Brand.** The wordmark and mark SVGs (with the blue slash) are unchanged brand assets. The phone sets "h/repo" as bold text instead.
+- **Speed.** No web fonts. Static files are served brotli or gzip with an ETag, and every module is `modulepreload`ed.
 
 ## Do's and Don'ts
 

@@ -54,6 +54,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -124,12 +125,13 @@ fun FindScreen(onOpenSettings: () -> Unit) {
         loading = true
         error = null
         try {
-            // One round trip for both lists — they used to wait on each other.
-            withContext(Dispatchers.IO) {
-                val feed = Db.homeFeed(query, status = filter.status)
-                items = feed.items
-                todayIds = feed.putAwayToday
-            }
+            // One round trip for both lists, assigned only after the IO
+            // returns, so a superseded query never lands.
+            val feed = withContext(Dispatchers.IO) { Db.homeFeed(query, status = filter.status) }
+            items = feed.items
+            todayIds = feed.putAwayToday
+        } catch (e: CancellationException) {
+            throw e // the next keystroke took over; not an error
         } catch (e: Exception) {
             error = e.message
             items = emptyList()
