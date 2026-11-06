@@ -29,7 +29,6 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,7 +40,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -140,7 +138,7 @@ fun FindScreen(onOpenSettings: () -> Unit) {
     }
 
     val list = rememberLazyListState()
-    val fabExpanded by remember { derivedStateOf { list.firstVisibleItemIndex == 0 } }
+    val (folded, toggleFold) = rememberFolds()
     val all = items.orEmpty()
     val showToday = query.isBlank() && filter == Filter.Active
     val today = if (showToday) todayIds.mapNotNull { id -> all.firstOrNull { it.id == id } } else emptyList()
@@ -153,14 +151,7 @@ fun FindScreen(onOpenSettings: () -> Unit) {
             IconButton(onClick = onOpenSettings) { Icon(Icons.Outlined.Settings, contentDescription = "Connection settings") }
         },
         fab = {
-            ExtendedFloatingActionButton(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                onClick = { adding = "" },
-                expanded = fabExpanded,
-                icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-                text = { Text("Add") },
-            )
+            AddFab("Add", onClick = { adding = "" })
         },
     ) { pad ->
         LazyColumn(
@@ -224,8 +215,7 @@ fun FindScreen(onOpenSettings: () -> Unit) {
                 }
             }
             if (today.isNotEmpty()) {
-                item { SectionTitle("Put away today") }
-                items(today, key = { "t" + it.id }) { ItemListRow(it) { detail = it } }
+                foldingSection("Put away today", today, folded, toggleFold, key = { "t" + it.id }) { it, m -> ItemListRow(it, modifier = m) { detail = it } }
             }
             when {
                 items == null || error != null -> {}
@@ -252,8 +242,9 @@ fun FindScreen(onOpenSettings: () -> Unit) {
                     }
                 }
                 rest.isNotEmpty() -> {
-                    item { SectionTitle(if (query.isBlank()) filter.label else "Matches") }
-                    items(rest, key = { it.id }) { ItemListRow(it) { detail = it } }
+                    foldingSection(if (query.isBlank()) filter.label else "Matches", rest, folded, toggleFold, key = { it.id }) { it, m ->
+                        ItemListRow(it, modifier = m) { detail = it }
+                    }
                 }
             }
         }

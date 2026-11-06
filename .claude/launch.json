@@ -5,6 +5,12 @@
       "name": "home-repo",
       "url": "http://localhost:8080",
       "port": 8080
+    },
+    {
+      "name": "home-repo-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--env-file=.env", "scripts/dev.js"],
+      "port": 8080
     }
   ]
 }

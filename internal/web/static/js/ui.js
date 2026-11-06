@@ -39,6 +39,13 @@ const ICONS = {
   qr: '<path d="M4 4h5v5H4zM15 4h5v5h-5zM4 15h5v5H4z"/><path d="M15 15h2v2h-2zM19 15h1M15 19h2M19 19h1"/>',
   print:
     '<path d="M7 9V3h10v6"/><path d="M7 19H5a2 2 0 01-2-2v-4a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2h-2"/><path d="M7 15h10v6H7z"/>',
+  more: '<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>',
+  hash: '<path d="M5 9h14M5 15h14M10 4L8 20M16 4l-2 16"/>',
+  rupee: '<path d="M6 4h12M6 9h12M6 4h3a5 5 0 010 10H6l8 6"/>',
+  notes: '<path d="M4 6h16M4 12h16M4 18h10"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  outbox: '<path d="M4 13v6h16v-6M12 15V4M8 8l4-4 4 4"/>',
+  restore: '<path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8"/><path d="M3 3v5h5"/>',
   scan: '<path d="M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3"/><path d="M4 12h16"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
   moon: '<path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/>',
@@ -89,7 +96,9 @@ export const roomBadge = (room, cls = 'w-10 h-10 text-base') => `
 // The small top app bar every screen shares: back on pushed screens, a
 // title-large title, icon actions trailing. `back` is an href, or true for
 // history.back().
-export const topBar = ({ title, back = '', sub = '', actions = '' }) => `
+// A destination (no back arrow) gets the big title; a pushed screen a step
+// smaller. `count` is the muted line under it ("3 rooms · 37 things").
+export const topBar = ({ title, back = '', sub = '', count = '', actions = '' }) => `
   <div class="flex items-center gap-1 h-16 px-1 md:pt-3 md:h-[4.75rem]">
     ${
       back === true
@@ -99,7 +108,8 @@ export const topBar = ({ title, back = '', sub = '', actions = '' }) => `
           : '<span class="w-3"></span>'
     }
     <div class="flex-1 min-w-0 ${back ? 'pl-1' : ''}">
-      <h1 class="t-title-lg truncate">${title}</h1>
+      <h1 class="${back ? 't-title-lg' : 't-headline-sm'} truncate">${title}</h1>
+      ${count ? `<p class="text-sm text-[var(--ink-soft)] truncate">${esc(count)}</p>` : ''}
       ${sub}
     </div>
     ${actions}
@@ -136,6 +146,41 @@ export const sectionTitle = (text, action = '') => `
     <h2 class="section-title">${esc(text)}</h2>
     ${action}
   </div>`;
+
+// A section that folds away: the title with its count, an optional action,
+// and a chevron; tapping the title or the chevron folds it. What is folded is
+// remembered for the session by key, so a re-render keeps it shut.
+const folded = new Set();
+export const foldSection = (key, title, count, inner, action = '') => {
+  const open = !folded.has(key);
+  return `
+  <section data-fold="${esc(key)}">
+    <div class="flex items-center gap-2 min-h-12 mt-3 mb-0.5">
+      <button type="button" data-fold-toggle aria-expanded="${open}" class="flex-1 min-w-0 flex items-center gap-2 min-h-12 text-left">
+        <h2 class="section-title truncate">${esc(title)}</h2>
+        ${count === '' || count == null ? '' : `<span class="t-label-sm text-[var(--ink-faint)]">${esc(count)}</span>`}
+      </button>
+      ${action}
+      <button type="button" data-fold-toggle tabindex="-1" aria-hidden="true" class="w-10 h-10 grid place-items-center text-[var(--ink-soft)]">
+        <span class="inline-block transition-transform ${open ? '-rotate-90' : 'rotate-90'}" data-fold-chevron>${icon('chevron', 'w-4 h-4')}</span>
+      </button>
+    </div>
+    <div data-fold-body ${open ? '' : 'hidden'}>${inner}</div>
+  </section>`;
+};
+addEventListener('click', (e) => {
+  const btn = e.target.closest?.('[data-fold-toggle]');
+  if (!btn) return;
+  const section = btn.closest('[data-fold]');
+  const key = section.dataset.fold;
+  const open = folded.has(key);
+  open ? folded.delete(key) : folded.add(key);
+  section.querySelector('[data-fold-body]').hidden = !open;
+  section.querySelectorAll('[aria-expanded]').forEach((b) => b.setAttribute('aria-expanded', String(open)));
+  const chev = section.querySelector('[data-fold-chevron]');
+  chev.classList.toggle('-rotate-90', open);
+  chev.classList.toggle('rotate-90', !open);
+});
 
 // A notice: a 40px outline icon, a title, the copy, an optional action.
 export const emptyState = (title, body, action = '') => `
@@ -191,7 +236,7 @@ function unitSummary(unit) {
 export const unitRow = (unit, { pending = false, depth = 0 } = {}) => `
   <a href="#/unit/${esc(unit.id)}"
      class="row-press flex items-center gap-3.5 py-3 pr-2 ${pending ? 'is-pending' : ''}"
-     style="padding-left:${8 + Math.min(depth, 3) * 10}px">
+     style="padding-left:${16 + Math.min(depth, 3) * 10}px">
     <span class="w-10 h-10 rounded-[10px] bg-[var(--paper)] border border-[var(--line)] text-[var(--ink-soft)] grid place-items-center shrink-0">
       ${icon('box', 'w-5 h-5')}
     </span>

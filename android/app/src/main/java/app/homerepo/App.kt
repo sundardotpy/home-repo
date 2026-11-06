@@ -15,6 +15,10 @@ import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.NavigationRailItemDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -95,7 +99,23 @@ fun App(prefs: android.content.SharedPreferences) {
             }
         }
 
+        // The active tab: the accent's tonal pill, its icon and label in accent ink.
+        val scheme = MaterialTheme.colorScheme
+        val tabColors = NavigationSuiteDefaults.itemColors(
+            navigationBarItemColors = NavigationBarItemDefaults.colors(
+                selectedIconColor = scheme.primary, selectedTextColor = scheme.primary,
+                indicatorColor = scheme.secondaryContainer,
+            ),
+            navigationRailItemColors = NavigationRailItemDefaults.colors(
+                selectedIconColor = scheme.primary, selectedTextColor = scheme.primary,
+                indicatorColor = scheme.secondaryContainer,
+            ),
+        )
         NavigationSuiteScaffold(
+            navigationSuiteColors = NavigationSuiteDefaults.colors(
+                navigationBarContainerColor = scheme.surface,
+                navigationRailContainerColor = scheme.surface,
+            ),
             navigationSuiteItems = {
                 Tabs.forEach { tab ->
                     item(
@@ -109,6 +129,7 @@ fun App(prefs: android.content.SharedPreferences) {
                         },
                         icon = { Icon(tab.icon, contentDescription = null) },
                         label = { Text(tab.label) },
+                        colors = tabColors,
                     )
                 }
             },

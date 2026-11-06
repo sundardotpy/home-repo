@@ -42,11 +42,19 @@ export function tagPickerSheet(selected, onDone) {
 
   openSheet({
     title: 'Tags',
+    // The tray of chosen tags first, then a search well, then every tag as a
+    // checkbox row; Cancel and Save at the foot.
     body: `
-      <input data-filter class="${inputCls} mb-3" placeholder="Filter or add a tag" autocomplete="off">
-      <div data-chosen class="flex flex-wrap gap-1.5 mb-3"></div>
-      <div data-list class="max-h-[45dvh] overflow-y-auto -mx-1 px-1"></div>
-      ${primaryButton('Done', 'data-done class="w-full mt-4"')}`,
+      <div data-chosen class="flex flex-wrap gap-1.5 mb-3 min-h-14 p-3 rounded-[28px] bg-[var(--sunken)] items-center"></div>
+      <label class="search-well mb-3">
+        ${icon('search', 'w-5 h-5 text-[var(--ink-soft)] shrink-0')}
+        <input data-filter class="flex-1 min-w-0 bg-transparent outline-none h-12 text-[var(--ink)]" placeholder="Find or make a tag" autocomplete="off">
+      </label>
+      <div data-list class="max-h-[45dvh] overflow-y-auto"></div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button type="button" data-cancel class="btn bg-[var(--sunken)]">Cancel</button>
+        ${primaryButton('Save', 'data-done')}
+      </div>`,
     onMount(body, close) {
       const filterEl = body.querySelector('[data-filter]');
       const listEl = body.querySelector('[data-list]');
@@ -57,7 +65,7 @@ export function tagPickerSheet(selected, onDone) {
       const paintChosen = () => {
         chosenEl.innerHTML = chosen.size
           ? tagChips([...chosen].sort(), { removable: true })
-          : `<span class="text-sm text-[var(--ink-faint)]">No tags yet</span>`;
+          : `<span class="px-1 text-[var(--ink-soft)]">No tags yet</span>`;
         chosenEl.querySelectorAll('[data-untag]').forEach((b) =>
           b.addEventListener('click', () => {
             chosen.delete(b.dataset.untag);
@@ -76,29 +84,30 @@ export function tagPickerSheet(selected, onDone) {
         listEl.innerHTML = `
           ${
             q && !exact
-              ? `<button type="button" data-create
-                   class="w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-2 text-[var(--accent-ink)] font-medium hover:bg-[var(--sunken)]">
-                   ${icon('plus', 'w-4 h-4')} Add “${esc(q)}”
-                 </button>`
+              ? `<div class="list mb-2"><button type="button" data-create
+                   class="row-press w-full text-left min-h-13 py-3 flex items-center gap-4 text-[var(--accent-ink)] font-medium">
+                   ${icon('plus', 'w-5 h-5')} Create “${esc(q)}”
+                 </button></div>`
               : ''
           }
           ${
             matches.length
-              ? matches
+              ? `<div class="list">${matches
                   .map(
                     (t) => `
-                <button type="button" data-toggle="${esc(t.name)}"
-                  class="w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-2.5 hover:bg-[var(--sunken)]">
-                  <span class="w-4 h-4 shrink-0 rounded border ${
-                    chosen.has(t.name)
-                      ? 'bg-[var(--accent)] border-[var(--accent)] text-[var(--on-accent)] grid place-items-center'
-                      : 'border-[var(--line)]'
-                  }">${chosen.has(t.name) ? icon('check', 'w-3 h-3') : ''}</span>
+                <button type="button" data-toggle="${esc(t.name)}" role="checkbox" aria-checked="${chosen.has(t.name)}"
+                  class="row-press w-full text-left min-h-13 py-3 flex items-center gap-4">
+                  <span class="text-[var(--ink-soft)]">${icon('tag', 'w-5 h-5')}</span>
                   <span class="flex-1 truncate">${esc(t.name)}</span>
                   <span class="text-xs text-[var(--ink-faint)]">${t.count || 0}</span>
+                  <span class="w-5 h-5 shrink-0 rounded-[4px] border-2 grid place-items-center ${
+                    chosen.has(t.name)
+                      ? 'bg-[var(--accent-ink)] border-[var(--accent-ink)] text-white'
+                      : 'border-[var(--outline)]'
+                  }">${chosen.has(t.name) ? icon('check', 'w-3.5 h-3.5') : ''}</span>
                 </button>`,
                   )
-                  .join('')
+                  .join('')}</div>`
               : q
                 ? ''
                 : `<p class="text-sm text-[var(--ink-soft)] px-3 py-4">No tags yet.</p>`
@@ -139,6 +148,7 @@ export function tagPickerSheet(selected, onDone) {
         }
       });
 
+      body.querySelector('[data-cancel]').addEventListener('click', close);
       body.querySelector('[data-done]').addEventListener('click', () => {
         close();
         onDone([...chosen].sort());

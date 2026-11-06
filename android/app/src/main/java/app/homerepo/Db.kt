@@ -85,6 +85,13 @@ data class ItemRow(
     val active: Boolean get() = status == "active"
 }
 
+data class ItemDetails(
+    val description: String,
+    val tags: List<String>,
+    val properties: List<Pair<String, String>>,
+    val added: String,
+)
+
 data class AddItem(
     val name: String,
     val roomId: String?,
@@ -472,6 +479,53 @@ object Db {
 
     /** One item with its full location, as the lists show it. */
     fun item(id: String): ItemRow = db { c -> locationOf(c, id) }
+
+    /** What the item sheet shows beyond the row: notes, tags, custom fields, and when it was added. */
+    fun itemDetails(id: String): ItemDetails = db { c ->
+        c.prepareStatement(
+            "SELECT description, tags, properties::text, to_char(created_at, 'DD Mon YYYY') FROM items WHERE id = ?"
+        ).use { st ->
+            st.setUuid(1, id)
+            st.executeQuery().use { rs ->
+                if (!rs.next()) throw DbException("item not found")
+                val tags = (rs.getArray(2)?.array as? Array<*>)?.map { it.toString() } ?: emptyList()
+                val props = org.json.JSONObject(rs.getString(3) ?: "{}")
+                ItemDetails(
+                    description = rs.getString(1).orEmpty(),
+                    tags = tags,
+                    properties = props.keys().asSequence().map { it to props.optString(it) }.toList(),
+                    added = rs.getString(4).orEmpty(),
+                )
+            }
+        }
+    }
+
+    /** The tag vocabulary, unused tags included, most used first. */
+    fun allTags(): List<String> = db { c ->
+        c.createStatement().use { st ->
+            st.executeQuery(
+                """SELECT t.name FROM tags t
+                   LEFT JOIN (SELECT unnest(tags) AS name, count(*) AS n FROM items GROUP BY 1) u ON u.name = t.name
+                  ORDER BY COALESCE(u.n, 0) DESC, t.name"""
+            ).use { rs -> buildList { while (rs.next()) add(rs.getString(1)) } }
+        }
+    }
+
+    /** Replace an item's tags; new names join the vocabulary, as on the server. */
+    fun setTags(id: String, tags: List<String>): Unit = tx { c ->
+        // Same folding as the server's normaliseTag: lowercase, single spaces.
+        val clean = tags.map { it.lowercase().trim().split(Regex("\\s+")).filter(String::isNotEmpty).joinToString(" ") }
+            .filter { it.isNotEmpty() }.distinct()
+        c.prepareStatement("INSERT INTO tags (name) SELECT unnest(?::text[]) ON CONFLICT (name) DO NOTHING").use { st ->
+            st.setArray(1, c.createArrayOf("text", clean.toTypedArray()))
+            st.executeUpdate()
+        }
+        c.prepareStatement("UPDATE items SET tags = ?::text[], updated_at = now() WHERE id = ?").use { st ->
+            st.setArray(1, c.createArrayOf("text", clean.toTypedArray()))
+            st.setUuid(2, id)
+            if (st.executeUpdate() == 0) throw DbException("item not found")
+        }
+    }
 
     private fun locationOf(c: Connection, id: String): ItemRow {
         val rows = selectItems(c, "i.id = ?") { st -> st.setUuid(1, id) }

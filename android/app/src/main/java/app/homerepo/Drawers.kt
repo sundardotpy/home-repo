@@ -19,9 +19,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -212,13 +220,13 @@ fun ItemAvatar(iconKey: String, name: String, room: String, size: Dp = 40.dp) {
  * (`within`), only the drawers below that place are shown.
  */
 @Composable
-fun ItemListRow(item: ItemRow, within: String = "", onClick: () -> Unit) {
+fun ItemListRow(item: ItemRow, within: String = "", modifier: Modifier = Modifier, onClick: () -> Unit) {
     val parts = pathParts(item.path)
     val room = parts.firstOrNull().orEmpty()
     val here = pathParts(within)
     val below = if (here.isNotEmpty() && parts.take(here.size) == here) parts.drop(here.size) else parts
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -255,15 +263,69 @@ fun StatusLabel(text: String) {
     }
 }
 
-/** A list section's title. */
+/**
+ * A list section's title: sentence case, with an optional count, a trailing
+ * action, and a chevron when the section folds away (tap anywhere on it).
+ */
 @Composable
-fun SectionTitle(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 4.dp).semantics { heading() },
-    )
+fun SectionTitle(
+    text: String,
+    modifier: Modifier = Modifier,
+    count: Int? = null,
+    expanded: Boolean? = null,
+    onToggle: (() -> Unit)? = null,
+    action: (@Composable () -> Unit)? = null,
+) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp)
+            .then(if (onToggle != null) Modifier.clickable(onClick = onToggle) else Modifier)
+            .heightIn(min = 48.dp)
+            .padding(horizontal = 16.dp)
+            .semantics(mergeDescendants = true) {
+                heading()
+                if (expanded != null) stateDescription = if (expanded) "Expanded" else "Collapsed"
+            },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(text, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+        if (count != null) Text("$count", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.weight(1f))
+        action?.invoke()
+        if (expanded != null) {
+            Icon(
+                if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * A titled group of rows that folds away: the title with its count and a
+ * chevron, then the rows as one segmented stack.
+ */
+fun <T : Any> androidx.compose.foundation.lazy.LazyListScope.foldingSection(
+    title: String,
+    rows: List<T>,
+    collapsed: Set<String>,
+    onToggle: (String) -> Unit,
+    key: (T) -> Any,
+    row: @Composable (T, Modifier) -> Unit,
+) {
+    val open = title !in collapsed
+    item(key = "section:$title") { SectionTitle(title, count = rows.size, expanded = open, onToggle = { onToggle(title) }) }
+    if (open) segments(rows, key, row = row)
+}
+
+/** Which sections of a screen are folded, kept across rotation. */
+@Composable
+fun rememberFolds(): Pair<Set<String>, (String) -> Unit> {
+    var folded by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(setOf<String>()) }
+    return folded to { t: String -> folded = if (t in folded) folded - t else folded + t }
 }
 
 /** A centred empty or error state with an optional action under it. */
@@ -288,6 +350,45 @@ fun Notice(title: String, body: String, modifier: Modifier = Modifier, action: (
     }
 }
 
+// ------------------------------------------------------- segmented lists
+
+private val SegmentOuter = 14.dp
+private val SegmentInner = 4.dp
+
+/**
+ * One row of a segmented list: a white card of its own, 2dp below its
+ * neighbour, 12dp in from the screen edge. Only the group's outer corners are
+ * fully rounded, so a run of rows reads as one stack of cards.
+ */
+fun Modifier.segment(index: Int, count: Int, inset: Dp = 12.dp): Modifier = composed {
+    val top = if (index == 0) SegmentOuter else SegmentInner
+    val bottom = if (index == count - 1) SegmentOuter else SegmentInner
+    this
+        .padding(start = inset, end = inset, top = if (index > 0) 2.dp else 0.dp)
+        .clip(RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom))
+        .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+}
+
+/** A list of rows as one segmented group. Inside a sheet, which has its own padding, pass `inset = 0.dp`. */
+fun <T : Any> androidx.compose.foundation.lazy.LazyListScope.segments(
+    list: List<T>,
+    key: (T) -> Any,
+    inset: Dp = 12.dp,
+    row: @Composable (T, Modifier) -> Unit,
+) = items(list.size, key = { key(list[it]) }) { i -> row(list[i], Modifier.segment(i, list.size, inset)) }
+
+/** The screen's one accent action: an icon-only rounded square in the accent fill. */
+@Composable
+fun AddFab(label: String, onClick: () -> Unit) {
+    FloatingActionButton(
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    ) {
+        Icon(Icons.Outlined.Add, contentDescription = label)
+    }
+}
+
 // ------------------------------------------------------------- scaffold
 
 /**
@@ -302,6 +403,8 @@ fun ScreenScaffold(
     actions: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {},
     fab: @Composable () -> Unit = {},
     titleBold: Boolean = false,
+    /** A muted count line under the title, e.g. "24 things". */
+    subtitle: String? = null,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val ui = LocalUi.current
@@ -310,10 +413,21 @@ fun ScreenScaffold(
             Column {
                 TopAppBar(
                     title = {
-                        Text(
-                            title, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            fontWeight = if (titleBold) FontWeight.Bold else null,
-                        )
+                        Column {
+                            // Destinations get the big title; pushed screens a step smaller beside the back arrow.
+                            Text(
+                                title, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                style = if (onBack == null) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleLarge,
+                                fontWeight = if (titleBold) FontWeight.Bold else null,
+                            )
+                            if (subtitle != null) {
+                                Text(
+                                    subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     },
                     navigationIcon = {
                         if (onBack != null) {

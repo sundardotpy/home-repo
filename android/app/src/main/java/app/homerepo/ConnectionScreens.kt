@@ -110,7 +110,7 @@ fun ConnectionScreen(prefs: android.content.SharedPreferences, onConnected: () -
                 Switch(checked = ssl, onCheckedChange = { ssl = it })
             }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
-            Button(
+            Button(colors = confirmColors(),
                 onClick = { connect() },
                 enabled = !busy && host.isNotBlank() && database.isNotBlank() && user.isNotBlank(),
                 modifier = Modifier.fillMaxWidth().height(56.dp),

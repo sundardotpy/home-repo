@@ -3,6 +3,6 @@
     <style name="Theme.HomeRepo" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/launch_surface</item>
     </style>
-    <color name="launch_surface">#F4F7F6</color>
+    <color name="launch_surface">#F8F7F5</color>
     <color name="launcher_ground">#0E5E58</color>
 </resources>

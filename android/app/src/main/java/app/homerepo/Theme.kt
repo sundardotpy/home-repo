@@ -17,79 +17,81 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 
-// Clear Drawers: a frosted sea-glass ground, deep teal spent only on the one
-// main action per screen, and a tint per room so the first drawer of every path
-// says which room it is in. The palette is the app's identity, so wallpaper
-// (dynamic) colour is deliberately not used.
+// A warm off-white ground with white cards on it, one accent family (Tangerine
+// by default) for the main action, and a tint per room so the first drawer of
+// every path says which room it is in. The palette is the app's identity, so
+// wallpaper (dynamic) colour is deliberately not used.
 
 private val LightScheme = lightColorScheme(
-    primary = Color(0xFF0E5E58),
+    primary = Color(0xFF8F5A00),
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFB8E0D2),
-    onPrimaryContainer = Color(0xFF00201C),
-    secondary = Color(0xFF4A6360),
+    primaryContainer = Color(0xFFFEBD61),
+    onPrimaryContainer = Color(0xFF1A1C1E),
+    secondary = Color(0xFF66605A),
     onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFCCE8E3),
-    onSecondaryContainer = Color(0xFF05201D),
+    secondaryContainer = Color(0xFFF9EBD5),
+    onSecondaryContainer = Color(0xFF1F1E1D),
     tertiary = Color(0xFF7A5900),
     onTertiary = Color(0xFFFFFFFF),
     tertiaryContainer = Color(0xFFF6E0B5),
     onTertiaryContainer = Color(0xFF261A00),
-    background = Color(0xFFF4F7F6),
-    onBackground = Color(0xFF1C2326),
-    surface = Color(0xFFF4F7F6),
-    onSurface = Color(0xFF1C2326),
-    surfaceVariant = Color(0xFFDAE4E2),
-    onSurfaceVariant = Color(0xFF4A5557),
+    background = Color(0xFFF8F7F5),
+    onBackground = Color(0xFF1F1E1D),
+    surface = Color(0xFFF8F7F5),
+    onSurface = Color(0xFF1F1E1D),
+    surfaceVariant = Color(0xFFE8E6E3),
+    onSurfaceVariant = Color(0xFF6C6A67),
+    // Cards: white on the warm ground.
     surfaceContainerLowest = Color(0xFFFFFFFF),
-    surfaceContainerLow = Color(0xFFEEF3F2),
-    surfaceContainer = Color(0xFFE8EEED),
-    surfaceContainerHigh = Color(0xFFE2E9E7),
-    surfaceContainerHighest = Color(0xFFDCE3E1),
-    outline = Color(0xFF6F7A79),
-    outlineVariant = Color(0xFFC3CCCA),
+    surfaceContainerLow = Color(0xFFF3F2EF),
+    surfaceContainer = Color(0xFFEEEDEB),
+    surfaceContainerHigh = Color(0xFFE8E7E4),
+    surfaceContainerHighest = Color(0xFFDFDEDC),
+    outline = Color(0xFF7A7876),
+    outlineVariant = Color(0xFFDCDAD6),
     error = Color(0xFFB3261E),
     onError = Color(0xFFFFFFFF),
     errorContainer = Color(0xFFF9DEDC),
     onErrorContainer = Color(0xFF410E0B),
-    inverseSurface = Color(0xFF2D3433),
-    inverseOnSurface = Color(0xFFECF2F0),
-    inversePrimary = Color(0xFF7FD3C6),
+    inverseSurface = Color(0xFF31302E),
+    inverseOnSurface = Color(0xFFF4F2EF),
+    inversePrimary = Color(0xFFFEBD61),
 )
 
 private val DarkScheme = darkColorScheme(
-    primary = Color(0xFF7FD3C6),
-    onPrimary = Color(0xFF003732),
-    primaryContainer = Color(0xFF1F4F49),
-    onPrimaryContainer = Color(0xFFB8F0E4),
-    secondary = Color(0xFFB0CCC7),
-    onSecondary = Color(0xFF1B3531),
-    secondaryContainer = Color(0xFF324B47),
-    onSecondaryContainer = Color(0xFFCCE8E3),
+    primary = Color(0xFFFED39A),
+    onPrimary = Color(0xFF3A2600),
+    primaryContainer = Color(0xFFFEBD61),
+    onPrimaryContainer = Color(0xFF1A1C1E),
+    secondary = Color(0xFFCFC6BB),
+    onSecondary = Color(0xFF353029),
+    secondaryContainer = Color(0xFF4A3D2A),
+    onSecondaryContainer = Color(0xFFE8E6E3),
     tertiary = Color(0xFFEBC277),
     onTertiary = Color(0xFF412D00),
     tertiaryContainer = Color(0xFF5D4300),
     onTertiaryContainer = Color(0xFFF6E0B5),
-    background = Color(0xFF101615),
-    onBackground = Color(0xFFDEE4E2),
-    surface = Color(0xFF101615),
-    onSurface = Color(0xFFDEE4E2),
-    surfaceVariant = Color(0xFF3F4947),
-    onSurfaceVariant = Color(0xFFBFC9C7),
-    surfaceContainerLowest = Color(0xFF0B100F),
-    surfaceContainerLow = Color(0xFF181E1D),
-    surfaceContainer = Color(0xFF1C2221),
-    surfaceContainerHigh = Color(0xFF262D2B),
-    surfaceContainerHighest = Color(0xFF313836),
-    outline = Color(0xFF899391),
-    outlineVariant = Color(0xFF3F4947),
+    background = Color(0xFF161514),
+    onBackground = Color(0xFFE8E6E3),
+    surface = Color(0xFF161514),
+    onSurface = Color(0xFFE8E6E3),
+    surfaceVariant = Color(0xFF3A3836),
+    onSurfaceVariant = Color(0xFFC4C1BC),
+    // Cards sit one step lighter than the ground, as white does in light mode.
+    surfaceContainerLowest = Color(0xFF242321),
+    surfaceContainerLow = Color(0xFF1C1B19),
+    surfaceContainer = Color(0xFF201F1D),
+    surfaceContainerHigh = Color(0xFF2A2927),
+    surfaceContainerHighest = Color(0xFF353331),
+    outline = Color(0xFF9A9690),
+    outlineVariant = Color(0xFF3D3B38),
     error = Color(0xFFF2B8B5),
     onError = Color(0xFF601410),
     errorContainer = Color(0xFF8C1D18),
     onErrorContainer = Color(0xFFF9DEDC),
-    inverseSurface = Color(0xFFDEE4E2),
-    inverseOnSurface = Color(0xFF2D3433),
-    inversePrimary = Color(0xFF0E5E58),
+    inverseSurface = Color(0xFFE8E6E3),
+    inverseOnSurface = Color(0xFF31302E),
+    inversePrimary = Color(0xFF8F5A00),
 )
 
 /** One room's drawer colour: the tinted front and the ink that reads on it. */
@@ -138,14 +140,16 @@ private val AppShapes = Shapes(
 enum class ThemeMode(val label: String) { System("System"), Light("Light"), Dark("Dark") }
 
 /**
- * The user's accent: one exact colour. It replaces the teal on actions,
- * selection and the FAB; the sea-glass ground and the room tints stay, because
- * they carry the drawers.
+ * The user's accent: one exact colour, the fill of the FAB and of each sheet's
+ * confirm button. Text, checkboxes and switches use a darker step of the same
+ * hue (see [schemeFor]). The ground and the room tints stay, because they carry
+ * the drawers. Tangerine is the default.
  */
-enum class Accent(val label: String, val color: Color) {
+enum class Accent(val label: String, val color: Color, val lightInk: Color? = null) {
+    // A light fill: its ink is a saturated amber, not the fill darkened (that goes muddy).
+    Tangerine("Tangerine", Color(0xFFFEBD61), lightInk = Color(0xFF8F5A00)),
     SeaGlass("Sea glass", Color(0xFF0E5E58)),
     Moonstone("Moonstone", Color(0xFF4A5462)),
-    Tangerine("Tangerine", Color(0xFFD68401)),
     Kale("Kale", Color(0xFF4B7A45)),
     Blueberry("Blueberry", Color(0xFF3569BA)),
     Lavender("Lavender", Color(0xFF756BBD)),
@@ -164,22 +168,44 @@ private fun inkOn(fill: Color): Color {
 }
 
 /**
+ * The accent as text on a card: the fill itself when it reads at 4.5:1, or
+ * stepped toward black (light) or white (dark) until it does. Tangerine's
+ * light fill becomes a dark amber this way.
+ */
+private fun accentInk(fill: Color, dark: Boolean): Color {
+    val card = if (dark) Color(0xFF242321) else Color.White
+    val target = if (dark) Color.White else Color.Black
+    var c = fill
+    repeat(20) { if (contrast(c, card) < 4.5f) c = lerp(c, target, 0.1f) }
+    return c
+}
+
+/**
  * The full scheme for a mode and an accent, also used by the settings previews.
- * Light mode fills with the exact accent; dark mode lightens the same hue a
- * third so accent text stays legible on the dark ground. Containers and the
- * tonal fill are the accent mixed into the ground.
+ * The accent splits in two: `primaryContainer` is the exact fill (FAB, confirm
+ * buttons) with white or near-black on it, and `primary` is its readable ink
+ * (text buttons, checkboxes, switches, focus, the active tab). The tonal
+ * `secondaryContainer` (active tab pill, selected chip) is the fill mixed into
+ * the ground.
  */
 fun schemeFor(dark: Boolean, accent: Accent): androidx.compose.material3.ColorScheme {
     val base = if (dark) DarkScheme else LightScheme
-    val lifted = lerp(accent.color, Color.White, 0.35f)
-    val primary = if (dark) lifted else accent.color
+    val fill = accent.color
+    val ink = if (dark) accentInk(lerp(fill, Color.White, 0.35f), true) else accent.lightInk ?: accentInk(fill, false)
     return base.copy(
-        primary = primary, onPrimary = inkOn(primary),
-        primaryContainer = lerp(base.surface, accent.color, if (dark) 0.45f else 0.25f), onPrimaryContainer = base.onSurface,
-        secondaryContainer = lerp(base.surface, accent.color, if (dark) 0.30f else 0.18f), onSecondaryContainer = base.onSurface,
-        inversePrimary = if (dark) accent.color else lifted,
+        primary = ink, onPrimary = inkOn(ink),
+        primaryContainer = fill, onPrimaryContainer = inkOn(fill),
+        secondaryContainer = lerp(base.surface, fill, if (dark) 0.30f else 0.20f), onSecondaryContainer = base.onSurface,
+        inversePrimary = if (dark) accent.lightInk ?: accentInk(fill, false) else lerp(fill, Color.White, 0.35f),
     )
 }
+
+/** The filled confirm button: the accent fill, as on the FAB. */
+@Composable
+fun confirmColors() = androidx.compose.material3.ButtonDefaults.buttonColors(
+    containerColor = MaterialTheme.colorScheme.primaryContainer,
+    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+)
 
 fun tintsFor(dark: Boolean): List<RoomTint> = if (dark) DarkTints else LightTints
 
@@ -190,7 +216,7 @@ class Appearance(private val prefs: android.content.SharedPreferences) {
     )
         private set
     var accent by androidx.compose.runtime.mutableStateOf(
-        Accent.entries.firstOrNull { it.name == prefs.getString("accent", null) } ?: Accent.SeaGlass,
+        Accent.entries.firstOrNull { it.name == prefs.getString("accent", null) } ?: Accent.Tangerine,
     )
         private set
 

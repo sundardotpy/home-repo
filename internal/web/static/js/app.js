@@ -1,7 +1,7 @@
 // Screens, routing and the actions that drive optimistic mutations.
 
 import { api, get, post, qs } from './api.js';
-import { closeAnyPopup, createSelect, wireAccordions } from './components.js';
+import { closeAnyPopup, createSelect, openMenu, wireAccordions } from './components.js';
 import { BRAND_ICONS, BRAND_KEYS } from './brand-icons.js';
 import { MONOGRAMS, MONOGRAM_KEYS } from './brand-monograms.js';
 import { checkSession, lockNow, lockRequired, showLock } from './lock.js';
@@ -11,7 +11,7 @@ import { openVoiceSheet } from './voice.js';
 import { ago, pathText, rupees, rupeesPerDay, setValueLine, valueLine } from './look.js';
 import { attachPhoto, removePhoto } from './photos.js';
 import * as store from './store.js';
-import { manageTagSheet, propertyEditor, propertyList, tagChips, tagPickerSheet } from './taxonomy.js';
+import { manageTagSheet, propertyEditor, tagChips, tagPickerSheet } from './taxonomy.js';
 import { appearanceMarkup, initTheme, wireAppearance } from './theme.js';
 import {
   addRow,
@@ -28,6 +28,7 @@ import {
   openSheet,
   closeAllSheets,
   plural,
+  foldSection,
   primaryButton,
   tonalButton,
   roomBadge,
@@ -827,98 +828,81 @@ function historyMarkup(moves) {
     .join('');
 }
 
+// One thing owns the sheet. Top: where it is (tap to move) and an overflow.
+// Then a title card, one white row per property (place, quantity, price,
+// tags, barcode, custom fields, notes), a row of pill actions, and history.
 function itemDetailSheet(item) {
   const parts = item.location?.path || [];
   const v = item.value;
   const line = valueLine();
   const under = v && v.per_day < line;
+  const active = item.status !== 'decluttered';
+  const muted = (text) => `<span class="text-[var(--ink-soft)]">${esc(text)}</span>`;
+  const row = (iconName, inner, attrs = '') =>
+    `<button type="button" ${attrs} class="row-press prop-row">${icon(iconName, 'w-5 h-5')}<span class="flex-1 min-w-0">${inner}</span></button>`;
 
-  const valueCard = v
-    ? `
-      <section>
-        <h3 class="section-title">Value so far</h3>
-        <p class="mt-1 flex items-center gap-2 flex-wrap text-sm tabular-nums">
-          <span class="text-[var(--ink)] font-medium">${rupeesPerDay(v.per_day)} a day</span>
-          <span class="pill ${under ? 'pill-good' : 'pill-warn'}">${under ? 'Under' : 'Over'} ${rupees(line)}/day</span>
-        </p>
-        <p class="text-sm text-[var(--ink-soft)] tabular-nums">
-          ${rupees(item.purchase_price)} · bought ${esc(fmtDate(item.purchased_on))} · ${plural(v.days, 'day', 'days')}
-        </p>
-      </section>`
-    : `
-      <button type="button" data-add-price
-        class="row-press w-full text-left rounded-[var(--radius-card)] border border-[var(--line)] p-4 text-sm text-[var(--ink-soft)] leading-snug">
-        Add a price and date to see what this costs per day. <b class="font-medium text-[var(--accent-ink)]">Add</b>
-      </button>`;
+  const priceRow = v
+    ? `<span class="block tabular-nums">${rupees(item.purchase_price)} · ${rupeesPerDay(v.per_day)} a day
+         <span class="pill ${under ? 'pill-good' : 'pill-warn'} ml-1">${under ? 'Under' : 'Over'} ${rupees(line)}/day</span></span>
+       <span class="block text-sm text-[var(--ink-soft)] tabular-nums">bought ${esc(fmtDate(item.purchased_on))} · ${plural(v.days, 'day', 'days')}</span>`
+    : item.purchase_price != null
+      ? `<span class="tabular-nums">${rupees(item.purchase_price)}</span>`
+      : muted('Price and date, to see what it costs per day');
+
+  const rows = [
+    row('pin', `${drawerPath(parts)}<span class="block mt-1 text-sm text-[var(--ink-soft)]" data-lastmoved></span>`, active ? 'data-move' : 'disabled'),
+    row('hash', item.quantity > 1 ? `${esc(item.quantity)} of them` : '1 of it', 'data-edit'),
+    row('rupee', priceRow, 'data-add-price'),
+    row(
+      'tag',
+      item.tags?.length ? `<span class="flex flex-wrap gap-1.5">${item.tags.map((t) => `<span class="pill pill-quiet">${esc(t)}</span>`).join('')}</span>` : muted('Tags'),
+      'data-tags',
+    ),
+    item.barcode ? row('barcode', `<span class="font-mono tracking-wider truncate block">${esc(item.barcode)}</span>`, 'data-edit') : '',
+    ...Object.entries(item.properties || {}).map(([k, val]) =>
+      row('info', `<span class="block text-xs text-[var(--ink-soft)]">${esc(k)}</span><span class="block">${esc(val)}</span>`, 'data-edit'),
+    ),
+    item.description ? row('notes', `<span class="block whitespace-pre-line">${esc(item.description)}</span>`, 'data-edit') : '',
+  ].filter(Boolean);
 
   openSheet({
-    title: item.name,
+    title: '',
     body: `
-      <div class="space-y-4">
+      <div class="space-y-3">
+        <div class="flex items-center gap-1 -mt-2">
+          <button type="button" ${active ? 'data-move' : 'disabled'} class="row-press flex-1 min-w-0 min-h-11 px-1 flex items-center gap-2 rounded-full text-left">
+            ${roomBadgeSmall(parts[0])}
+            <span class="truncate text-sm font-medium text-[var(--ink-soft)] t-path">${esc(pathText(parts))}</span>
+            ${active ? `<span class="text-[var(--ink-soft)] shrink-0">${icon('chevron', 'w-4 h-4')}</span>` : ''}
+          </button>
+          <button type="button" data-more class="topround" aria-label="More" aria-haspopup="menu">${icon('more', 'w-6 h-6')}</button>
+        </div>
         ${
           item.photo_url
-            ? `<div class="rounded-xl overflow-hidden bg-[var(--sunken)] skeleton">
+            ? `<div class="rounded-[14px] overflow-hidden bg-[var(--sunken)] skeleton">
                  <img src="${esc(item.photo_url)}" alt="${esc(item.name)}" data-photo
                       class="w-full max-h-72 object-cover opacity-0 transition-opacity duration-200">
                </div>`
             : ''
         }
-        <div class="flex items-center gap-3">
-          ${itemAvatar(item, 'w-16 h-16')}
+        <div class="surface p-4 flex items-center gap-4">
+          ${itemAvatar(item, 'w-12 h-12')}
           <div class="min-w-0">
-            <div class="flex flex-wrap gap-1.5">
-              ${(item.tags || []).slice(0, 4).map((tag) => `<span class="pill pill-quiet">${esc(tag)}</span>`).join('') ||
-                '<span class="text-sm text-[var(--ink-faint)]">No tags</span>'}
-            </div>
-            ${item.quantity > 1 ? `<p class="text-sm text-[var(--ink-soft)] mt-1.5">Quantity ${esc(item.quantity)}</p>` : ''}
+            <h3 class="t-headline-sm font-medium text-pretty">${esc(item.name)}</h3>
+            ${active ? '' : `<p class="mt-1 text-sm text-[var(--ink-soft)]">Decluttered: out of the house, kept in the record.${item.declutter_note ? ` <span class="font-medium">${esc(item.declutter_note)}</span>` : ''}</p>`}
           </div>
         </div>
-
-        <section>
-          <h3 class="section-title">Where it is${multiFloor() ? ` · ${esc(item.location.floor_label)}` : ''}</h3>
-          ${drawerPath(parts)}
-          <p class="mt-3 text-sm text-[var(--ink-soft)]" data-lastmoved></p>
-        </section>
-
-        <div class="flex gap-2">
-          ${primaryButton('Move it', 'data-move class="flex-1"')}
+        <div class="list">${rows.join('')}</div>
+        <div class="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1">
           ${
-            item.status === 'decluttered'
-              ? ghostButton('Restore', 'data-declutter class="flex-1"')
-              : ghostButton('Declutter', 'data-declutter class="flex-1"')
+            active
+              ? `<button type="button" data-move class="pill-action is-main">${icon('move', 'w-[18px] h-[18px]')}Move</button>
+                 <button type="button" data-declutter class="pill-action">${icon('outbox', 'w-[18px] h-[18px]')}Declutter</button>`
+              : `<button type="button" data-declutter class="pill-action is-main">${icon('restore', 'w-[18px] h-[18px]')}Restore</button>`
           }
+          <button type="button" data-edit class="pill-action">${icon('pencil', 'w-[18px] h-[18px]')}Edit</button>
         </div>
-        <div class="flex gap-1 -mx-3 -mt-2">
-          <button type="button" data-edit class="btn btn-text">${icon('pencil', 'w-5 h-5')} Edit details</button>
-          <button type="button" data-delete class="btn btn-text !text-[var(--error)]">${icon('trash', 'w-5 h-5')} Delete</button>
-        </div>
-
-        ${
-          item.status === 'decluttered'
-            ? `<div class="surface p-3 text-sm text-[var(--ink-soft)]">
-                 ${esc('Decluttered — out of the house, kept in the record.')}
-                 ${item.declutter_note ? `<span class="font-medium">${esc(item.declutter_note)}</span>` : ''}
-               </div>`
-            : ''
-        }
-
-        ${valueCard}
-
-        ${
-          item.barcode
-            ? `<div class="surface p-3 flex items-center gap-3">
-                 <span class="text-[var(--ink-soft)]">${icon('barcode', 'w-5 h-5')}</span>
-                 <span class="flex-1 min-w-0">
-                   <span class="block text-sm text-[var(--ink-soft)]">Barcode</span>
-                   <span class="block font-mono tracking-wider truncate">${esc(item.barcode)}</span>
-                 </span>
-               </div>`
-            : ''
-        }
-        ${propertyList(item.properties)}
-        ${item.description ? `<div class="surface p-3"><div class="text-sm text-[var(--ink-soft)] mb-1">Notes</div><div>${esc(item.description)}</div></div>` : ''}
-
-        <section data-history class="hidden">
+        <section data-history class="hidden pt-2">
           <h3 class="section-title mb-3">History</h3>
           <div class="journey" data-history-body></div>
         </section>
@@ -933,20 +917,16 @@ function itemDetailSheet(item) {
         };
         photo.complete ? reveal() : photo.addEventListener('load', reveal, { once: true });
       }
-      body.querySelector('[data-edit]').addEventListener('click', () => {
+      const edit = () => {
         close();
         itemSheet({ item });
-      });
-      body.querySelector('[data-add-price]')?.addEventListener('click', () => {
-        close();
-        itemSheet({ item, focusPrice: true });
-      });
-      body.querySelector('[data-move]').addEventListener('click', () => {
+      };
+      const move = () => {
         close();
         moveSheet(item);
-      });
-      body.querySelector('[data-declutter]').addEventListener('click', () => {
-        if (item.status === 'decluttered') {
+      };
+      const declutter = () => {
+        if (!active) {
           // Back into the active inventory, where it was.
           api('PATCH', `/items/${item.id}`, { status: 'active' }).then(() => {
             close();
@@ -965,11 +945,43 @@ function itemDetailSheet(item) {
             toast(`${item.name} decluttered`);
           },
         });
-      });
-      body.querySelector('[data-delete]').addEventListener('click', () => {
+      };
+      const tags = () =>
+        tagPickerSheet(item.tags || [], (next) => {
+          api('PATCH', `/items/${item.id}`, { tags: next }).then(() => {
+            close();
+            store.revalidate();
+            toast(next.length ? `Tagged ${item.name}` : `Removed the tags from ${item.name}`);
+          });
+        });
+      body.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', edit));
+      body.querySelectorAll('[data-move]').forEach((b) => b.addEventListener('click', move));
+      body.querySelectorAll('[data-declutter]').forEach((b) => b.addEventListener('click', declutter));
+      body.querySelector('[data-tags]').addEventListener('click', tags);
+      body.querySelector('[data-add-price]').addEventListener('click', () => {
         close();
-        deleteItem(item);
+        itemSheet({ item, focusPrice: true });
       });
+      body.querySelector('[data-more]').addEventListener('click', (e) =>
+        openMenu(e.currentTarget, {
+          header: item.created_at ? `Added on ${fmtDate(item.created_at.slice(0, 10))}` : '',
+          items: [
+            { icon: 'pencil', label: 'Edit details', onClick: edit },
+            { icon: 'tag', label: 'Tags', onClick: tags },
+            { icon: active ? 'outbox' : 'restore', label: active ? 'Declutter' : 'Restore', onClick: declutter },
+            'divider',
+            {
+              icon: 'trash',
+              label: 'Delete',
+              danger: true,
+              onClick: () => {
+                close();
+                deleteItem(item);
+              },
+            },
+          ],
+        }),
+      );
 
       // History is its own request; the card is useful before it arrives.
       if (!store.isTemp(item.id)) {
@@ -990,139 +1002,141 @@ function itemDetailSheet(item) {
   });
 }
 
-// "I put it somewhere else": recent places for one tap, or any room and box.
+// The room's swatch at breadcrumb size.
+const roomBadgeSmall = (room) =>
+  room ? `<span class="room-badge ${roomTint(room)} w-6 h-6 rounded-[6px] grid place-items-center text-xs font-medium shrink-0">${esc(room[0].toUpperCase())}</span>` : '';
+
+// "I put it somewhere else": recent places for one tap, then every room with
+// its boxes nested under it, searchable. Typing also offers "inside another
+// thing". Where it is now is shaded and can't be picked.
 function moveSheet(item) {
   store.load('/rooms');
+  store.load('/storage-units').catch(() => {});
   store.load('/activity?limit=30').catch(() => {});
-  let selectedRoom = item.room_id;
-  let selectedUnit = item.storage_unit_id || '';
-  let selectedContainer = item.location?.container_id || item.parent_item_id || '';
   const here = `${item.room_id}|${item.storage_unit_id || ''}`;
+  const wasIn = item.location?.container_id || item.parent_item_id || '';
   // Cycle guard: the item itself and everything nested inside it can't hold it.
   const blocked = new Set([item.id]);
   const insidePath = `/items?container_id=${item.id}&deep=true&limit=500`;
-  const candidatesPath = () => `/items?room_id=${selectedRoom}&limit=500`;
+  const thingsPath = '/items?limit=500&total=false';
 
   openSheet({
-    title: 'Move it',
+    title: `Move ${item.name}`,
     body: `
-      <p class="text-sm text-[var(--ink-soft)] mb-3">
-        Now in <b class="t-path text-[var(--ink)]">${esc(pathText(item.location?.path || []))}</b>
-      </p>
-      <div data-recent class="flex flex-wrap gap-2 mb-4"></div>
-      ${field('Room', `<div data-room-select></div>`)}
-      ${field('Storage unit', `<div data-unit-select></div>`, 'Leave as "Anywhere in the room" for things that are not in a box.')}
-      ${field('Put inside another item', `<div data-container-select></div>`, 'A box inside a box, a case inside a bag. It goes wherever that item is.')}
-      ${primaryButton('Move here', 'data-save class="w-full"')}`,
+      <label class="search-well mb-3">
+        ${icon('search', 'w-5 h-5 text-[var(--ink-soft)] shrink-0')}
+        <input data-q class="flex-1 min-w-0 bg-transparent outline-none h-12 text-[var(--ink)]" placeholder="Find a room, box or thing" autocomplete="off">
+      </label>
+      <div data-recent class="flex flex-wrap gap-2 mb-3"></div>
+      <div data-places></div>`,
     onMount(body, close) {
-      const candidates = () =>
-        (store.peek(candidatesPath()).data?.items || []).filter((i) => !blocked.has(i.id));
-      const containerOptions = () => [
-        { value: '', label: 'Not inside anything' },
-        ...candidates().map((i) => ({ value: i.id, label: i.name, hint: pathText(i.location?.path || []) })),
-      ];
-      const containerSelect = createSelect(body.querySelector('[data-container-select]'), {
-        options: containerOptions(),
-        value: selectedContainer,
-        onChange: (v) => {
-          selectedContainer = v;
-          // The container decides the unit; the two pickers never disagree.
-          if (v) {
-            selectedUnit = '';
-            unitSelect.value = '';
-          }
-        },
-      });
-      const loadContainers = () =>
-        Promise.all([store.load(candidatesPath()), store.load(insidePath)])
-          .then(() => {
-            for (const i of store.peek(insidePath).data?.items || []) blocked.add(i.id);
-          })
-          .catch(() => {})
-          .finally(() => {
-            containerSelect.setOptions(containerOptions());
-            containerSelect.value = selectedContainer;
-          });
-
-      const unitOptions = () => {
-        const flat = flattenUnits(store.peek(`/rooms/${selectedRoom}/tree`).data?.storage_units || []);
-        return [
-          { value: '', label: 'Anywhere in the room' },
-          ...flat.map((u) => ({ value: u.id, label: u.name, depth: u._depth + 1 })),
-        ];
+      const input = body.querySelector('[data-q]');
+      const units = () => store.peek('/storage-units').data?.storage_units || [];
+      const go = (roomId, unitId, containerId) => {
+        close();
+        if (containerId) {
+          if (containerId === wasIn) return toast('It is already there');
+          const container = (store.peek(thingsPath).data?.items || []).find((i) => i.id === containerId);
+          return container && moveIntoItem(item, container);
+        }
+        if (!wasIn && `${roomId}|${unitId || ''}` === here) return toast('It is already there');
+        moveItem(item, roomId, units().find((u) => u.id === unitId) || null);
       };
-      const roomOptions = () =>
-        rooms().map((r) => ({ value: r.id, label: r.name, hint: multiFloor() ? r.floor_label : '' }));
+      const placeRow = ({ attrs, lead, title, sub = '', depth = 0, isHere = false }) => `
+        <button type="button" ${isHere ? 'disabled' : attrs} class="row-press w-full flex items-center gap-3.5 py-2.5 text-left ${isHere ? 'is-here' : ''}"
+          style="padding-left:calc(1rem + ${Math.min(depth, 3) * 20}px)">
+          ${lead}
+          <span class="flex-1 min-w-0">
+            <span class="block truncate">${esc(title)}</span>
+            ${isHere || sub ? `<span class="block text-sm text-[var(--ink-soft)] truncate">${esc(isHere ? 'Here now' : sub)}</span>` : ''}
+          </span>
+        </button>`;
+      const boxLead = `<span class="w-9 h-9 grid place-items-center text-[var(--ink-soft)] shrink-0">${icon('box', 'w-5 h-5')}</span>`;
 
-      const unitSelect = createSelect(body.querySelector('[data-unit-select]'), {
-        options: unitOptions(),
-        value: selectedUnit,
-        onChange: (v) => {
-          selectedUnit = v;
-          selectedContainer = '';
-          containerSelect.value = '';
-          paintRecent();
-        },
-      });
-      const loadUnits = () =>
-        store.load(`/rooms/${selectedRoom}/tree`).finally(() => {
-          unitSelect.setOptions(unitOptions());
-          unitSelect.value = selectedUnit;
-        });
-      const roomSelect = createSelect(body.querySelector('[data-room-select]'), {
-        options: roomOptions(),
-        value: selectedRoom,
-        onChange: (v) => {
-          selectedRoom = v;
-          selectedUnit = '';
-          selectedContainer = '';
-          unitSelect.setOptions([{ value: '', label: 'Anywhere in the room' }], false);
-          loadUnits();
-          loadContainers();
-          paintRecent();
-        },
-      });
-      loadUnits();
-      loadContainers();
-      store.load('/rooms').then(() => {
-        roomSelect.setOptions(roomOptions());
-        roomSelect.value = selectedRoom;
-      });
+      const paint = () => {
+        const q = input.value.trim().toLowerCase();
+        const hit = (t) => !q || t.toLowerCase().includes(q);
+        const rows = [];
+        for (const room of rooms()) {
+          const inRoom = units()
+            .filter((u) => u.room_id === room.id)
+            .sort((a, b) => a.path.join('/').localeCompare(b.path.join('/')));
+          if (hit(room.name)) {
+            rows.push(
+              placeRow({
+                attrs: `data-room="${esc(room.id)}"`,
+                lead: roomBadge(room, 'w-9 h-9 text-sm rounded-[10px]'),
+                title: room.name,
+                sub: multiFloor() ? `${room.floor_label} · loose in the room` : 'Loose in the room',
+                isHere: !wasIn && here === `${room.id}|`,
+              }),
+            );
+          }
+          for (const u of inRoom.filter((u) => hit(u.path.join(' ')))) {
+            rows.push(
+              placeRow({
+                attrs: `data-room="${esc(room.id)}" data-unit="${esc(u.id)}"`,
+                lead: boxLead,
+                title: u.name,
+                depth: u.depth || u.path.length,
+                isHere: !wasIn && here === `${room.id}|${u.id}`,
+              }),
+            );
+          }
+        }
+        const things = q
+          ? (store.peek(thingsPath).data?.items || []).filter((i) => !blocked.has(i.id) && hit(i.name)).slice(0, 30)
+          : [];
+        body.querySelector('[data-places]').innerHTML = `
+          ${rows.length ? `<div class="list">${rows.join('')}</div>` : `<p class="py-4 text-sm text-[var(--ink-soft)]">No room or box matches.</p>`}
+          ${
+            things.length
+              ? `<h3 class="section-title mt-5 mb-2">Inside another thing</h3>
+                 <div class="list">${things
+                   .map((t) =>
+                     placeRow({
+                       attrs: `data-thing="${esc(t.id)}"`,
+                       lead: itemAvatar(t, 'w-9 h-9'),
+                       title: t.name,
+                       sub: pathText(t.location?.path || []),
+                       isHere: t.id === wasIn,
+                     }),
+                   )
+                   .join('')}</div>`
+              : ''
+          }`;
+        body.querySelectorAll('[data-room],[data-thing]').forEach((b) =>
+          b.addEventListener('click', () => go(b.dataset.room, b.dataset.unit, b.dataset.thing)),
+        );
+      };
 
       const holder = body.querySelector('[data-recent]');
       const paintRecent = () => {
         const places = recentPlaces(4, here);
         holder.classList.toggle('hidden', !places.length);
-        holder.innerHTML = recentChips(places, `${selectedRoom}|${selectedUnit}`);
+        holder.innerHTML = recentChips(places);
         holder.querySelectorAll('[data-recent]').forEach((b) =>
           b.addEventListener('click', () => {
             const p = places[Number(b.dataset.recent)];
-            selectedRoom = p.roomId;
-            selectedUnit = p.unitId;
-            selectedContainer = '';
-            roomSelect.value = selectedRoom;
-            loadUnits();
-            loadContainers();
-            paintRecent();
+            go(p.roomId, p.unitId);
           }),
         );
       };
-      paintRecent();
-      store.load('/activity?limit=30').then(paintRecent).catch(() => {});
 
-      body.querySelector('[data-save]').addEventListener('click', () => {
-        const flat = flattenUnits(store.peek(`/rooms/${selectedRoom}/tree`).data?.storage_units || []);
-        const unit = flat.find((u) => u.id === (unitSelect.value || '')) || null;
-        const container = candidates().find((i) => i.id === selectedContainer) || null;
-        const wasIn = item.location?.container_id || item.parent_item_id || '';
-        const unchanged = container
-          ? container.id === wasIn
-          : !wasIn && selectedRoom === item.room_id && (unit?.id || '') === (item.storage_unit_id || '');
-        close();
-        if (unchanged) return toast('It is already there');
-        if (container) return moveIntoItem(item, container);
-        moveItem(item, selectedRoom, unit);
+      input.addEventListener('input', () => {
+        if (input.value.trim()) store.load(thingsPath).then(paint).catch(() => {});
+        paint();
       });
+      paint();
+      paintRecent();
+      store.load('/rooms').then(paint).catch(() => {});
+      store.load('/storage-units').then(paint).catch(() => {});
+      store.load('/activity?limit=30').then(paintRecent).catch(() => {});
+      Promise.all([store.load(insidePath)])
+        .then(() => {
+          for (const i of store.peek(insidePath).data?.items || []) blocked.add(i.id);
+        })
+        .catch(() => {});
     },
   });
 }
@@ -1398,16 +1412,17 @@ const findScreen = {
       ${syncBanner()}
       ${
         moves.length
-          ? `${sectionTitle('Put away today')}
-             <div class="list -mx-2">${moves.map(moveRow).join('')}</div>`
+          ? foldSection('find:today', 'Put away today', moves.length, `<div class="list">${moves.map(moveRow).join('')}</div>`)
           : ''
       }
-      ${sectionTitle('Your things')}
-      ${
+      ${foldSection(
+        'find:things',
+        'Your things',
+        itemsCached ? (itemData?.total ?? items.length) : '',
         !itemsCached
           ? skeletonList(4)
           : items.length
-            ? `<div class="list -mx-2">
+            ? `<div class="list">
                  ${items.map((it) => itemRow(it, { showLocation: true })).join('')}
                </div>
                ${more ? `<div class="mt-3">${ghostButton('Show more', 'data-more class="w-full"')}</div>` : ''}`
@@ -1415,8 +1430,8 @@ const findScreen = {
                 'Nothing tracked yet',
                 'Add something with the + button and it shows up here.',
                 tonalButton('Add something', 'data-add-first'),
-              )
-      }
+              ),
+      )}
       ${sectionTitle('Rooms')}
       ${
         !roomsCached
@@ -1471,7 +1486,14 @@ addEventListener('keydown', (e) => {
 // Rooms and, inside them, the boxes. The old home screen, now one tab among three.
 const placesScreen = {
   paths: () => ['/rooms'],
-  header: () => topBar({ title: 'Places' }),
+  header() {
+    const rooms = store.peek('/rooms').data?.rooms;
+    const things = (rooms || []).reduce((n, r) => n + (r.item_count || 0), 0);
+    return topBar({
+      title: 'Places',
+      count: rooms ? `${plural(rooms.length, 'room', 'rooms')} · ${plural(things, 'thing', 'things')}` : '',
+    });
+  },
   mount(el) {
     el.innerHTML = `<div id="places-body" class="px-4"></div>`;
     rewireHeader();
@@ -1500,7 +1522,7 @@ const placesScreen = {
                     ? `<span class="t-label-sm text-[var(--ink-faint)]">${plural(roomsOnFloor.length, 'room', 'rooms')}</span>`
                     : '',
                 )}
-                <div class="grid-rows">
+                <div class="list">
                   ${roomsOnFloor
                     .map((r) => roomRow(r, store.isTemp(r.id), { showFloor: false }))
                     .join('')}
@@ -1627,10 +1649,15 @@ const roomScreen = {
       title: room
         ? `<span class="inline-flex items-center gap-3 max-w-full">${roomBadge(room, 'w-8 h-8 text-sm rounded-[8px]')}<span class="truncate">${esc(room.name)}</span></span>`
         : '<span class="skeleton inline-block h-5 w-32 align-middle"></span>',
-      sub:
-        room && multiFloor()
-          ? `<p class="text-sm text-[var(--ink-soft)] truncate">${esc(room.floor_label)}</p>`
-          : '',
+      count: room
+        ? [
+            multiFloor() ? room.floor_label : '',
+            plural(room.storage_unit_count || 0, 'box', 'boxes'),
+            plural(room.item_count || 0, 'thing', 'things'),
+          ]
+            .filter(Boolean)
+            .join(' · ')
+        : '',
       actions: barAction('pencil', 'Rename room', 'data-rename') + barAction('trash', 'Delete room', 'data-delete'),
     });
   },
@@ -1683,15 +1710,14 @@ const roomScreen = {
 
     body.innerHTML = `
       ${syncBanner()}
-      ${sectionTitle(
+      ${foldSection(
+        `room:${this.id}:units`,
         'Storage units',
-        `<a href="#/labels/${esc(this.id)}" class="btn btn-text !min-h-10 -mr-3">QR labels</a>`,
-      )}
-      ${
+        cached ? tree.length : '',
         !cached
           ? skeletonList(3)
           : tree.length
-            ? `<div class="list -mx-2">
+            ? `<div class="list">
                  ${tree.map((u) => branch(u, 0)).join('')}
                  ${addRow('New storage unit', 'data-add-unit')}
                </div>`
@@ -1699,18 +1725,21 @@ const roomScreen = {
                 'Nothing in here yet',
                 'Add a wardrobe, a shelf or a labelled box — they can nest as deep as you like.',
                 tonalButton('Add storage unit', 'data-add-unit'),
-              )
-      }
-      ${sectionTitle('Loose in this room')}
-      ${
+              ),
+        `<a href="#/labels/${esc(this.id)}" class="btn btn-text !min-h-10">QR labels</a>`,
+      )}
+      ${foldSection(
+        `room:${this.id}:loose`,
+        'Loose in this room',
+        cached ? loose.length : '',
         !cached
           ? skeletonList(2)
           : loose.length
-            ? `<div class="list -mx-2">
+            ? `<div class="list">
                  ${loose.map((i) => itemRow(i, { pending: store.isTemp(i.id) })).join('')}
                </div>`
-            : `<p class="py-3 text-sm text-[var(--ink-soft)]">Nothing loose: everything here lives inside a storage unit.</p>`
-      }`;
+            : `<p class="py-3 text-sm text-[var(--ink-soft)]">Nothing loose: everything here lives inside a storage unit.</p>`,
+      )}`;
 
     wireSyncBanner(body);
     wireAccordions(body, {
@@ -1773,22 +1802,23 @@ const unitScreen = {
       ${syncBanner()}
       ${
         children.length || !cached
-          ? sectionTitle('Inside') +
-            (!cached
-              ? skeletonList(2)
-              : listCard(
-                  children.map((u) => unitRow(u, { pending: store.isTemp(u.id) })).join('') +
-                    addRow('New unit in here', 'data-add-unit'),
-                ))
+          ? foldSection(
+              `unit:${this.id}:inside`,
+              'Inside',
+              cached ? children.length : '',
+              !cached
+                ? skeletonList(2)
+                : listCard(
+                    children.map((u) => unitRow(u, { pending: store.isTemp(u.id) })).join('') +
+                      addRow('New unit in here', 'data-add-unit'),
+                  ),
+            )
           : ''
       }
-      ${sectionTitle(
+      ${foldSection(
+        `unit:${this.id}:items`,
         'Items',
-        `<button type="button" data-deep class="text-sm font-medium ${this.deep ? 'text-[var(--accent-ink)]' : 'text-[var(--ink-soft)]'}">
-           ${this.deep ? 'Showing nested' : 'Include nested'}
-         </button>`,
-      )}
-      ${
+        cached ? items.length : '',
         !cached
           ? skeletonList(3)
           : items.length
@@ -1801,8 +1831,11 @@ const unitScreen = {
                 'Empty',
                 'Nothing is stored in here yet.',
                 tonalButton('Add item here', 'data-add-item'),
-              )
-      }
+              ),
+        `<button type="button" data-deep class="text-sm font-medium ${this.deep ? 'text-[var(--accent-ink)]' : 'text-[var(--ink-soft)]'}">
+           ${this.deep ? 'Showing nested' : 'Include nested'}
+         </button>`,
+      )}
       ${!children.length && cached ? `<div class="mt-3">${listCard(addRow('New unit in here', 'data-add-unit'))}</div>` : ''}`;
 
     wireSyncBanner(body);
@@ -2959,13 +2992,6 @@ function playMotion(from, to) {
   }
 }
 
-// Past the first row, Find's extended FAB folds to its icon, as on the phone.
-addEventListener(
-  'scroll',
-  () => document.getElementById('fab').classList.toggle('is-collapsed', current === findScreen && scrollY > 120),
-  { passive: true },
-);
-
 // Re-render the header only when its data arrives, so the title stops being a
 // skeleton without rebuilding (and unfocusing) the screen below it.
 let lastHeader = '';
@@ -2988,15 +3014,14 @@ function syncChrome() {
   document.getElementById('sync-pip').classList.toggle('hidden', store.pendingCount() === 0);
   // Adding an item makes no sense on the label sheet or in settings, and the
   // floating button would sit on top of their controls.
-  // The FAB says what it does: a new room on Places, otherwise adding a thing
-  // into wherever you are (the common job, so it stays one tap away).
+  // The FAB is an icon; its name says what it does: a new room on Places,
+  // otherwise adding a thing into wherever you are (the common job, so it
+  // stays one tap away).
   const fab = document.getElementById('fab');
-  const verb = current === placesScreen ? ['New room', 'Add a room'] : ['Add', 'Add something'];
-  fab.querySelector('[data-fab-label]').textContent = verb[0];
-  fab.setAttribute('aria-label', verb[1]);
-  document.getElementById('topbar-add').setAttribute('aria-label', verb[1]);
+  const verb = current === placesScreen ? 'Add a room' : 'Add something';
+  fab.setAttribute('aria-label', verb);
+  document.getElementById('topbar-add').setAttribute('aria-label', verb);
   fab.classList.toggle('hidden', current === settingsScreen || current === labelsScreen);
-  if (current !== findScreen) fab.classList.remove('is-collapsed');
 }
 
 // On phones the header is sticky. A tall one (Find's headline) would pin a

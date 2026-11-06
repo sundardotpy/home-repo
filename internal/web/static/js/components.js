@@ -199,6 +199,71 @@ export function createSelect(host, { options = [], value = '', placeholder = 'Se
   };
 }
 
+// ---------------------------------------------------------------- menus ---
+
+/**
+ * An overflow menu anchored under `trigger`'s right edge: a white card with
+ * icon rows, an optional muted header (when a thing was added), and
+ * 'divider' entries between groups. items: [{ icon, label, danger, onClick } | 'divider']
+ */
+export function openMenu(trigger, { header = '', items = [] } = {}) {
+  closeAnyPopup();
+  const pop = document.createElement('div');
+  pop.className = 'fixed z-[70] popup-in';
+  pop.innerHTML = `
+    <div role="menu" class="menu-card">
+      ${header ? `<p class="px-4 pt-2 pb-2 text-xs text-[var(--ink-soft)] border-b border-[var(--line)] mb-1">${esc(header)}</p>` : ''}
+      ${items
+        .map((it, i) =>
+          it === 'divider'
+            ? '<div class="my-1 border-t border-[var(--line)]" role="separator"></div>'
+            : `<button type="button" role="menuitem" data-i="${i}"
+                 class="w-full min-h-12 px-4 flex items-center gap-4 text-left hover:bg-[var(--sunken)] ${it.danger ? 'text-[var(--error)]' : ''}">
+                 <span class="${it.danger ? '' : 'text-[var(--ink-soft)]'}">${icon(it.icon, 'w-5 h-5')}</span>
+                 <span>${esc(it.label)}</span>
+               </button>`,
+        )
+        .join('')}
+    </div>`;
+  document.body.appendChild(pop);
+  const r = trigger.getBoundingClientRect();
+  const w = pop.offsetWidth;
+  pop.style.left = `${Math.max(8, Math.min(r.right - w, innerWidth - w - 8))}px`;
+  const h = pop.offsetHeight;
+  pop.style.top = innerHeight - r.bottom - 8 >= h ? `${r.bottom + 4}px` : `${Math.max(8, r.top - h - 4)}px`;
+  pop.style.transformOrigin = 'top right';
+  trigger.setAttribute('aria-expanded', 'true');
+
+  // Escape shuts the menu only, not the sheet it was opened from.
+  const onKey = (e) => {
+    if (e.key !== 'Escape') return;
+    e.stopPropagation();
+    close();
+  };
+  const onDown = (e) => {
+    if (!pop.contains(e.target) && !trigger.contains(e.target)) close();
+  };
+  function close() {
+    pop.remove();
+    removeEventListener('keydown', onKey, true);
+    removeEventListener('pointerdown', onDown, true);
+    removeEventListener('scroll', close, true);
+    openPopup = null;
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+  pop.querySelectorAll('[role=menuitem]').forEach((b) =>
+    b.addEventListener('click', () => {
+      close();
+      items[Number(b.dataset.i)].onClick?.();
+    }),
+  );
+  addEventListener('keydown', onKey, true);
+  addEventListener('pointerdown', onDown, true);
+  addEventListener('scroll', close, true);
+  openPopup = close;
+  pop.querySelector('[role=menuitem]')?.focus();
+}
+
 // --------------------------------------------------------------- accordion ---
 
 // Collapsible sections animate on grid-template-rows, which — unlike max-height

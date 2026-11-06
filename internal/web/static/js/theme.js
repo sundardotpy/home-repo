@@ -4,11 +4,12 @@ const KEY = 'hsh.accent';
 const MODE_KEY = 'hsh.theme';
 
 // The same seven as the Android app, by the same names, so a household sees
-// one product on both. Sea glass is the default.
+// one product on both. Tangerine is the default. A light fill names its own
+// ink: darkening it toward black would turn it muddy.
 export const ACCENTS = [
+  { name: 'Tangerine', hex: '#febd61', ink: '#8f5a00' },
   { name: 'Sea glass', hex: '#0e5e58' },
   { name: 'Moonstone', hex: '#4a5462' },
-  { name: 'Tangerine', hex: '#d68401' },
   { name: 'Kale', hex: '#4b7a45' },
   { name: 'Blueberry', hex: '#3569ba' },
   { name: 'Lavender', hex: '#756bbd' },
@@ -63,16 +64,17 @@ function paintAccent(base) {
   const root = document.documentElement.style;
   root.setProperty('--accent', fill);
   root.setProperty('--on-accent', onAccent(fill));
-  root.setProperty('--accent-ink', inkFor(fill, dark));
+  const named = !dark && ACCENTS.find((a) => a.hex === base)?.ink;
+  root.setProperty('--accent-ink', named || inkFor(fill, dark));
   // The snackbar's action sits on the inverse surface: the other mode's fill.
   root.setProperty('--accent-inverse', dark ? base : lifted(base));
   syncThemeColor();
 }
 
-// The accent as text on the ground: the fill itself when it reads (4.5:1), or
-// stepped toward the ink until it does — Tangerine on sea glass needs this.
+// The accent as text on a card: the fill itself when it reads (4.5:1), or
+// stepped toward the ink until it does.
 function inkFor(fill, dark) {
-  const ground = dark ? [16, 22, 21] : [244, 247, 246];
+  const ground = dark ? [36, 35, 33] : [255, 255, 255];
   const ink = dark ? [255, 255, 255] : [0, 0, 0];
   let c = rgb(fill);
   for (let i = 0; i < 20 && contrast(c, ground) < 4.5; i++) c = c.map((v, k) => v + (ink[k] - v) * 0.1);
@@ -129,8 +131,8 @@ export function initTheme() {
 // real scheme it stands for (rail, an item with its drawer tabs, the accent on
 // Add), then its name. Announced as radio choices.
 const SCHEMES = {
-  light: { ground: '#f4f7f6', slip: '#ffffff', bar: '#e8eeed', line: '#c3ccca', ink: '#1c2326', tint: '#cdebe1' },
-  dark: { ground: '#101615', slip: '#0b100f', bar: '#1c2221', line: '#3f4947', ink: '#dee4e2', tint: '#24453c' },
+  light: { ground: '#f8f7f5', slip: '#ffffff', bar: '#f8f7f5', line: '#dcdad6', ink: '#1f1e1d', tint: '#cdebe1' },
+  dark: { ground: '#161514', slip: '#242321', bar: '#161514', line: '#3d3b38', ink: '#e8e6e3', tint: '#24453c' },
 };
 
 function mini(scheme, accentBase) {

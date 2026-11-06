@@ -73,6 +73,7 @@ fun HistoryScreen() {
         }
     }
 
+    val (folded, toggleFold) = rememberFolds()
     ScreenScaffold(title = "History") { pad ->
         LazyColumn(
             Modifier.fillMaxSize(),
@@ -84,9 +85,8 @@ fun HistoryScreen() {
                 item { Notice("Nothing yet", "Every add, move and declutter shows up here, newest first.") }
             }
             moves.orEmpty().groupBy { dayLabel(it.movedAt) }.forEach { (day, rows) ->
-                item(key = "h$day") { SectionTitle(day) }
-                items(rows, key = { it.itemId + it.movedAt + it.kind }) { m ->
-                    HistoryRow(m) {
+                foldingSection(day, rows, folded, toggleFold, key = { it.itemId + it.movedAt + it.kind }) { m, mod ->
+                    HistoryRow(m, mod) {
                         scope.launch {
                             try {
                                 detail = withContext(Dispatchers.IO) { Db.item(m.itemId) }
@@ -102,14 +102,14 @@ fun HistoryScreen() {
 }
 
 @Composable
-private fun HistoryRow(m: MoveRow, onClick: () -> Unit) {
+private fun HistoryRow(m: MoveRow, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val (icon, verb) = when (m.kind) {
         "added" -> Icons.Outlined.AddCircleOutline to (if ((m.quantity ?: 0) > 1) "Added ×${m.quantity}" else "Added")
         "decluttered" -> Icons.Outlined.Outbox to "Decluttered"
         else -> Icons.Outlined.SwapHoriz to "Moved"
     }
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {

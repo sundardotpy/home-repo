@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -14,6 +16,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.MoreVert
@@ -22,7 +29,6 @@ import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -76,14 +82,9 @@ fun PlacesScreen(onOpenRoom: (RoomRow) -> Unit) {
 
     ScreenScaffold(
         title = "Places",
+        subtitle = rooms?.let { r -> count(r.size, "room", "rooms") + " · " + count(r.sumOf { it.itemCount }, "thing", "things") },
         fab = {
-            ExtendedFloatingActionButton(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                onClick = { newRoom = true },
-                icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-                text = { Text("New room") },
-            )
+            AddFab("New room", onClick = { newRoom = true })
         },
     ) { pad ->
         LazyColumn(
@@ -97,11 +98,13 @@ fun PlacesScreen(onOpenRoom: (RoomRow) -> Unit) {
                     Notice("No rooms yet", "Start with the rooms in your home, then add the cupboards and boxes inside them.")
                 }
             }
-            items(rooms.orEmpty(), key = { it.id }) { r ->
+            item { Spacer(Modifier.height(8.dp)) }
+            segments(rooms.orEmpty(), key = { it.id }) { r, m ->
                 PlaceRow(
                     leading = { RoomSwatch(r.name, icon = r.icon) },
                     title = r.name,
                     sub = count(r.unitCount, "box", "boxes") + " · " + count(r.itemCount, "thing", "things"),
+                    modifier = m,
                 ) { onOpenRoom(r) }
             }
         }
@@ -125,9 +128,9 @@ fun PlacesScreen(onOpenRoom: (RoomRow) -> Unit) {
 
 /** A room or box in a list: its drawer front, name, counts, and a way in. */
 @Composable
-private fun PlaceRow(leading: @Composable () -> Unit, title: String, sub: String, onClick: () -> Unit) {
+private fun PlaceRow(leading: @Composable () -> Unit, title: String, sub: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -152,18 +155,12 @@ private fun BoxIcon() {
 /** Rename and delete, tucked behind the top bar's overflow. */
 @Composable
 private fun PlaceMenu(onRename: () -> Unit, onDelete: () -> Unit, onMove: (() -> Unit)? = null, onIcon: (() -> Unit)? = null) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { open = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "More") }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            if (onMove != null) DropdownMenuItem(text = { Text("Move") }, onClick = { open = false; onMove() })
-            if (onIcon != null) DropdownMenuItem(text = { Text("Change icon") }, onClick = { open = false; onIcon() })
-            DropdownMenuItem(text = { Text("Rename") }, onClick = { open = false; onRename() })
-            DropdownMenuItem(
-                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
-                onClick = { open = false; onDelete() },
-            )
-        }
+    OverflowMenu { close ->
+        if (onMove != null) MenuRow(Icons.Outlined.SwapHoriz, "Move") { close(); onMove() }
+        if (onIcon != null) MenuRow(Icons.Outlined.Image, "Change icon") { close(); onIcon() }
+        MenuRow(Icons.Outlined.Edit, "Rename") { close(); onRename() }
+        HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
+        MenuRow(Icons.Outlined.Delete, "Delete", danger = true) { close(); onDelete() }
     }
 }
 
@@ -181,21 +178,17 @@ fun RoomScreen(room: RoomKey, onBack: () -> Unit, onOpenUnit: (UnitRow) -> Unit)
     }
     var detail by remember { mutableStateOf<ItemRow?>(null) }
     var newBox by remember { mutableStateOf(false) }
+    val (folded, toggleFold) = rememberFolds()
     var renaming by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
 
     ScreenScaffold(
         title = name,
         onBack = onBack,
+        subtitle = data?.let { (units, loose) -> count(units.size, "box", "boxes") + " · " + count(loose.size, "thing", "things") + " loose" },
         actions = { PlaceMenu(onRename = { renaming = true }, onDelete = { deleting = true }, onIcon = { pickingIcon = true }) },
         fab = {
-            ExtendedFloatingActionButton(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                onClick = { newBox = true },
-                icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-                text = { Text("New box") },
-            )
+            AddFab("New box", onClick = { newBox = true })
         },
     ) { pad ->
         val (units, loose) = data ?: (emptyList<UnitRow>() to emptyList())
@@ -223,12 +216,10 @@ fun RoomScreen(room: RoomKey, onBack: () -> Unit, onOpenUnit: (UnitRow) -> Unit)
                 item { Notice("Nothing in $name yet", "Add a wardrobe, a shelf or a labelled box, or put things straight in the room.") }
             }
             if (units.isNotEmpty()) {
-                item { SectionTitle("Boxes") }
-                items(units, key = { it.id }) { u -> PlaceRow({ BoxIcon() }, u.name, "") { onOpenUnit(u) } }
+                foldingSection("Boxes", units, folded, toggleFold, key = { it.id }) { u, m -> PlaceRow({ BoxIcon() }, u.name, "", m) { onOpenUnit(u) } }
             }
             if (loose.isNotEmpty()) {
-                item { SectionTitle("Loose in $name") }
-                items(loose, key = { it.id }) { ItemListRow(it, within = name) { detail = it } }
+                foldingSection("Loose in $name", loose, folded, toggleFold, key = { it.id }) { it, m -> ItemListRow(it, within = name, modifier = m) { detail = it } }
             }
         }
     }
@@ -299,6 +290,7 @@ fun UnitScreen(unit: UnitKey, onBack: () -> Unit, onOpenUnit: (UnitRow) -> Unit)
     }
     var detail by remember { mutableStateOf<ItemRow?>(null) }
     var newBox by remember { mutableStateOf(false) }
+    val (folded, toggleFold) = rememberFolds()
     var renaming by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
     var moving by remember { mutableStateOf(false) }
@@ -308,13 +300,7 @@ fun UnitScreen(unit: UnitKey, onBack: () -> Unit, onOpenUnit: (UnitRow) -> Unit)
         onBack = onBack,
         actions = { PlaceMenu(onRename = { renaming = true }, onDelete = { deleting = true }, onMove = { moving = true }) },
         fab = {
-            ExtendedFloatingActionButton(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                onClick = { newBox = true },
-                icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-                text = { Text("Box inside") },
-            )
+            AddFab("Box inside", onClick = { newBox = true })
         },
     ) { pad ->
         val (children, inside) = data ?: (emptyList<UnitRow>() to emptyList())
@@ -329,12 +315,10 @@ fun UnitScreen(unit: UnitKey, onBack: () -> Unit, onOpenUnit: (UnitRow) -> Unit)
                 item { Notice("$name is empty", "Move things in from their sheet, or add a box inside it.") }
             }
             if (children.isNotEmpty()) {
-                item { SectionTitle("Boxes inside") }
-                items(children, key = { it.id }) { u -> PlaceRow({ BoxIcon() }, u.name, "") { onOpenUnit(u) } }
+                foldingSection("Boxes inside", children, folded, toggleFold, key = { it.id }) { u, m -> PlaceRow({ BoxIcon() }, u.name, "", m) { onOpenUnit(u) } }
             }
             if (inside.isNotEmpty()) {
-                item { SectionTitle("In $name") }
-                items(inside, key = { it.id }) { ItemListRow(it, within = unit.path) { detail = it } }
+                foldingSection("In $name", inside, folded, toggleFold, key = { it.id }) { it, m -> ItemListRow(it, within = unit.path, modifier = m) { detail = it } }
             }
         }
     }
@@ -437,13 +421,13 @@ private fun MoveBoxSheet(unit: UnitKey, name: String, onDismiss: () -> Unit, onM
         LazyColumn(Modifier.heightIn(max = 520.dp)) {
             val r = rooms.filter { hit(it.name) }
             if (r.isNotEmpty()) item { SectionTitle("Rooms") }
-            items(r, key = { "r" + it.id }) { room ->
-                MoveRow(room.name, "Straight in the room", { RoomSwatch(room.name, 36.dp, room.icon) }, !busy) { go(room.name, room.id, null) }
+            segments(r, key = { "r" + it.id }, inset = 0.dp) { room, m ->
+                MoveRow(room.name, "Straight in the room", { RoomSwatch(room.name, 36.dp, room.icon) }, !busy, m) { go(room.name, room.id, null) }
             }
             val b = boxes.filter { hit(it.pathString) }
             if (b.isNotEmpty()) item { SectionTitle("Inside another box") }
-            items(b, key = { "u" + it.id }) { box ->
-                MoveRow(box.name, pathParts(box.pathString).joinToString(" › "), { BoxGlyph() }, !busy) { go(box.name, null, box.id) }
+            segments(b, key = { "u" + it.id }, inset = 0.dp) { box, m ->
+                MoveRow(box.name, pathParts(box.pathString).joinToString(" › "), { BoxGlyph() }, !busy, m) { go(box.name, null, box.id) }
             }
         }
     }

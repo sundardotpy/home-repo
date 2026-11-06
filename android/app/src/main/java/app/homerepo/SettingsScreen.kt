@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -24,14 +25,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.ColorLens
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Sync
-import androidx.compose.material3.Button
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -88,54 +94,55 @@ fun SettingsScreen(prefs: android.content.SharedPreferences, onBack: () -> Unit,
     }
 
     ScreenScaffold(title = "Settings", onBack = onBack) { pad ->
+        // Settings is one white sheet under the warm top bar, as a list of bands.
         Column(
             Modifier
                 .padding(pad)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SettingsHeading("Theme", "Light, dark, or follow your phone.")
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ThemeMode.entries.forEach { mode ->
-                    ChoiceCard(mode.label, appearance.mode == mode, { appearance.choose(mode) }, Modifier.weight(1f)) {
-                        ModePreview(mode, appearance.accent)
-                    }
-                }
-            }
-
-            SettingsHeading("Accent colour", "Used for buttons, selection and the Add button.")
-            // Large text gets two columns so every name fits whole.
-            val columns = if (LocalDensity.current.fontScale > 1.15f) 2 else 3
-            Accent.entries.chunked(columns).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    row.forEach { accent ->
-                        ChoiceCard(accent.label, appearance.accent == accent, { appearance.choose(accent) }, Modifier.weight(1f)) {
-                            MiniApp(schemeFor(dark, accent), tintsFor(dark), Modifier.fillMaxWidth().height(PreviewHeight))
+            SettingsSection("Appearance") {
+                SettingsRow(Icons.Outlined.Palette, "Theme", "Light, dark, or follow your phone")
+                Row(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ThemeMode.entries.forEach { mode ->
+                        ChoiceCard(mode.label, appearance.mode == mode, { appearance.choose(mode) }, Modifier.weight(1f)) {
+                            ModePreview(mode, appearance.accent)
                         }
                     }
-                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+                SettingsRow(Icons.Outlined.ColorLens, "Accent colour", appearance.accent.label)
+                // Large text gets two columns so every name fits whole.
+                val columns = if (LocalDensity.current.fontScale > 1.15f) 2 else 3
+                Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Accent.entries.chunked(columns).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            row.forEach { accent ->
+                                ChoiceCard(accent.label, appearance.accent == accent, { appearance.choose(accent) }, Modifier.weight(1f)) {
+                                    MiniApp(schemeFor(dark, accent), tintsFor(dark), Modifier.fillMaxWidth().height(PreviewHeight))
+                                }
+                            }
+                            repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                        }
+                    }
                 }
             }
 
-            SettingsHeading("Sync", "Everything here comes straight from the household database. Sync checks the connection and reloads every screen.")
-            Button(onClick = { sync() }, enabled = !syncing, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                Icon(Icons.Outlined.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.size(8.dp))
-                Text(if (syncing) "Syncing…" else "Sync now")
-            }
-            ui.lastSync?.let { at ->
-                Text(
-                    "Last synced at " + Instant.ofEpochMilli(at).atZone(ZoneId.systemDefault()).toLocalTime()
-                        .format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            SettingsSection("Data") {
+                SettingsRow(
+                    Icons.Outlined.Sync,
+                    if (syncing) "Syncing…" else "Sync now",
+                    ui.lastSync?.let { at ->
+                        "Last synced at " + Instant.ofEpochMilli(at).atZone(ZoneId.systemDefault()).toLocalTime()
+                            .format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+                    } ?: "Checks the database answers and reloads every screen",
+                    onClick = if (syncing) null else ({ sync() }),
                 )
-            }
-            // Only a build without a built-in database can point somewhere else.
-            if (!Db.builtIn) {
-                TextButton(onClick = { confirmForget = true }) { Text("Change database") }
+                // Only a build without a built-in database can point somewhere else.
+                if (!Db.builtIn) {
+                    SettingsRow(Icons.Outlined.Storage, "Change database", "Forget this connection and enter another", onClick = { confirmForget = true })
+                }
             }
         }
     }
@@ -155,11 +162,41 @@ fun SettingsScreen(prefs: android.content.SharedPreferences, onBack: () -> Unit,
     }
 }
 
+/**
+ * A block of settings: a white, full-width band under a sentence-case header
+ * in the accent's ink, with a hairline above it to part it from the last one.
+ */
 @Composable
-private fun SettingsHeading(title: String, body: String) {
-    Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
-        Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun SettingsSection(title: String, content: @Composable () -> Unit) {
+    Column(Modifier.fillMaxWidth()) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Text(
+            title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 8.dp).semantics { heading() },
+        )
+        content()
+    }
+}
+
+/** One setting: an outline icon, its name, and its value or a hint underneath. */
+@Composable
+private fun SettingsRow(icon: ImageVector, title: String, value: String, onClick: (() -> Unit)? = null) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .heightIn(min = 56.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 

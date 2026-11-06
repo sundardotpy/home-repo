@@ -8,7 +8,7 @@ android
 
 Scope note: this record covers the native Android client in `android/`. The web
 app (`internal/web/`) is a separate surface that shares the same design system
-(DESIGN.md, Clear Drawers).
+(DESIGN.md, Warm Drawers).
 
 ## Users
 
