@@ -347,7 +347,7 @@ Depth is white on warm. Cards sit flat on the ground, and the contrast between t
 
 ## Shapes
 
-Corners are soft and step with size: 4dp between segmented rows, 6dp for tabs and status labels, 10dp for room swatches and tag chips, 14dp for item avatars, cards and the shift notice, 16dp for menus and the web FAB, 20dp for the Android FAB, 28dp for sheets, the search field and the tag tray. Buttons and chips keep the Material pill and 8dp-family shapes. The spine is a 2dp round-capped line. The launcher icon redraws the signature (a teal ground, a 3px spine, a tinted room tab, two white slips stepping right) and ships a monochrome layer for themed icons.
+Corners are soft and step with size: 4dp between segmented rows, 6dp for tabs and status labels, 10dp for room swatches and tag chips, 14dp for item avatars, cards and the shift notice, 16dp for menus and the web FAB, 20dp for the Android FAB, 28dp for sheets, the search field and the tag tray. Buttons and chips keep the Material pill and 8dp-family shapes. The spine is a 2dp round-capped line. The launcher icon is the app's own artwork (a light rounded tile with a short list: an orange dot and grey pill, a blue pill, a green dot), generated for every density by `scripts/make-android-launcher-icon.mjs`, on a flat `#EFEEEE` background layer so a circle mask shows no corner, with a monochrome layer for themed icons.
 
 ## Components
 

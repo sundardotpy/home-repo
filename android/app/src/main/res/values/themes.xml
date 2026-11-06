@@ -4,5 +4,7 @@
         <item name="android:windowBackground">@color/launch_surface</item>
     </style>
     <color name="launch_surface">#F8F7F5</color>
-    <color name="launcher_ground">#0E5E58</color>
+    <!-- The launcher icon's background layer: the tile colour of the app
+         artwork, so the mask shape reads as the artwork's own surface. -->
+    <color name="launcher_ground">#EFEEEE</color>
 </resources>
