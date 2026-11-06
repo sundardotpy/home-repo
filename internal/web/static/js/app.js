@@ -15,7 +15,6 @@ import { manageTagSheet, propertyEditor, propertyList, tagChips, tagPickerSheet 
 import { appearanceMarkup, initTheme, wireAppearance } from './theme.js';
 import {
   addRow,
-  breadcrumb,
   emptyState,
   esc,
   field,
@@ -673,7 +672,7 @@ function iconPickerSheet(selected, onPick) {
                  ? 'border-[var(--ink)] bg-[var(--accent-tonal)] text-[var(--ink)]'
                  : 'border-[var(--line)] text-[var(--ink-soft)] hover:border-[var(--ink-faint)]'}">
         ${itemIconSVG(key, 'w-6 h-6')}
-        <span class="text-[11px] leading-4 text-center truncate w-full px-0.5">${esc(iconLabel(key))}</span>
+        <span class="t-label-sm text-center truncate w-full px-0.5">${esc(iconLabel(key))}</span>
       </button>`;
   };
 
@@ -690,7 +689,7 @@ function iconPickerSheet(selected, onPick) {
   const content = () => {
     if (tab === 'brands') {
       const real = BRAND_KEYS.map((k) => `brand:${k}`).filter(matches);
-      const note = `<p class="text-[12px] text-[var(--ink-soft)] mt-5 mb-2">No official mark to ship for these, so each is a badge with the brand's initials, not its logo.</p>`;
+      const note = `<p class="text-xs text-[var(--ink-soft)] mt-5 mb-2">No official mark to ship for these, so each is a badge with the brand's initials, not its logo.</p>`;
       const mono = MONOGRAM_KEYS.filter((k) => !BRAND_ICONS[k]).map((k) => `brand:${k}`).filter(matches);
       if (!real.length && !mono.length) return nothing();
       return (
@@ -793,7 +792,7 @@ const recentChips = (places, activeKey = '') =>
     .map(
       (p, i) => `
     <button type="button" data-recent="${i}" aria-pressed="${`${p.roomId}|${p.unitId}` === activeKey}"
-      class="h-10 px-3 max-w-full inline-flex items-center gap-2 rounded-[10px] text-[14px] font-medium t-path ${
+      class="h-10 px-3 max-w-full inline-flex items-center gap-2 rounded-[10px] text-sm font-medium t-path ${
         `${p.roomId}|${p.unitId}` === activeKey
           ? 'bg-[var(--accent-tonal)]'
           : 'border border-[var(--line)] text-[var(--ink-soft)]'
@@ -811,14 +810,14 @@ function historyMarkup(moves) {
       <span class="journey-dot mt-1 ${i === 0 ? 'is-here' : ''}"></span>
       <span class="flex-1 min-w-0 pb-4">
         <span class="flex items-baseline justify-between gap-2">
-          <span class="font-semibold text-[14px]">${
+          <span class="font-semibold text-sm">${
             m.kind === 'added' ? 'Added'
               : m.kind === 'decluttered' ? 'Decluttered'
                 : 'Moved'
           }${m.quantity ? ` ×${m.quantity}` : ''}</span>
-          <span class="text-[12px] text-[var(--ink-faint)] shrink-0">${esc(ago(m.moved_at, { long: true }))}</span>
+          <span class="text-xs text-[var(--ink-faint)] shrink-0">${esc(ago(m.moved_at, { long: true }))}</span>
         </span>
-        <span class="block mt-1 text-[12px] leading-relaxed t-path">
+        <span class="block mt-1 text-xs leading-relaxed t-path">
           ${m.from_path?.length ? `<span class="block diff-del truncate">${esc(pathText(m.from_path))}</span>` : ''}
           <span class="block diff-add truncate">${esc(pathText(m.to_path))}</span>
         </span>
@@ -836,22 +835,13 @@ function itemDetailSheet(item) {
 
   const valueCard = v
     ? `
-      <section class="surface p-4">
-        <div class="flex items-center justify-between">
-          <h3 class="section-title">Value so far</h3>
+      <section>
+        <h3 class="section-title">Value so far</h3>
+        <p class="mt-1 flex items-center gap-2 flex-wrap text-sm tabular-nums">
+          <span class="text-[var(--ink)] font-medium">${rupeesPerDay(v.per_day)} a day</span>
           <span class="pill ${under ? 'pill-good' : 'pill-warn'}">${under ? 'Under' : 'Over'} ${rupees(line)}/day</span>
-        </div>
-        <div class="flex items-baseline gap-1.5 mt-1">
-          <span class="text-[24px] leading-8 tabular-nums">${rupeesPerDay(v.per_day)}</span>
-          <span class="text-sm text-[var(--ink-soft)]">per day</span>
-        </div>
-        <div class="mt-3 h-1 rounded-full bg-[var(--sunken)] overflow-hidden" role="img"
-             aria-label="${Math.min(100, Math.round((v.per_day / line) * 100))}% of your good value line">
-          <div class="h-full rounded-full" style="width:${Math.min(100, Math.round((v.per_day / line) * 100))}%;background:${
-            under ? 'var(--ink)' : 'var(--warn-fg)'
-          }"></div>
-        </div>
-        <p class="mt-2.5 text-sm text-[var(--ink-soft)]">
+        </p>
+        <p class="text-sm text-[var(--ink-soft)] tabular-nums">
           ${rupees(item.purchase_price)} · bought ${esc(fmtDate(item.purchased_on))} · ${plural(v.days, 'day', 'days')}
         </p>
       </section>`
@@ -894,11 +884,13 @@ function itemDetailSheet(item) {
           ${primaryButton('Move it', 'data-move class="flex-1"')}
           ${
             item.status === 'decluttered'
-              ? ghostButton('Restore', 'data-declutter aria-label="Restore item" class="flex-1"')
-              : ghostButton('Decluttered', 'data-declutter aria-label="Mark decluttered" class="flex-1"')
+              ? ghostButton('Restore', 'data-declutter class="flex-1"')
+              : ghostButton('Declutter', 'data-declutter class="flex-1"')
           }
-          ${ghostButton(icon('pencil', 'w-5 h-5'), 'data-edit aria-label="Edit item"')}
-          ${ghostButton(icon('trash', 'w-5 h-5'), 'data-delete aria-label="Delete item"')}
+        </div>
+        <div class="flex gap-1 -mx-3 -mt-2">
+          <button type="button" data-edit class="btn btn-text">${icon('pencil', 'w-5 h-5')} Edit details</button>
+          <button type="button" data-delete class="btn btn-text !text-[var(--error)]">${icon('trash', 'w-5 h-5')} Delete</button>
         </div>
 
         ${
@@ -1359,11 +1351,11 @@ const findScreen = {
         </h1>
         <a href="#/settings" class="topround -mr-2" aria-label="Settings">${icon('settings', 'w-6 h-6')}</a>
       </div>
-      <h1 class="hidden md:block text-[22px] leading-7 pt-7 pb-4">Find</h1>
+      <h1 class="hidden md:block t-title-lg pt-7 pb-4">Find</h1>
       <div data-sticky-anchor class="search-well">
         <button type="button" data-go-search class="flex-1 min-w-0 h-full flex items-center gap-4 text-left">
           <span class="text-[var(--ink)]">${icon('search', 'w-6 h-6')}</span>
-          <span class="truncate text-[16px] text-[var(--ink-soft)]">Where did I put it?</span>
+          <span class="truncate text-base text-[var(--ink-soft)]">Where did I put it?</span>
         </button>
         <button type="button" data-voice aria-label="Speak to put something away" class="topround">
           ${icon('mic', 'w-6 h-6')}
@@ -1435,7 +1427,7 @@ const findScreen = {
                    .map(
                      (r) => `
                    <a href="#/room/${esc(r.id)}"
-                      class="h-12 pl-2 pr-4 inline-flex items-center gap-2 rounded-[10px] border border-[var(--line)] text-[14px] font-medium
+                      class="h-12 pl-2 pr-4 inline-flex items-center gap-2 rounded-[10px] border border-[var(--line)] text-sm font-medium
                              row-press ${store.isTemp(r.id) ? 'is-pending' : ''}">
                      ${roomBadge(r, 'w-8 h-8 text-sm rounded-[8px]')}
                      <span class="t-path">${esc(r.name)}</span>
@@ -1444,7 +1436,7 @@ const findScreen = {
                    )
                    .join('')}
                </div>`
-            : `<p class="text-[14px] text-[var(--ink-soft)]">
+            : `<p class="text-sm text-[var(--ink-soft)]">
                  No rooms yet. <a class="underline font-medium" href="#/places">Start with Places.</a>
                </p>`
       }`;
@@ -1479,11 +1471,7 @@ addEventListener('keydown', (e) => {
 // Rooms and, inside them, the boxes. The old home screen, now one tab among three.
 const placesScreen = {
   paths: () => ['/rooms'],
-  header: () =>
-    topBar({
-      title: 'Places',
-      actions: `<button type="button" data-add-room class="btn btn-tonal !min-h-10 !px-4 mr-2">${icon('plus', 'w-5 h-5')} New room</button>`,
-    }),
+  header: () => topBar({ title: 'Places' }),
   mount(el) {
     el.innerHTML = `<div id="places-body" class="px-4"></div>`;
     rewireHeader();
@@ -1509,7 +1497,7 @@ const placesScreen = {
                 ${sectionTitle(
                   showFloors ? roomsOnFloor[0].floor_label || floorLabel(floor) : 'Rooms',
                   showFloors
-                    ? `<span class="text-[11px] text-[var(--ink-faint)]">${plural(roomsOnFloor.length, 'room', 'rooms')}</span>`
+                    ? `<span class="t-label-sm text-[var(--ink-faint)]">${plural(roomsOnFloor.length, 'room', 'rooms')}</span>`
                     : '',
                 )}
                 <div class="room-grid">
@@ -1569,7 +1557,7 @@ const valueScreen = {
 
     const chip = (value, label) => `
       <button type="button" data-filter="${esc(value)}" aria-pressed="${this.filter === value}"
-        class="h-10 px-4 shrink-0 inline-flex items-center gap-2 rounded-[10px] text-[14px] font-medium ${
+        class="h-10 px-4 shrink-0 inline-flex items-center gap-2 rounded-[10px] text-sm font-medium ${
           this.filter === value
             ? 'bg-[var(--accent-tonal)] pl-2.5'
             : 'border border-[var(--line)] text-[var(--ink-soft)]'
@@ -1580,7 +1568,7 @@ const valueScreen = {
          class="row-press w-full text-left flex items-center gap-3.5 px-2 py-3">
         ${itemAvatar(i)}
         <span class="flex-1 min-w-0">
-          <span class="block text-[16px] leading-6 font-medium truncate t-name">${esc(i.name)}</span>
+          <span class="block t-title-md truncate t-name">${esc(i.name)}</span>
           <span class="block text-sm text-[var(--ink-soft)] truncate tabular-nums">
             ${rupees(i.purchase_price)} · ${plural(i.value.days, 'day', 'days')}
           </span>
@@ -1595,7 +1583,7 @@ const valueScreen = {
           ? skeletonList(4)
           : all.length
             ? `
-        <p class="mt-2 text-[16px] leading-6">
+        <p class="mt-2 t-body-lg">
           <span class="font-medium tabular-nums">${good} of ${items.length}</span>
           ${`thing${items.length === 1 ? '' : 's'}`} under ${rupees(line)} a day
         </p>
@@ -1675,7 +1663,7 @@ const roomScreen = {
                    aria-label="Show what is inside ${esc(unit.name)}"
                    class="w-8 shrink-0 grid place-items-center rounded-[14px] text-[var(--ink-soft)] active:bg-[var(--sunken)] transition-colors"
                    style="margin-left:${Math.min(depth, 3) * 10}px">
-                   <span data-caret ${isOpen ? 'style="transform:rotate(90deg)"' : ''}>${icon('chevron', 'w-4 h-4')}</span>
+                   <span data-caret ${isOpen ? 'style="transform:rotate(180deg)"' : ''}>${icon('down', 'w-5 h-5')}</span>
                  </button>`
               : `<span class="w-8 shrink-0" style="margin-left:${Math.min(depth, 3) * 10}px"></span>`
           }
@@ -1751,20 +1739,19 @@ const unitScreen = {
   header() {
     const data = store.peek(this.paths()[0]).data;
     const unit = data?.storage_unit;
-    return topBar({
+    return `${topBar({
       back: true,
       title: unit ? esc(unit.name) : '<span class="skeleton inline-block h-5 w-28 align-middle"></span>',
-      sub: unit
-        ? breadcrumb([
-            { label: unit.room_name, href: `#/room/${unit.room_id}` },
-            ...(unit.path || []).slice(0, -1).map((p) => ({ label: p })),
-          ])
-        : '<span class="skeleton inline-block h-2.5 w-40"></span>',
       actions:
         barAction('qr', 'QR label', 'data-qr') +
         barAction('pencil', 'Rename unit', 'data-rename') +
         barAction('trash', 'Delete unit', 'data-delete'),
-    });
+    })}
+    <div class="px-4 pb-2 -mt-2">${
+      unit
+        ? drawerPath([unit.room_name, ...(unit.path || []).slice(0, -1)], { roomHref: `#/room/${unit.room_id}` })
+        : '<span class="skeleton block h-5 w-32 mt-1.5"></span>'
+    }</div>`;
   },
   mount(el, params) {
     this.id = params.id;
@@ -1945,7 +1932,7 @@ const settingsScreen = {
           <span class="block text-sm text-[var(--ink-soft)] truncate">
             ${esc([u.room_name, ...(u.path || []).slice(0, -1)].filter(Boolean).join(' › '))}
           </span>
-          <span class="block font-mono text-[12px] tracking-wider text-[var(--ink-faint)] mt-0.5">${esc(u.qr_slug)}</span>
+          <span class="block font-mono text-xs tracking-wider text-[var(--ink-faint)] mt-0.5">${esc(u.qr_slug)}</span>
         </span>
         <button type="button" data-edit-code="${esc(u.id)}"
           class="h-11 px-3 rounded-lg text-sm font-medium text-[var(--accent-ink)] active:bg-[var(--sunken)] transition-colors">
@@ -1959,7 +1946,7 @@ const settingsScreen = {
         <span class="flex-1 min-w-0">
           <span class="block font-medium truncate">${esc(i.name)}</span>
           <span class="block text-sm text-[var(--ink-soft)] truncate">${esc(i.location?.path_string || '')}</span>
-          <span class="block font-mono text-[12px] tracking-wider text-[var(--ink-faint)] mt-0.5">${esc(i.barcode)}</span>
+          <span class="block font-mono text-xs tracking-wider text-[var(--ink-faint)] mt-0.5">${esc(i.barcode)}</span>
         </span>
         <button type="button" data-edit-item="${esc(i.id)}"
           class="h-11 px-3 rounded-lg text-sm font-medium text-[var(--accent-ink)] active:bg-[var(--sunken)] transition-colors">
@@ -1976,7 +1963,7 @@ const settingsScreen = {
           : `<span class="pill pill-warn">Never backed up</span>`,
       )}
       <div class="surface p-4">
-        <p class="text-[16px] leading-6">Everything lives in one database.</p>
+        <p class="t-body-lg">Everything lives in one database.</p>
         <p class="text-sm text-[var(--ink-soft)] mt-1">Keep a copy so a mistake never costs you your list.</p>
         <div class="flex gap-2 mt-4">
           <button type="button" data-export-all class="btn btn-primary flex-1">Download my data</button>
@@ -1989,13 +1976,13 @@ const settingsScreen = {
         <p class="text-sm text-[var(--ink-soft)]">A thing is good value when it costs less than this per day.</p>
         <div class="flex items-center gap-2 shrink-0">
           <button type="button" data-line-dec aria-label="Lower the line" class="w-11 h-11 rounded-full bg-[var(--sunken)] grid place-items-center">${icon('minus', 'w-4 h-4')}</button>
-          <span class="min-w-[4rem] text-center text-[22px] leading-7 tabular-nums" data-line-value>${rupees(valueLine())}</span>
+          <span class="min-w-[4rem] text-center t-title-lg tabular-nums" data-line-value>${rupees(valueLine())}</span>
           <button type="button" data-line-inc aria-label="Raise the line" class="w-11 h-11 rounded-full bg-[var(--sunken)] grid place-items-center">${icon('plus', 'w-4 h-4')}</button>
         </div>
       </div>
 
       ${sectionTitle('Appearance')}
-      <div class="surface p-4" data-appearance>${appearanceMarkup()}</div>
+      <div data-appearance>${appearanceMarkup()}</div>
 
       ${sectionTitle('House shift')}
       <div class="surface p-4 flex items-center justify-between gap-3">
@@ -2052,7 +2039,7 @@ const settingsScreen = {
                  .map(
                    (t) => `
                  <button type="button" data-edit-tag="${esc(t.name)}" class="text-left">
-                   ${tagChips([t.name])}<span class="ml-1 text-[11px] text-[var(--ink-faint)]">${t.count}</span>
+                   ${tagChips([t.name])}<span class="ml-1 t-label-sm text-[var(--ink-faint)]">${t.count}</span>
                  </button>`,
                  )
                  .join('')}
@@ -2062,7 +2049,7 @@ const settingsScreen = {
 
       ${sectionTitle(
         'Custom fields',
-        `<span class="text-[11px] text-[var(--ink-faint)]">${plural(propKeys.length, 'field', 'fields')}</span>`,
+        `<span class="t-label-sm text-[var(--ink-faint)]">${plural(propKeys.length, 'field', 'fields')}</span>`,
       )}
       <p class="px-1 mb-2 text-sm text-[var(--ink-soft)]">
         Every field name in use. Tap a value to see everything that shares it.
@@ -2076,7 +2063,7 @@ const settingsScreen = {
                  <div class="px-4 py-3">
                    <div class="flex items-baseline gap-2">
                      <span class="font-medium">${esc(p.key)}</span>
-                     <span class="text-[12px] text-[var(--ink-faint)]">${plural(p.count, 'item', 'items')}</span>
+                     <span class="text-xs text-[var(--ink-faint)]">${plural(p.count, 'item', 'items')}</span>
                    </div>
                    <div class="mt-1.5 flex flex-wrap gap-1.5">
                      ${p.values
@@ -2084,7 +2071,7 @@ const settingsScreen = {
                        .map(
                          (v) => `
                        <a href="#/search?q=${encodeURIComponent(v)}"
-                          class="px-2 py-0.5 rounded-full bg-[var(--sunken)] text-[12px] text-[var(--ink-soft)] hover:text-[var(--accent-ink)] transition-colors">${esc(v)}</a>`,
+                          class="px-2 py-0.5 rounded-full bg-[var(--sunken)] text-xs text-[var(--ink-soft)] hover:text-[var(--accent-ink)] transition-colors">${esc(v)}</a>`,
                        )
                        .join('')}
                    </div>
@@ -2099,7 +2086,7 @@ const settingsScreen = {
 
       ${sectionTitle(
         'Storage unit codes',
-        `<span class="text-[11px] text-[var(--ink-faint)]">${plural(units.length, 'unit', 'units')}</span>`,
+        `<span class="t-label-sm text-[var(--ink-faint)]">${plural(units.length, 'unit', 'units')}</span>`,
       )}
       <p class="px-1 mb-2 text-sm text-[var(--ink-soft)]">
         Override a printed code, or issue a new one if a label is lost or reused.
@@ -2112,7 +2099,7 @@ const settingsScreen = {
 
       ${sectionTitle(
         'Item barcodes',
-        `<span class="text-[11px] text-[var(--ink-faint)]">${plural(coded.length, 'item', 'items')}</span>`,
+        `<span class="t-label-sm text-[var(--ink-faint)]">${plural(coded.length, 'item', 'items')}</span>`,
       )}
       <p class="px-1 mb-2 text-sm text-[var(--ink-soft)]">
         Products whose own barcode is stored — these need no QR label.
@@ -2310,7 +2297,7 @@ const searchScreen = {
         <span class="text-[var(--ink-soft)] shrink-0">${icon('search', 'w-6 h-6')}</span>
         <input id="search-input" type="search" autocomplete="off" enterkeyhint="search"
           placeholder="Where did I put it?"
-          class="flex-1 min-w-0 h-full bg-transparent outline-none border-0 text-[16px] text-[var(--ink)] placeholder:text-[var(--ink-soft)] pl-3">
+          class="flex-1 min-w-0 h-full bg-transparent outline-none border-0 text-base text-[var(--ink)] placeholder:text-[var(--ink-soft)] pl-3">
         <button id="search-filters" type="button" aria-label="Filters" class="topround shrink-0">${icon('settings', 'w-6 h-6')}</button>
       </label>
     </div>`,
@@ -2362,7 +2349,7 @@ const searchScreen = {
            ${itemAvatar(best)}
            <span class="flex-1 min-w-0">
              <span class="flex items-center gap-2">
-               <span class="text-[22px] leading-7 truncate t-name">${esc(best.name)}</span>
+               <span class="t-title-lg truncate t-name">${esc(best.name)}</span>
                <span class="pill pill-quiet shrink-0">Best match</span>
              </span>
              ${drawerPath(best.location?.path || [])}
@@ -2844,7 +2831,7 @@ function exitConfirm(commit) {
   openSheet({
     title: commit ? 'Commit the shift?' : 'Discard the shift?',
     body: `
-      <p class="text-[14px] leading-relaxed">${
+      <p class="text-sm leading-relaxed">${
         commit
           ? 'Every move and addition made in the copy is replayed onto the real inventory, oldest first.'
           : 'The copy and everything in it is thrown away. The real inventory was never touched.'
@@ -3000,7 +2987,13 @@ function syncChrome() {
   document.getElementById('sync-pip').classList.toggle('hidden', store.pendingCount() === 0);
   // Adding an item makes no sense on the label sheet or in settings, and the
   // floating button would sit on top of their controls.
+  // The FAB says what it does: a new room on Places, otherwise adding a thing
+  // into wherever you are (the common job, so it stays one tap away).
   const fab = document.getElementById('fab');
+  const verb = current === placesScreen ? ['New room', 'Add a room'] : ['Add', 'Add something'];
+  fab.querySelector('[data-fab-label]').textContent = verb[0];
+  fab.setAttribute('aria-label', verb[1]);
+  document.getElementById('topbar-add').setAttribute('aria-label', verb[1]);
   fab.classList.toggle('hidden', current === settingsScreen || current === labelsScreen);
   if (current !== findScreen) fab.classList.remove('is-collapsed');
 }
@@ -3092,7 +3085,9 @@ function scanWithFallback() {
 }
 
 document.getElementById('fab').addEventListener('click', () => {
-  if (current === unitScreen) {
+  if (current === placesScreen) {
+    roomSheet();
+  } else if (current === unitScreen) {
     const unit = store.peek(current.paths()[0]).data?.storage_unit;
     itemSheet({ roomId: unit?.room_id, unitId: unit?.id });
   } else if (current === roomScreen) {

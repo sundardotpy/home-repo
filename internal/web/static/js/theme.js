@@ -125,51 +125,80 @@ export function initTheme() {
 
 // ------------------------------------------------------ settings controls ---
 
-// Theme mode is a segmented button; the accent a row of swatches announced as
-// one radio group.
+// Settings offers each choice as a card: a miniature of the app drawn from the
+// real scheme it stands for (rail, an item with its drawer tabs, the accent on
+// Add), then its name. Announced as radio choices.
+const SCHEMES = {
+  light: { ground: '#f4f7f6', slip: '#ffffff', bar: '#e8eeed', line: '#c3ccca', ink: '#1c2326', tint: '#cdebe1' },
+  dark: { ground: '#101615', slip: '#0b100f', bar: '#1c2221', line: '#3f4947', ink: '#dee4e2', tint: '#24453c' },
+};
+
+function mini(scheme, accentBase) {
+  const c = SCHEMES[scheme];
+  const fill = scheme === 'dark' ? lifted(accentBase) : accentBase;
+  return `<span class="mini" style="background:${c.ground}">
+    <span class="mini-rail" style="background:${c.bar}">
+      <span style="background:${fill}"></span>
+    </span>
+    <span class="mini-body">
+      <span class="mini-name" style="background:${c.ink}"></span>
+      <span class="mini-path" style="border-color:${c.line}">
+        <span style="background:${c.tint};border-color:${c.line}"></span>
+        <span style="background:${c.slip};border-color:${c.line}"></span>
+      </span>
+      <span class="mini-add" style="background:${fill}"></span>
+    </span>
+  </span>`;
+}
+
+const card = (attrs, chosen, picture, label) => `
+  <button type="button" role="radio" ${attrs} aria-checked="${chosen}" class="choice">
+    <span class="relative block">${picture}${
+      chosen ? `<span class="choice-check">${icon('check', 'w-3.5 h-3.5')}</span>` : ''
+    }</span>
+    <span class="choice-name">${esc(label)}</span>
+  </button>`;
+
 export function appearanceMarkup() {
-  const active = currentAccent();
+  const accent = currentAccent();
   const mode = currentMode();
+  const scheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  const modePicture = (m) =>
+    m === 'system'
+      ? `<span class="mini-split" aria-hidden="true"><span>${mini('light', accent)}</span><span>${mini('dark', accent)}</span></span>`
+      : `<span aria-hidden="true">${mini(m, accent)}</span>`;
   return `
-    <div class="segmented" role="radiogroup" aria-label="Theme">
-      ${MODES.map(
-        (m) => `<button type="button" role="radio" data-mode="${m.value}" aria-checked="${m.value === mode}">
-          ${icon(m.value === mode ? 'check' : m.icon, 'w-4 h-4')}${m.label}</button>`,
-      ).join('')}
+    <h3 class="section-title mb-2">Theme</h3>
+    <div class="choices" role="radiogroup" aria-label="Theme">
+      ${MODES.map((m) => card(`data-mode="${m.value}"`, m.value === mode, modePicture(m.value), m.label)).join('')}
     </div>
-    <p class="section-title mt-6">Accent</p>
-    <div class="flex flex-wrap gap-3" role="radiogroup" aria-label="Accent">
-      ${ACCENTS.map((a) => swatch(a, a.hex === active)).join('')}
+    <h3 class="section-title mt-6 mb-2">Accent</h3>
+    <div class="choices" role="radiogroup" aria-label="Accent">
+      ${ACCENTS.map((a) =>
+        card(`data-accent="${esc(a.hex)}"`, a.hex === accent, `<span aria-hidden="true">${mini(scheme, a.hex)}</span>`, a.name),
+      ).join('')}
     </div>`;
 }
 
-const swatch = (a, selected) => `
-  <button type="button" role="radio" data-accent="${esc(a.hex)}" aria-checked="${selected}"
-    class="swatch" title="${esc(a.name)}" aria-label="${esc(a.name)}"
-    style="--swatch:${esc(a.hex)};color:${onAccent(a.hex)}">
-    ${selected ? icon('check', 'w-5 h-5') : ''}
-  </button>`;
-
+// A choice repaints every miniature (the theme changes all of them), so the
+// block is drawn again rather than patched.
 export function wireAppearance(root) {
+  const redraw = () => {
+    root.innerHTML = appearanceMarkup();
+    wireAppearance(root);
+  };
   root.querySelectorAll('[data-accent]').forEach((b) =>
     b.addEventListener('click', () => {
       applyAccent(b.dataset.accent);
-      root.querySelectorAll('[data-accent]').forEach((x) => {
-        const on = x === b;
-        x.setAttribute('aria-checked', on);
-        x.innerHTML = on ? icon('check', 'w-5 h-5') : '';
-      });
+      redraw();
+      root.querySelector(`[data-accent="${b.dataset.accent}"]`)?.focus();
     }),
   );
   root.querySelectorAll('[data-mode]').forEach((b) =>
     b.addEventListener('click', () => {
       applyMode(b.dataset.mode);
-      root.querySelectorAll('[data-mode]').forEach((x) => {
-        const on = x === b;
-        x.setAttribute('aria-checked', on);
-        x.innerHTML = `${icon(on ? 'check' : MODES.find((m) => m.value === x.dataset.mode).icon, 'w-4 h-4')}${
-          MODES.find((m) => m.value === x.dataset.mode).label}`;
-      });
+      redraw();
+      root.querySelector(`[data-mode="${b.dataset.mode}"]`)?.focus();
     }),
   );
 }

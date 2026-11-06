@@ -177,7 +177,7 @@ export function listenOnce(timeoutMs = 6000) {
 // -------------------------------------------------------------------- UI
 
 const INPUT_CLS =
-  'w-full h-11 px-4 bg-[var(--sunken)] rounded-[var(--btn-radius)] text-[16px] outline-none ' +
+  'w-full h-11 px-4 bg-[var(--sunken)] rounded-[var(--btn-radius)] text-base outline-none ' +
   'border border-transparent focus:border-[var(--line)]';
 
 const shell = (inner) => `
@@ -297,7 +297,7 @@ export function openVoiceSheet() {
         label: c.label ?? `${c.name} — ${c.location?.path_string ?? ''}`,
       }));
       draw(`
-        <p class="text-[16px] font-medium">${esc(`Which “${which}”?`)}</p>
+        <p class="text-base font-medium">${esc(`Which “${which}”?`)}</p>
         <div class="mt-2 list">
           ${choices.map((c, i) => `
             <button type="button" data-choice="${i}"
@@ -318,7 +318,7 @@ export function openVoiceSheet() {
 
     if (a.status === 'empty' || a.status === 'ambiguous') {
       draw(`
-        <p class="text-[16px]">${esc('I heard something like:')}
+        <p class="text-base">${esc('I heard something like:')}
            <span class="font-medium">${esc(a.text ?? a.raw ?? '')}</span></p>
         <p class="text-sm text-[var(--ink-soft)] mt-1">${esc('Split it into the thing and the place:')}</p>
         <div class="mt-2 space-y-2">
@@ -352,7 +352,7 @@ export function openVoiceSheet() {
     }
 
     draw(`
-      <div class="text-[16px] leading-relaxed">${headline}</div>
+      <div class="text-base leading-relaxed">${headline}</div>
       <div class="mt-4 flex gap-2 items-stretch">
         <div class="flex-1">${primaryButton('Yes', 'data-voice-yes')}</div>
         <div class="flex-1">${ghostButton('No', 'data-voice-no')}</div>

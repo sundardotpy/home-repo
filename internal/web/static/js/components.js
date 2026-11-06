@@ -54,7 +54,7 @@ export function createSelect(host, { options = [], value = '', placeholder = 'Se
       ${o.prefix || ''}
       <span class="flex-1 min-w-0">
         <span class="block truncate">${esc(o.label)}</span>
-        ${o.hint ? `<span class="block text-[12px] text-[var(--ink-faint)] truncate">${esc(o.hint)}</span>` : ''}
+        ${o.hint ? `<span class="block text-xs text-[var(--ink-faint)] truncate">${esc(o.hint)}</span>` : ''}
       </span>
       ${o.value === current ? icon('check', 'w-4 h-4') : ''}
     </button>`;
@@ -217,7 +217,7 @@ export function wireAccordions(root, { onToggle } = {}) {
       panel.classList.toggle('is-open', nowOpen);
       btn.setAttribute('aria-expanded', String(nowOpen));
       const caret = btn.querySelector('[data-caret]');
-      if (caret) caret.style.transform = nowOpen ? 'rotate(90deg)' : '';
+      if (caret) caret.style.transform = nowOpen ? 'rotate(180deg)' : '';
       onToggle?.(acc.dataset.key, nowOpen);
     });
   });

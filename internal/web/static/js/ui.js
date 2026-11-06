@@ -80,7 +80,7 @@ export function initials(name = '') {
 
 // A room's drawer front: a 40px, 10px-radius square in its tint, holding its
 // icon or its initial.
-export const roomBadge = (room, cls = 'w-10 h-10 text-[16px]') => `
+export const roomBadge = (room, cls = 'w-10 h-10 text-base') => `
   <span class="room-badge ${roomTint(room.name)} ${cls} rounded-[10px] grid place-items-center shrink-0 font-medium"
         aria-hidden="true">${
           room.icon && itemIconSVG(room.icon) ? itemIconSVG(room.icon, 'w-[55%] h-[55%]') : esc(initials(room.name).slice(0, 1))
@@ -98,8 +98,8 @@ export const topBar = ({ title, back = '', sub = '', actions = '' }) => `
           ? `<a href="${esc(back)}" class="topround" aria-label="Back">${icon('back', 'w-6 h-6')}</a>`
           : '<span class="w-3"></span>'
     }
-    <div class="flex-1 min-w-0 pl-1">
-      <h1 class="text-[22px] leading-7 truncate">${title}</h1>
+    <div class="flex-1 min-w-0 ${back ? 'pl-1' : ''}">
+      <h1 class="t-title-lg truncate">${title}</h1>
       ${sub}
     </div>
     ${actions}
@@ -141,13 +141,13 @@ export const sectionTitle = (text, action = '') => `
 export const emptyState = (title, body, action = '') => `
   <div class="px-8 py-10 text-center fade-in">
     <span class="text-[var(--outline)] inline-block">${icon('box', 'w-10 h-10')}</span>
-    <p class="mt-3 text-[16px] leading-6 font-medium">${esc(title)}</p>
+    <p class="mt-3 t-title-md">${esc(title)}</p>
     <p class="mt-1 text-sm text-[var(--ink-soft)] text-pretty">${esc(body)}</p>
     ${action ? `<div class="mt-4">${action}</div>` : ''}
   </div>`;
 
 const pendingDot = `
-  <span class="inline-flex items-center gap-1 text-[11px] text-[var(--ink-faint)]">
+  <span class="inline-flex items-center gap-1 t-label-sm text-[var(--ink-faint)]">
     <span class="w-1.5 h-1.5 rounded-full bg-[var(--ink-faint)] animate-pulse"></span>saving
   </span>`;
 
@@ -156,7 +156,7 @@ export const roomRow = (room, pending, { showFloor = false } = {}) => `
      class="row-press flex items-center gap-3.5 px-2 py-3 ${pending ? 'is-pending' : ''}">
     ${roomBadge(room)}
     <span class="flex-1 min-w-0">
-      <span class="block text-[16px] leading-6 font-medium truncate">${esc(room.name)}</span>
+      <span class="block t-title-md truncate">${esc(room.name)}</span>
       <span class="block text-sm text-[var(--ink-soft)] truncate">
         ${
           pending
@@ -174,6 +174,20 @@ export const roomRow = (room, pending, { showFloor = false } = {}) => `
     <span class="text-[var(--ink-faint)]">${icon('chevron', 'w-4 h-4')}</span>
   </a>`;
 
+// What a box holds, all the way down: a shelf holding a box of passports is
+// not empty.
+function unitSummary(unit) {
+  const kids = unit.children || [];
+  const deepItems = (u) => (u.item_count || 0) + (u.children || []).reduce((n, k) => n + deepItems(k), 0);
+  return [
+    unit.kind,
+    kids.length ? plural(kids.length, 'box', 'boxes') : '',
+    plural(deepItems(unit), 'item', 'items'),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 export const unitRow = (unit, { pending = false, depth = 0 } = {}) => `
   <a href="#/unit/${esc(unit.id)}"
      class="row-press flex items-center gap-3.5 py-3 pr-2 ${pending ? 'is-pending' : ''}"
@@ -182,9 +196,9 @@ export const unitRow = (unit, { pending = false, depth = 0 } = {}) => `
       ${icon('box', 'w-5 h-5')}
     </span>
     <span class="flex-1 min-w-0">
-      <span class="block text-[16px] leading-6 font-medium truncate">${esc(unit.name)}</span>
+      <span class="block t-title-md truncate">${esc(unit.name)}</span>
       <span class="block text-sm text-[var(--ink-soft)] truncate">
-        ${pending ? 'saving…' : [unit.kind, plural(unit.item_count || 0, 'item', 'items')].filter(Boolean).join(' · ')}
+        ${pending ? 'saving…' : unitSummary(unit)}
       </span>
     </span>
     <span class="text-[var(--ink-faint)]">${icon('chevron', 'w-4 h-4')}</span>
@@ -202,7 +216,7 @@ const tagPills = (tags) =>
 // A location as drawer tabs down one spine. Past four levels the middle folds
 // to an ellipsis tab. `from` is the place being shown (a room or box name):
 // inside it, only the drawers below it are drawn, all slips.
-export function drawerPath(parts = [], { from = '' } = {}) {
+export function drawerPath(parts = [], { from = '', roomHref = '' } = {}) {
   let list = parts.filter(Boolean);
   const room = list[0];
   let relative = false;
@@ -216,11 +230,13 @@ export function drawerPath(parts = [], { from = '' } = {}) {
   if (!list.length) return '';
   const shown = list.length > 4 ? [list[0], '…', ...list.slice(-2)] : list;
   const label = `In ${list.join(', ')}`;
-  return `<span class="drawers" role="img" aria-label="${esc(label)}"><span>${shown
+  const named = roomHref ? `aria-label="${esc(label)}"` : `role="img" aria-label="${esc(label)}"`;
+  return `<span class="drawers" ${named}><span>${shown
     .map((p, i) => {
       const isRoom = i === 0 && !relative;
-      return `<span class="drawer-tab ${isRoom ? `is-room ${roomTint(room)}` : ''}"
-        style="--indent:${Math.min(i, 3) * 10}px" title="${esc(p)}">${esc(p)}</span>`;
+      const tag = isRoom && roomHref ? 'a' : 'span';
+      return `<${tag} ${tag === 'a' ? `href="${esc(roomHref)}"` : ''} class="drawer-tab ${isRoom ? `is-room ${roomTint(room)}` : ''}"
+        style="--indent:${Math.min(i, 3) * 10}px" title="${esc(p)}">${esc(p)}</${tag}>`;
     })
     .join('')}</span></span>`;
 }
@@ -235,13 +251,13 @@ export const itemAvatar = (item, cls = 'w-10 h-10') => {
            class="w-full h-full object-cover ${item._photo_uploading ? 'opacity-50' : ''}">
       ${
         item._photo_uploading
-          ? `<span class="absolute inset-0 grid place-items-center text-[11px] font-medium text-white bg-black/30">Saving</span>`
+          ? `<span class="absolute inset-0 grid place-items-center t-label-sm font-medium text-white bg-black/30">Saving</span>`
           : ''
       }
     </span>`;
   }
   const art = item.icon && itemIconSVG(item.icon, 'w-[55%] h-[55%]');
-  return `<span class="avatar ${tint} ${cls} grid place-items-center shrink-0 text-[16px] font-medium" aria-hidden="true">
+  return `<span class="avatar ${tint} ${cls} grid place-items-center shrink-0 text-base font-medium" aria-hidden="true">
     ${art || esc(initials(item.name || '').slice(0, 1) || '·')}
   </span>`;
 };
@@ -254,7 +270,7 @@ export const itemRow = (item, { pending = false, showLocation = false, from = ''
     ${itemAvatar(item)}
     <span class="flex-1 min-w-0">
       <span class="flex items-center gap-2 min-h-6">
-        <span class="text-[16px] leading-6 font-medium truncate t-name">${esc(item.name)}</span>
+        <span class="t-title-md truncate t-name">${esc(item.name)}</span>
         ${item.quantity > 1 ? `<span class="text-sm font-medium text-[var(--ink-soft)] shrink-0">×${esc(item.quantity)}</span>` : ''}
         ${item.status === 'decluttered' ? '<span class="pill pill-quiet shrink-0">Decluttered</span>' : ''}
         ${pending ? pendingDot : ''}
@@ -305,15 +321,6 @@ export const addRow = (label, attrs = '') => `
     <span>${esc(label)}</span>
   </button>`;
 
-export const breadcrumb = (parts) =>
-  `<nav class="text-sm text-[var(--ink-soft)] truncate">${parts
-    .map((p) =>
-      p.href
-        ? `<a class="hover:text-[var(--ink)]" href="${esc(p.href)}">${esc(p.label)}</a>`
-        : esc(p.label),
-    )
-    .join('<span class="mx-1 text-[var(--ink-faint)]">›</span>')}</nav>`;
-
 // --------------------------------------------------------------- toasts ----
 
 const toastRoot = () => document.getElementById('toast-root');
@@ -360,7 +367,7 @@ export function openSheet({ title, body, onMount, onClose }) {
       <div class="sticky top-0 bg-[var(--sheet)] px-4 pt-2 pb-1 z-10">
         <div class="md:hidden mx-auto my-2 h-1 w-8 rounded-full bg-[var(--outline)] opacity-40"></div>
         <div class="flex items-center gap-2">
-          <h2 class="flex-1 text-[22px] leading-7">${esc(title)}</h2>
+          <h2 class="flex-1 t-title-lg">${esc(title)}</h2>
           <button type="button" data-close aria-label="Close" class="topround">
             ${icon('close', 'w-5 h-5')}
           </button>
@@ -431,7 +438,7 @@ export const moveRow = (m) => `
     ${itemAvatar({ icon: m.item_icon, name: m.item_name, location: { path: m.to_path } })}
     <span class="flex-1 min-w-0">
       <span class="flex items-center gap-2 min-h-6">
-        <span class="text-[16px] leading-6 font-medium truncate t-name">${esc(m.item_name)}</span>
+        <span class="t-title-md truncate t-name">${esc(m.item_name)}</span>
         <span class="ml-auto text-xs text-[var(--ink-soft)] shrink-0">${ago(m.moved_at)}</span>
       </span>
       ${drawerPath(m.to_path)}

@@ -18,7 +18,7 @@ import {
 
 // Tags are slips, never tinted: a tint means a room, and nothing else.
 export const tagChip = (name, { removable = false } = {}) => `
-  <span class="tag-chip inline-flex items-center gap-1 pl-2 ${removable ? 'pr-1' : 'pr-2'} min-h-6 rounded-[6px] text-[12px] font-medium">
+  <span class="tag-chip inline-flex items-center gap-1 pl-2 ${removable ? 'pr-1' : 'pr-2'} min-h-6 rounded-[6px] text-xs font-medium">
     ${esc(name)}
     ${
       removable
@@ -95,7 +95,7 @@ export function tagPickerSheet(selected, onDone) {
                       : 'border-[var(--line)]'
                   }">${chosen.has(t.name) ? icon('check', 'w-3 h-3') : ''}</span>
                   <span class="flex-1 truncate">${esc(t.name)}</span>
-                  <span class="text-[12px] text-[var(--ink-faint)]">${t.count || 0}</span>
+                  <span class="text-xs text-[var(--ink-faint)]">${t.count || 0}</span>
                 </button>`,
                   )
                   .join('')
@@ -297,7 +297,7 @@ export function propertyEditor(host, initial = {}, getTags = () => []) {
       .map(
         (k) => `
         <button type="button" data-suggest-key="${esc(k)}"
-          class="px-2 py-1 rounded-full border border-[var(--line)] text-[12px] text-[var(--ink-soft)] hover:border-[var(--ink-faint)] transition-colors">
+          class="px-2 py-1 rounded-full border border-[var(--line)] text-xs text-[var(--ink-soft)] hover:border-[var(--ink-faint)] transition-colors">
           + ${esc(k)}
         </button>`,
       )

@@ -186,8 +186,8 @@
 
   /* The section title: sentence case, title-small, muted. */
   .section-title {
-    font-size: 14px;
-    line-height: 20px;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
     font-weight: 500;
     letter-spacing: 0.1px;
     color: var(--ink-soft);
@@ -225,8 +225,8 @@
     gap: 0.5rem;
     min-height: 3.25rem;
     padding: 0 1.5rem;
-    font-size: 14px;
-    line-height: 20px;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
     font-weight: 500;
     letter-spacing: 0.1px;
     white-space: nowrap;
@@ -284,8 +284,8 @@
     align-items: center;
     padding: 2px 6px;
     border-radius: 6px;
-    font-size: 11px;
-    line-height: 16px;
+    font-size: 0.6875rem;
+    line-height: 1rem;
     font-weight: 500;
     letter-spacing: 0.5px;
     white-space: nowrap;
@@ -317,7 +317,7 @@
     justify-content: center;
     gap: 0.5rem;
     height: 3rem;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 500;
     color: var(--ink);
   }
@@ -328,18 +328,148 @@
     background: var(--accent-tonal);
   }
 
-  .swatch {
-    width: 3rem;
-    height: 3rem;
+  /* Settings choice cards: a miniature of the app over the choice's name.
+     Sized in rem so enlarged text drops the grid to fewer columns. */
+  .choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+    gap: 0.5rem;
+  }
+  .choice {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem 0.5rem 0.625rem;
+    border-radius: 14px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    text-align: left;
+  }
+  .choice[aria-checked="true"] {
+    border: 2px solid var(--accent);
+    padding: calc(0.5rem - 1px) calc(0.5rem - 1px) calc(0.625rem - 1px);
+  }
+  .choice-name {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    letter-spacing: 0.1px;
+  }
+  .choice[aria-checked="true"] .choice-name {
+    color: var(--accent-ink);
+  }
+  .choice-check {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
     border-radius: 9999px;
     display: grid;
     place-items: center;
-    background: var(--swatch);
+    background: var(--accent);
+    color: var(--on-accent);
   }
-  .swatch[aria-checked="true"] {
-    box-shadow:
-      0 0 0 2px var(--canvas),
-      0 0 0 4px var(--ink);
+  .mini {
+    display: flex;
+    height: 78px;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .mini-rail {
+    width: 16px;
+    flex: none;
+    display: flex;
+    justify-content: center;
+    padding-top: 8px;
+  }
+  .mini-rail > span {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+  .mini-body {
+    position: relative;
+    flex: 1;
+    padding: 10px 8px;
+  }
+  .mini-name {
+    display: block;
+    width: 60%;
+    height: 5px;
+    border-radius: 9999px;
+    opacity: 0.85;
+  }
+  .mini-path {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 6px;
+    padding-left: 5px;
+    border-left: 2px solid;
+  }
+  .mini-path > span {
+    width: 26px;
+    height: 7px;
+    border-radius: 2px;
+    border: 1px solid;
+  }
+  .mini-path > span + span {
+    margin-left: 4px;
+  }
+  .mini-add {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    width: 22px;
+    height: 14px;
+    border-radius: 5px;
+  }
+  .mini-split {
+    display: flex;
+    height: 78px;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .mini-split > span {
+    width: 50%;
+    overflow: hidden;
+  }
+  .mini-split .mini {
+    width: 200%;
+    border-radius: 0;
+  }
+  .mini-split > span + span .mini {
+    margin-left: -100%;
+  }
+
+  /* Material type roles, in rem so the browser's text size carries through
+     (the web's version of following the phone's font size). */
+  .t-title-lg {
+    font-size: 1.375rem;
+    line-height: 1.75rem;
+  }
+  .t-title-md {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    font-weight: 500;
+    letter-spacing: 0.15px;
+  }
+  .t-body-lg {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+  .t-label-md {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+  .t-label-sm {
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
   }
 
   /* An item's avatar is a 40px tile on its room's tint. */
@@ -398,8 +528,8 @@
     border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
     background: var(--paper);
     color: var(--ink);
-    font-size: 12px;
-    line-height: 16px;
+    font-size: 0.75rem;
+    line-height: 1rem;
     font-weight: 500;
     letter-spacing: 0.5px;
     white-space: nowrap;
@@ -725,8 +855,8 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    font-size: 12px;
-    line-height: 16px;
+    font-size: 0.75rem;
+    line-height: 1rem;
     font-weight: 500;
     letter-spacing: 0.5px;
     color: var(--ink-soft);
@@ -762,7 +892,7 @@
     gap: 0.75rem;
     background: var(--accent);
     color: var(--on-accent);
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 500;
     letter-spacing: 0.1px;
     box-shadow: var(--shadow-fab);
@@ -848,8 +978,8 @@
       align-items: center;
       gap: 4px;
       width: 5rem;
-      font-size: 12px;
-      line-height: 16px;
+      font-size: 0.75rem;
+      line-height: 1rem;
       font-weight: 500;
       letter-spacing: 0.5px;
       color: var(--ink-soft);

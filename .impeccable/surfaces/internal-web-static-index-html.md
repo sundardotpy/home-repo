@@ -22,6 +22,6 @@ STORY: The visitor sees their things with where each one lives, finds one by typ
 
 FIRST VIEWPORT: Find. Small top bar (h/repo, settings). A 56px search well with mic and scan. "Put away today" when anything moved today, then "Your things": tinted avatar, name, drawer-tab path down a spine. Extended FAB "Add"; Material navigation bar on phones, a rail with the FAB on desktop.
 
-FORM: Clear Drawers (established world, inherited from the Android surface). seed: none (inherited direction, no roll)
+FORM: Clear Drawers, inherited. seed: none (exempt: new-work §1 "Established world: inherit it" and §3 "keep the visual system fixed"; the direction roll applies only to creating or replacing a world, and the surface structure is carried from the Android surface, not open)
 
 FINISH: finish review on the built screens; DESIGN.md scope widened to cover the web.

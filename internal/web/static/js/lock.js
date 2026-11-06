@@ -38,7 +38,7 @@ export function showLock(message = '') {
     <form class="w-full max-w-sm" autocomplete="on">
       <img class="logo-light h-9 w-auto mb-8" src="/static/brand/wordmark.svg" alt="h/repo" width="97" height="36">
       <img class="logo-dark h-9 w-auto mb-8" src="/static/brand/wordmark-dark.svg" alt="" width="97" height="36">
-      <h1 class="text-[24px] leading-8">Enter the passcode</h1>
+      <h1 class="text-2xl">Enter the passcode</h1>
       <p class="mt-2 text-sm text-[var(--ink-soft)]">This home is locked. The passcode is shared, so ask whoever set it up.</p>
       <label class="block mt-6">
         <span class="sr-only">Passcode</span>
