@@ -1,20 +1,20 @@
-import { currentUI, isRepo, storeUI } from './look.js';
 import { esc, icon, openSheet, toast } from './ui.js';
 
 const KEY = 'hsh.accent';
 const MODE_KEY = 'hsh.theme';
-export const DEFAULT_ACCENT = '#efe34a';
 
+// The same seven as the Android app, by the same names, so a household sees
+// one product on both. Sea glass is the default.
 export const ACCENTS = [
-  { name: 'Yellow', hex: '#efe34a' },
-  { name: 'Lavender', hex: '#b9a8f2' },
-  { name: 'Coral', hex: '#f28b72' },
-  { name: 'Green', hex: '#6ccb9a' },
-  { name: 'Blue', hex: '#6d9bf5' },
-  { name: 'Pink', hex: '#f283b6' },
-  { name: 'Orange', hex: '#f5a623' },
-  { name: 'Graphite', hex: '#5b6470' },
+  { name: 'Sea glass', hex: '#0e5e58' },
+  { name: 'Moonstone', hex: '#4a5462' },
+  { name: 'Tangerine', hex: '#d68401' },
+  { name: 'Kale', hex: '#4b7a45' },
+  { name: 'Blueberry', hex: '#3569ba' },
+  { name: 'Lavender', hex: '#756bbd' },
+  { name: 'Raspberry', hex: '#ca4f71' },
 ];
+export const DEFAULT_ACCENT = ACCENTS[0].hex;
 
 const MODES = [
   { value: 'system', label: 'System', icon: 'monitor' },
@@ -22,53 +22,75 @@ const MODES = [
   { value: 'dark', label: 'Dark', icon: 'moon' },
 ];
 
-// Dark text on a light accent, white on a dark one: the accent is user-chosen,
-// so the colour of what sits on it has to be worked out, not assumed.
-export function onAccent(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  const lin = (c) => {
-    c /= 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  };
-  const L = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
-  return L > 0.4 ? '#1a1812' : '#ffffff';
+const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const hex = (c) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+const lum = (c) => {
+  const [r, g, b] = c.map((v) => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contrast = (a, b) => {
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+/** White or near-black, whichever reads better on the fill (as on Android). */
+export function onAccent(fill) {
+  const c = rgb(fill);
+  return contrast(c, [255, 255, 255]) >= contrast(c, [26, 28, 30]) ? '#ffffff' : '#1a1c1e';
 }
+
+/** Dark mode lifts the same hue 35% toward white, so accent text stays legible. */
+const lifted = (fill) => hex(rgb(fill).map((v) => v + (255 - v) * 0.35));
 
 export function currentAccent() {
   try {
-    return localStorage.getItem(KEY) || DEFAULT_ACCENT;
+    const stored = localStorage.getItem(KEY);
+    // An accent from the old palette is not one of the seven any more.
+    return ACCENTS.some((a) => a.hex === stored) ? stored : DEFAULT_ACCENT;
   } catch {
     return DEFAULT_ACCENT;
   }
 }
 
-// The Repo interface has its own accent (blue), set in CSS, so the user's
-// chosen colour is kept but not applied while Repo is on.
-function paintAccent(hex) {
+// The containers derived from the accent live in CSS (color-mix); only the
+// fill and the ink on it are worked out here.
+function paintAccent(base) {
+  const dark = document.documentElement.classList.contains('dark');
+  const fill = dark ? lifted(base) : base;
   const root = document.documentElement.style;
-  if (isRepo()) {
-    root.removeProperty('--color-accent');
-    root.removeProperty('--on-accent');
-  } else {
-    root.setProperty('--color-accent', hex);
-    root.setProperty('--on-accent', onAccent(hex));
-  }
+  root.setProperty('--accent', fill);
+  root.setProperty('--on-accent', onAccent(fill));
+  root.setProperty('--accent-ink', inkFor(fill, dark));
+  // The snackbar's action sits on the inverse surface: the other mode's fill.
+  root.setProperty('--accent-inverse', dark ? base : lifted(base));
   syncThemeColor();
 }
 
-// The status bar on a phone takes the app's background, not the accent, so the
-// two read as one surface in every theme and in both interfaces.
+// The accent as text on the ground: the fill itself when it reads (4.5:1), or
+// stepped toward the ink until it does — Tangerine on sea glass needs this.
+function inkFor(fill, dark) {
+  const ground = dark ? [16, 22, 21] : [244, 247, 246];
+  const ink = dark ? [255, 255, 255] : [0, 0, 0];
+  let c = rgb(fill);
+  for (let i = 0; i < 20 && contrast(c, ground) < 4.5; i++) c = c.map((v, k) => v + (ink[k] - v) * 0.1);
+  return hex(c);
+}
+
+// The status bar on a phone takes the app's ground, so the two read as one.
 export function syncThemeColor() {
-  const bg = getComputedStyle(document.documentElement).getPropertyValue('--canvas').trim();
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--ground').trim();
   if (bg) document.querySelectorAll('meta[name=theme-color]').forEach((m) => m.setAttribute('content', bg));
 }
 
-export function applyAccent(hex) {
-  paintAccent(hex);
+export function applyAccent(value) {
   try {
-    if (hex === DEFAULT_ACCENT) localStorage.removeItem(KEY);
-    else localStorage.setItem(KEY, hex);
+    if (value === DEFAULT_ACCENT) localStorage.removeItem(KEY);
+    else localStorage.setItem(KEY, value);
   } catch {}
+  paintAccent(value);
 }
 
 function currentMode() {
@@ -90,150 +112,63 @@ export function applyMode(mode) {
     if (mode === 'system') localStorage.removeItem(MODE_KEY);
     else localStorage.setItem(MODE_KEY, mode);
   } catch {}
-
   document.documentElement.classList.toggle('dark', shouldBeDark(mode));
   paintAccent(currentAccent());
 }
 
-// Switching interface restyles at once (it is a class on <html>), but wording
-// and path formats are written into the markup, so listeners re-render.
-const uiListeners = new Set();
-export const onUIChange = (fn) => uiListeners.add(fn);
-
-export function applyUI(mode) {
-  storeUI(mode);
-  document.documentElement.classList.toggle('ui-repo', mode === 'repo');
-  paintAccent(currentAccent());
-  uiListeners.forEach((fn) => fn(mode));
-}
-
-let _mediaQuery;
-
 export function initTheme() {
-  document.documentElement.classList.toggle('ui-repo', currentUI() === 'repo');
-  paintAccent(currentAccent());
   applyMode(currentMode());
-
-  _mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  _mediaQuery.addEventListener('change', () => {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     if (currentMode() === 'system') applyMode('system');
   });
 }
 
 // ------------------------------------------------------ settings controls ---
 
-const segment = (on, label, attrs, extra = '') => `
-  <button type="button" ${attrs}
-    class="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-[calc(var(--radius-lg)-2px)] text-[13px] transition-all ${extra}
-           ${on ? 'bg-[var(--ink)] text-[var(--paper)] font-bold' : 'text-[var(--ink-soft)] font-medium hover:text-[var(--ink)]'}">
-    ${label}
-  </button>`;
-
-// Interface: the same data in two looks.
-export function interfaceMarkup() {
-  const ui = currentUI();
-  const tile = (value, label, blurb, preview) => `
-    <button type="button" data-ui="${value}" aria-pressed="${ui === value}"
-      class="text-left rounded-[var(--radius-xl)] border p-3 transition-colors
-             ${ui === value ? 'border-[var(--ink)] bg-[var(--paper)]' : 'border-[var(--line)] hover:border-[var(--ink-faint)]'}">
-      <span aria-hidden="true">${preview}</span>
-      <span class="mt-2.5 flex items-center gap-2 font-semibold text-[14px]">
-        <span class="w-4 h-4 rounded-full border-2 ${ui === value ? 'border-[5px] border-[var(--ink)]' : 'border-[var(--ink-faint)]'}"></span>${label}
-      </span>
-      <span class="block text-[12px] text-[var(--ink-soft)] mt-0.5 pl-6">${blurb}</span>
-    </button>`;
-  return `
-    <div class="grid grid-cols-2 gap-3" data-ui-group>
-      ${tile(
-        'classic',
-        'Classic',
-        'Rounded and light',
-        `<span class="block h-14 rounded-xl p-2" style="background:#f6f2e7">
-           <span class="block h-2 w-2/5 rounded-full" style="background:#1a1812"></span>
-           <span class="block h-5 mt-1.5 rounded-full bg-white"></span></span>`,
-      )}
-      ${tile(
-        'repo',
-        'Repo',
-        'Folders, files, history',
-        `<span class="block h-14 rounded-lg p-2 border" style="background:#0f1117;border-color:#2a2f3d">
-           <span class="block font-mono text-[8px]" style="color:#7f93f5">home / office</span>
-           <span class="block h-1.5 w-4/5 mt-1.5 rounded-sm" style="background:#2a2f3d"></span>
-           <span class="block h-1.5 w-3/5 mt-1 rounded-sm" style="background:#1c3a2d"></span></span>`,
-      )}
-    </div>`;
-}
-
-export function wireInterface(root, { after } = {}) {
-  root.querySelectorAll('[data-ui]').forEach((b) =>
-    b.addEventListener('click', () => {
-      if (b.dataset.ui === currentUI()) return;
-      applyUI(b.dataset.ui);
-      after?.();
-    }),
-  );
-}
-
-// Theme mode and accent colour, as inline controls (Settings) or in a sheet.
+// Theme mode is a segmented button; the accent a row of swatches announced as
+// one radio group.
 export function appearanceMarkup() {
   const active = currentAccent();
   const mode = currentMode();
   return `
-    <div class="flex gap-1 p-1 bg-[var(--sunken)] rounded-[var(--radius-xl)]" data-mode-group>
-      ${MODES.map((m) =>
-        segment(m.value === mode, `${icon(m.icon, 'w-4 h-4')}${m.label}`, `data-mode="${m.value}"`),
+    <div class="segmented" role="radiogroup" aria-label="Theme">
+      ${MODES.map(
+        (m) => `<button type="button" role="radio" data-mode="${m.value}" aria-checked="${m.value === mode}">
+          ${icon(m.value === mode ? 'check' : m.icon, 'w-4 h-4')}${m.label}</button>`,
       ).join('')}
     </div>
-    <div data-accent-block class="${isRepo() ? 'hidden' : ''}">
-      <p class="mt-4 mb-2 text-[13px] text-[var(--ink-soft)]">Accent colour</p>
-      <div class="flex flex-wrap items-center gap-3" data-swatches>
-        ${ACCENTS.map((a) => swatch(a.hex, a.name, a.hex.toLowerCase() === active.toLowerCase())).join('')}
-        <label class="w-10 h-10 rounded-full border-2 border-dashed border-[var(--ink-faint)] grid place-items-center cursor-pointer text-[var(--ink-soft)]" title="Custom colour">
-          ${icon('plus', 'w-4 h-4')}
-          <input type="color" data-custom value="${esc(active)}" class="sr-only" aria-label="Custom colour">
-        </label>
-      </div>
-    </div>
-    ${isRepo() ? '<p class="mt-3 text-[12px] text-[var(--ink-soft)]">The Repo interface has its own colours. Your accent comes back with Classic.</p>' : ''}`;
+    <p class="section-title mt-6">Accent</p>
+    <div class="flex flex-wrap gap-3" role="radiogroup" aria-label="Accent">
+      ${ACCENTS.map((a) => swatch(a, a.hex === active)).join('')}
+    </div>`;
 }
 
-const swatch = (hex, name, selected) => `
-  <button type="button" data-accent="${esc(hex)}" title="${esc(name)}" aria-label="${esc(name)}${selected ? ', selected' : ''}"
-    class="w-10 h-10 rounded-full grid place-items-center transition-transform active:scale-95
-           ${selected ? 'ring-2 ring-offset-2 ring-[var(--ink)] ring-offset-[var(--paper)]' : ''}"
-    style="background:${esc(hex)};color:${onAccent(hex)}">
-    ${selected ? icon('check', 'w-4 h-4') : ''}
+const swatch = (a, selected) => `
+  <button type="button" role="radio" data-accent="${esc(a.hex)}" aria-checked="${selected}"
+    class="swatch" title="${esc(a.name)}" aria-label="${esc(a.name)}"
+    style="--swatch:${esc(a.hex)};color:${onAccent(a.hex)}">
+    ${selected ? icon('check', 'w-5 h-5') : ''}
   </button>`;
 
 export function wireAppearance(root) {
-  const repaint = (value) => {
-    applyAccent(value);
-    root.querySelectorAll('[data-accent]').forEach((b) => {
-      const on = b.dataset.accent.toLowerCase() === value.toLowerCase();
-      b.innerHTML = on ? icon('check', 'w-4 h-4') : '';
-      b.classList.toggle('ring-2', on);
-      b.classList.toggle('ring-offset-2', on);
-      b.classList.toggle('ring-[var(--ink)]', on);
-      b.classList.toggle('ring-offset-[var(--paper)]', on);
-    });
-    const custom = root.querySelector('[data-custom]');
-    if (custom) custom.value = value;
-  };
-
   root.querySelectorAll('[data-accent]').forEach((b) =>
-    b.addEventListener('click', () => repaint(b.dataset.accent)),
+    b.addEventListener('click', () => {
+      applyAccent(b.dataset.accent);
+      root.querySelectorAll('[data-accent]').forEach((x) => {
+        const on = x === b;
+        x.setAttribute('aria-checked', on);
+        x.innerHTML = on ? icon('check', 'w-5 h-5') : '';
+      });
+    }),
   );
-  root.querySelector('[data-custom]')?.addEventListener('input', (e) => repaint(e.target.value));
   root.querySelectorAll('[data-mode]').forEach((b) =>
     b.addEventListener('click', () => {
       applyMode(b.dataset.mode);
       root.querySelectorAll('[data-mode]').forEach((x) => {
-        const on = x.dataset.mode === b.dataset.mode;
-        x.classList.toggle('bg-[var(--ink)]', on);
-        x.classList.toggle('text-[var(--paper)]', on);
-        x.classList.toggle('font-bold', on);
-        x.classList.toggle('text-[var(--ink-soft)]', !on);
-        x.classList.toggle('font-medium', !on);
+        const on = x === b;
+        x.setAttribute('aria-checked', on);
+        x.innerHTML = `${icon(on ? 'check' : MODES.find((m) => m.value === x.dataset.mode).icon, 'w-4 h-4')}${
+          MODES.find((m) => m.value === x.dataset.mode).label}`;
       });
     }),
   );
@@ -244,7 +179,7 @@ export function appearanceSheet() {
     title: 'Appearance',
     body: `
       ${appearanceMarkup()}
-      <button type="button" data-reset class="btn btn-ghost w-full mt-5">Reset to default</button>`,
+      <button type="button" data-reset class="btn btn-text w-full mt-5">Reset to default</button>`,
     onMount(body) {
       wireAppearance(body);
       body.querySelector('[data-reset]').addEventListener('click', () => {

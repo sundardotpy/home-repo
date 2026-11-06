@@ -36,17 +36,17 @@ export function showLock(message = '') {
   el.className = 'fixed inset-0 z-[100] bg-[var(--canvas)] grid place-items-center px-6 overflow-y-auto';
   el.innerHTML = `
     <form class="w-full max-w-sm" autocomplete="on">
-      <img class="logo-light h-9 w-auto mb-8" src="/static/brand/wordmark.svg" alt="h/repo">
-      <img class="logo-dark h-9 w-auto mb-8" src="/static/brand/wordmark-dark.svg" alt="">
-      <h1 class="font-display font-bold tracking-tight text-[2rem] leading-tight">Enter the passcode</h1>
-      <p class="mt-2 text-[14px] text-[var(--ink-soft)]">This home is locked. The passcode is shared, so ask whoever set it up.</p>
+      <img class="logo-light h-9 w-auto mb-8" src="/static/brand/wordmark.svg" alt="h/repo" width="97" height="36">
+      <img class="logo-dark h-9 w-auto mb-8" src="/static/brand/wordmark-dark.svg" alt="" width="97" height="36">
+      <h1 class="text-[24px] leading-8">Enter the passcode</h1>
+      <p class="mt-2 text-sm text-[var(--ink-soft)]">This home is locked. The passcode is shared, so ask whoever set it up.</p>
       <label class="block mt-6">
         <span class="sr-only">Passcode</span>
         <input type="password" name="passcode" autocomplete="current-password" autofocus required
-          class="w-full h-14 px-4 rounded-lg bg-[var(--paper)] border border-[var(--line)] outline-none focus:border-[var(--ink)]"
+          class="w-full h-14 px-4 rounded-[6px] bg-transparent border border-[var(--outline)] outline-none focus:border-[var(--accent-ink)] focus:shadow-[inset_0_0_0_1px_var(--accent-ink)]"
           placeholder="Passcode">
       </label>
-      <p data-error role="alert" class="mt-3 min-h-[1.25rem] text-[13px] font-semibold text-[var(--del)]">${message}</p>
+      <p data-error role="alert" class="mt-3 min-h-[1.25rem] text-sm font-semibold text-[var(--del)]">${message}</p>
       <button type="submit" class="btn btn-primary w-full mt-2">Unlock</button>
     </form>`;
   document.body.appendChild(el);

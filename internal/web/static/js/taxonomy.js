@@ -11,17 +11,14 @@ import {
   inputCls,
   openSheet,
   primaryButton,
-  roomHue,
   toast,
 } from './ui.js';
 
 // ------------------------------------------------------------------ tags ----
 
-// Tags get a colour from their name, same trick as rooms: it makes a wall of
-// pills scannable instead of uniform grey.
+// Tags are slips, never tinted: a tint means a room, and nothing else.
 export const tagChip = (name, { removable = false } = {}) => `
-  <span class="tag-chip inline-flex items-center gap-1 pl-2 ${removable ? 'pr-1' : 'pr-2'} py-0.5 rounded-full text-[12px] font-medium"
-        style="--room-h:${roomHue(name)}">
+  <span class="tag-chip inline-flex items-center gap-1 pl-2 ${removable ? 'pr-1' : 'pr-2'} min-h-6 rounded-[6px] text-[12px] font-medium">
     ${esc(name)}
     ${
       removable
@@ -60,7 +57,7 @@ export function tagPickerSheet(selected, onDone) {
       const paintChosen = () => {
         chosenEl.innerHTML = chosen.size
           ? tagChips([...chosen].sort(), { removable: true })
-          : `<span class="text-[13px] text-[var(--ink-faint)]">No tags yet</span>`;
+          : `<span class="text-sm text-[var(--ink-faint)]">No tags yet</span>`;
         chosenEl.querySelectorAll('[data-untag]').forEach((b) =>
           b.addEventListener('click', () => {
             chosen.delete(b.dataset.untag);
@@ -94,7 +91,7 @@ export function tagPickerSheet(selected, onDone) {
                   class="w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-2.5 hover:bg-[var(--sunken)]">
                   <span class="w-4 h-4 shrink-0 rounded border ${
                     chosen.has(t.name)
-                      ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-[var(--on-accent)] grid place-items-center'
+                      ? 'bg-[var(--accent)] border-[var(--accent)] text-[var(--on-accent)] grid place-items-center'
                       : 'border-[var(--line)]'
                   }">${chosen.has(t.name) ? icon('check', 'w-3 h-3') : ''}</span>
                   <span class="flex-1 truncate">${esc(t.name)}</span>
@@ -104,7 +101,7 @@ export function tagPickerSheet(selected, onDone) {
                   .join('')
               : q
                 ? ''
-                : `<p class="text-[13px] text-[var(--ink-soft)] px-3 py-4">No tags yet.</p>`
+                : `<p class="text-sm text-[var(--ink-soft)] px-3 py-4">No tags yet.</p>`
           }`;
 
         listEl.querySelectorAll('[data-toggle]').forEach((b) =>
@@ -261,7 +258,7 @@ export function propertyEditor(host, initial = {}, getTags = () => []) {
       }
       <div data-suggest class="flex flex-wrap gap-1.5 mb-2"></div>
       <button type="button" data-add
-        class="text-[13px] font-medium text-[var(--accent-ink)] inline-flex items-center gap-1">
+        class="text-sm font-medium text-[var(--accent-ink)] inline-flex items-center gap-1">
         ${icon('plus', 'w-4 h-4')} Add a field
       </button>`;
 
@@ -336,12 +333,12 @@ export const propertyList = (props) => {
   const entries = Object.entries(props || {}).sort(([a], [b]) => a.localeCompare(b));
   if (!entries.length) return '';
   return `
-    <div class="surface divide-y divide-[var(--line)] overflow-hidden">
+    <div class="list">
       ${entries
         .map(
           ([k, v]) => `
         <div class="flex items-baseline gap-3 px-3 py-2.5">
-          <span class="text-[13px] text-[var(--ink-soft)] shrink-0 min-w-24">${esc(k)}</span>
+          <span class="text-sm text-[var(--ink-soft)] shrink-0 min-w-24">${esc(k)}</span>
           ${
             v
               ? `<a href="#/search?q=${encodeURIComponent(v)}"

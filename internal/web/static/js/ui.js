@@ -1,7 +1,7 @@
 // Presentation helpers: escaping, icons, skeletons, rows, toasts, sheets.
 
 import { itemIconSVG } from './item-icons.js';
-import { ago, pathText, rupeesPerDay, valueLine } from './look.js';
+import { ago, rupeesPerDay, valueLine } from './look.js';
 
 export const esc = (s) =>
   String(s ?? '')
@@ -60,15 +60,15 @@ export const icon = (name, cls = 'w-5 h-5') =>
 
 export const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
-// Rooms need to be told apart at a glance — six identical door glyphs in a
-// sidebar are decoration, not information. Each room gets a hue derived from
-// its name (stable, no storage) and its initials.
-const ROOM_HUES = [4, 22, 40, 92, 150, 174, 196, 220, 262, 320];
-
-export function roomHue(name = '') {
+// One of six room tints (.tint-0 … .tint-5), picked exactly as the Android app
+// picks it — Java's String.hashCode of the trimmed, lowercased name, floor-mod
+// six — so a room is the same colour on both clients. ponytail: two rooms can
+// share a tint; store one per room if households outgrow six.
+export function roomTint(name = '') {
+  const s = String(name).trim().toLowerCase();
   let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 100000;
-  return ROOM_HUES[h % ROOM_HUES.length];
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return `tint-${((h % 6) + 6) % 6}`;
 }
 
 export function initials(name = '') {
@@ -78,9 +78,35 @@ export function initials(name = '') {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
-export const roomBadge = (room, cls = 'w-9 h-9 text-[13px]') => `
-  <span class="room-badge ${cls} rounded-lg grid place-items-center shrink-0 font-semibold tracking-tight"
-        style="--room-h:${roomHue(room.name)}">${esc(initials(room.name))}</span>`;
+// A room's drawer front: a 40px, 10px-radius square in its tint, holding its
+// icon or its initial.
+export const roomBadge = (room, cls = 'w-10 h-10 text-[16px]') => `
+  <span class="room-badge ${roomTint(room.name)} ${cls} rounded-[10px] grid place-items-center shrink-0 font-medium"
+        aria-hidden="true">${
+          room.icon && itemIconSVG(room.icon) ? itemIconSVG(room.icon, 'w-[55%] h-[55%]') : esc(initials(room.name).slice(0, 1))
+        }</span>`;
+
+// The small top app bar every screen shares: back on pushed screens, a
+// title-large title, icon actions trailing. `back` is an href, or true for
+// history.back().
+export const topBar = ({ title, back = '', sub = '', actions = '' }) => `
+  <div class="flex items-center gap-1 h-16 px-1 md:pt-3 md:h-[4.75rem]">
+    ${
+      back === true
+        ? `<button type="button" data-back class="topround" aria-label="Back">${icon('back', 'w-6 h-6')}</button>`
+        : back
+          ? `<a href="${esc(back)}" class="topround" aria-label="Back">${icon('back', 'w-6 h-6')}</a>`
+          : '<span class="w-3"></span>'
+    }
+    <div class="flex-1 min-w-0 pl-1">
+      <h1 class="text-[22px] leading-7 truncate">${title}</h1>
+      ${sub}
+    </div>
+    ${actions}
+  </div>`;
+
+export const barAction = (iconName, label, attrs) =>
+  `<button type="button" ${attrs} class="topround" aria-label="${esc(label)}">${icon(iconName, 'w-6 h-6')}</button>`;
 
 // ------------------------------------------------------------ skeletons ----
 
@@ -90,8 +116,8 @@ export const skeletonRows = (n = 4) =>
   Array.from({ length: n })
     .map(
       () => `
-      <div class="flex items-center gap-3 px-4 py-3.5">
-        <div class="skeleton w-9 h-9 rounded-lg shrink-0"></div>
+      <div class="flex items-center gap-3.5 px-2 py-3">
+        <div class="skeleton w-10 h-10 rounded-[14px] shrink-0"></div>
         <div class="flex-1 space-y-2">
           <div class="skeleton h-3.5" style="width:${45 + Math.random() * 35}%"></div>
           <div class="skeleton h-2.5" style="width:${25 + Math.random() * 25}%"></div>
@@ -100,24 +126,23 @@ export const skeletonRows = (n = 4) =>
     )
     .join('');
 
-export const skeletonList = (n = 4) =>
-  `<div class="surface divide-y divide-[var(--line)] overflow-hidden">${skeletonRows(n)}</div>`;
+export const skeletonList = (n = 4) => `<div class="list -mx-2">${skeletonRows(n)}</div>`;
 
 // ----------------------------------------------------------------- rows ----
 
+// Sentence case at title-small in muted ink: 20px above, 4px below.
 export const sectionTitle = (text, action = '') => `
-  <div class="flex items-center justify-between px-1 mt-6 mb-2">
-    <h2 class="text-xs font-semibold uppercase tracking-wider text-[var(--ink-faint)]">${esc(text)}</h2>
+  <div class="flex items-center justify-between min-h-12 mt-3 mb-0.5">
+    <h2 class="section-title">${esc(text)}</h2>
     ${action}
   </div>`;
 
+// A notice: a 40px outline icon, a title, the copy, an optional action.
 export const emptyState = (title, body, action = '') => `
-  <div class="surface px-6 py-10 text-center fade-in">
-    <div class="mx-auto w-11 h-11 rounded-full bg-[var(--sunken)] grid place-items-center text-[var(--ink-faint)]">
-      ${icon('box', 'w-5 h-5')}
-    </div>
-    <p class="mt-3 font-medium">${esc(title)}</p>
-    <p class="mt-1 text-sm text-[var(--ink-soft)]">${esc(body)}</p>
+  <div class="px-8 py-10 text-center fade-in">
+    <span class="text-[var(--outline)] inline-block">${icon('box', 'w-10 h-10')}</span>
+    <p class="mt-3 text-[16px] leading-6 font-medium">${esc(title)}</p>
+    <p class="mt-1 text-sm text-[var(--ink-soft)] text-pretty">${esc(body)}</p>
     ${action ? `<div class="mt-4">${action}</div>` : ''}
   </div>`;
 
@@ -128,11 +153,11 @@ const pendingDot = `
 
 export const roomRow = (room, pending, { showFloor = false } = {}) => `
   <a href="#/room/${esc(room.id)}"
-     class="row-press flex items-center gap-3 px-4 py-3.5 ${pending ? 'is-pending' : ''}">
+     class="row-press flex items-center gap-3.5 px-2 py-3 ${pending ? 'is-pending' : ''}">
     ${roomBadge(room)}
     <span class="flex-1 min-w-0">
-      <span class="block font-medium truncate">${esc(room.name)}</span>
-      <span class="block text-[13px] text-[var(--ink-soft)] truncate">
+      <span class="block text-[16px] leading-6 font-medium truncate">${esc(room.name)}</span>
+      <span class="block text-sm text-[var(--ink-soft)] truncate">
         ${
           pending
             ? 'saving…'
@@ -151,14 +176,14 @@ export const roomRow = (room, pending, { showFloor = false } = {}) => `
 
 export const unitRow = (unit, { pending = false, depth = 0 } = {}) => `
   <a href="#/unit/${esc(unit.id)}"
-     class="row-press flex items-center gap-3 py-3 pr-4 ${pending ? 'is-pending' : ''}"
-     style="padding-left:${16 + depth * 18}px">
-    <span class="w-9 h-9 rounded-lg bg-[var(--sunken)] text-[var(--ink-soft)] grid place-items-center shrink-0">
-      ${icon('box', 'w-4.5 h-4.5')}
+     class="row-press flex items-center gap-3.5 py-3 pr-2 ${pending ? 'is-pending' : ''}"
+     style="padding-left:${8 + Math.min(depth, 3) * 10}px">
+    <span class="w-10 h-10 rounded-[10px] bg-[var(--paper)] border border-[var(--line)] text-[var(--ink-soft)] grid place-items-center shrink-0">
+      ${icon('box', 'w-5 h-5')}
     </span>
     <span class="flex-1 min-w-0">
-      <span class="block font-medium truncate">${esc(unit.name)}</span>
-      <span class="block text-[13px] text-[var(--ink-soft)] truncate">
+      <span class="block text-[16px] leading-6 font-medium truncate">${esc(unit.name)}</span>
+      <span class="block text-sm text-[var(--ink-soft)] truncate">
         ${pending ? 'saving…' : [unit.kind, plural(unit.item_count || 0, 'item', 'items')].filter(Boolean).join(' · ')}
       </span>
     </span>
@@ -170,58 +195,82 @@ const tagPills = (tags) =>
     .slice(0, 3)
     .map(
       (t) =>
-        `<span class="px-1.5 py-0.5 rounded bg-[var(--sunken)] text-[11px] text-[var(--ink-soft)]">${esc(t)}</span>`,
+        `<span class="pill pill-quiet">${esc(t)}</span>`,
     )
     .join('');
 
-// Three ways to picture an item, in order of how much the user told us:
-// a photo, a chosen icon, or the quantity badge.
-export const itemAvatar = (item, cls = 'w-11 h-11') => {
+// A location as drawer tabs down one spine. Past four levels the middle folds
+// to an ellipsis tab. `from` is the place being shown (a room or box name):
+// inside it, only the drawers below it are drawn, all slips.
+export function drawerPath(parts = [], { from = '' } = {}) {
+  let list = parts.filter(Boolean);
+  const room = list[0];
+  let relative = false;
+  if (from) {
+    const at = list.lastIndexOf(from);
+    if (at >= 0) {
+      list = list.slice(at + 1);
+      relative = true;
+    }
+  }
+  if (!list.length) return '';
+  const shown = list.length > 4 ? [list[0], '…', ...list.slice(-2)] : list;
+  const label = `In ${list.join(', ')}`;
+  return `<span class="drawers" role="img" aria-label="${esc(label)}"><span>${shown
+    .map((p, i) => {
+      const isRoom = i === 0 && !relative;
+      return `<span class="drawer-tab ${isRoom ? `is-room ${roomTint(room)}` : ''}"
+        style="--indent:${Math.min(i, 3) * 10}px" title="${esc(p)}">${esc(p)}</span>`;
+    })
+    .join('')}</span></span>`;
+}
+
+// How an item is pictured, in order of what the user told us: a photo, a
+// chosen icon, a brand monogram, then its initial. Always on its room's tint.
+export const itemAvatar = (item, cls = 'w-10 h-10') => {
+  const tint = roomTint(item.location?.path?.[0] ?? item.room_name ?? '');
   if (item.photo_thumb_url) {
-    return `<span class="avatar ${cls} overflow-hidden bg-[var(--sunken)] shrink-0 relative">
-      <img src="${esc(item.photo_thumb_url)}" alt="" loading="lazy" decoding="async"
+    return `<span class="avatar ${tint} ${cls} overflow-hidden shrink-0 relative">
+      <img src="${esc(item.photo_thumb_url)}" alt="" loading="lazy" decoding="async" width="40" height="40"
            class="w-full h-full object-cover ${item._photo_uploading ? 'opacity-50' : ''}">
       ${
         item._photo_uploading
-          ? `<span class="absolute inset-0 grid place-items-center">
-               <span class="w-3 h-3 rounded-full bg-white/90 animate-pulse"></span>
-             </span>`
+          ? `<span class="absolute inset-0 grid place-items-center text-[11px] font-medium text-white bg-black/30">Saving</span>`
           : ''
       }
     </span>`;
   }
-  if (item.icon && itemIconSVG(item.icon)) {
-    return `<span class="avatar ${cls} bg-[var(--color-accent-soft)] text-[var(--ink)] grid place-items-center shrink-0">
-      ${itemIconSVG(item.icon, 'w-5 h-5')}
-    </span>`;
-  }
-  return `<span class="avatar ${cls} bg-[var(--sunken)] grid place-items-center shrink-0 text-[var(--ink-soft)] text-[13px] font-medium">
-    ${item.quantity > 1 ? `×${esc(item.quantity)}` : icon('tag', 'w-4 h-4')}
+  const art = item.icon && itemIconSVG(item.icon, 'w-[55%] h-[55%]');
+  return `<span class="avatar ${tint} ${cls} grid place-items-center shrink-0 text-[16px] font-medium" aria-hidden="true">
+    ${art || esc(initials(item.name || '').slice(0, 1) || '·')}
   </span>`;
 };
 
-export const itemRow = (item, { pending = false, showLocation = false } = {}) => `
+// One item per row: the avatar, the name with its quantity and status, then
+// where it is as a drawer path (or its description when the place is obvious).
+export const itemRow = (item, { pending = false, showLocation = false, from = '' } = {}) => `
   <button type="button" data-item="${esc(item.id)}"
-     class="row-press w-full text-left flex items-start gap-3 px-4 py-3.5 ${pending ? 'is-pending' : ''}">
+     class="row-press w-full text-left flex items-start gap-3.5 px-2 py-3 ${pending ? 'is-pending' : ''}">
     ${itemAvatar(item)}
     <span class="flex-1 min-w-0">
-      <span class="flex items-center gap-2">
-        <span class="font-semibold truncate t-name">${esc(item.name)}</span>
+      <span class="flex items-center gap-2 min-h-6">
+        <span class="text-[16px] leading-6 font-medium truncate t-name">${esc(item.name)}</span>
+        ${item.quantity > 1 ? `<span class="text-sm font-medium text-[var(--ink-soft)] shrink-0">×${esc(item.quantity)}</span>` : ''}
+        ${item.status === 'decluttered' ? '<span class="pill pill-quiet shrink-0">Decluttered</span>' : ''}
         ${pending ? pendingDot : ''}
       </span>
       ${
-        showLocation && item.location
-          ? `<span class="block text-[13px] text-[var(--ink-soft)] truncate t-path">${esc(pathText(item.location.path))}</span>`
+        (showLocation || from) && item.location
+          ? drawerPath(item.location.path, { from })
           : item.description
-            ? `<span class="block text-[13px] text-[var(--ink-soft)] truncate">${esc(item.description)}</span>`
+            ? `<span class="block text-sm text-[var(--ink-soft)] truncate">${esc(item.description)}</span>`
             : ''
       }
       ${item.tags?.length ? `<span class="flex gap-1 mt-1.5 flex-wrap">${tagPills(item.tags)}</span>` : ''}
     </span>
   </button>`;
 
-export const listCard = (inner) =>
-  `<div class="surface divide-y divide-[var(--line)] overflow-hidden">${inner}</div>`;
+export const listCard = (inner) => `<div class="list -mx-2">${inner}</div>`;
 
 // Callers pass extra classes inside the attrs string (`data-save class="flex-1"`).
 // Emitting that verbatim next to the component's own class= would produce two
@@ -239,20 +288,25 @@ const iconOnly = (label) => /^\s*<svg[\s\S]*<\/svg>\s*$/.test(label);
 export const primaryButton = (label, attrs = '') =>
   `<button type="button" ${mergeAttrs(attrs, `btn btn-primary${iconOnly(label) ? ' btn-icon' : ''}`)}>${label}</button>`;
 
+// Secondary but useful: what an empty state offers on a screen whose FAB is
+// already the accent action.
+export const tonalButton = (label, attrs = '') =>
+  `<button type="button" ${mergeAttrs(attrs, `btn btn-tonal${iconOnly(label) ? ' btn-icon' : ''}`)}>${label}</button>`;
+
 export const ghostButton = (label, attrs = '') =>
   `<button type="button" ${mergeAttrs(attrs, `btn btn-ghost${iconOnly(label) ? ' btn-icon' : ''}`)}>${label}</button>`;
 
 export const addRow = (label, attrs = '') => `
   <button type="button" ${mergeAttrs(
     attrs,
-    'row-press w-full flex items-center gap-3 px-4 py-3.5 text-[var(--ink)] font-semibold',
+    'row-press w-full flex items-center gap-3.5 px-2 py-3 text-[var(--accent-ink)] font-medium',
   )}>
-    <span class="w-9 h-9 grid place-items-center shrink-0">${icon('plus', 'w-5 h-5')}</span>
+    <span class="w-10 h-10 grid place-items-center shrink-0">${icon('plus', 'w-5 h-5')}</span>
     <span>${esc(label)}</span>
   </button>`;
 
 export const breadcrumb = (parts) =>
-  `<nav class="text-[13px] text-[var(--ink-soft)] truncate">${parts
+  `<nav class="text-sm text-[var(--ink-soft)] truncate">${parts
     .map((p) =>
       p.href
         ? `<a class="hover:text-[var(--ink)]" href="${esc(p.href)}">${esc(p.label)}</a>`
@@ -266,12 +320,11 @@ const toastRoot = () => document.getElementById('toast-root');
 
 export function toast(message, { action, onAction, tone = 'neutral', timeout = 4500 } = {}) {
   const el = document.createElement('div');
-  el.className = `pointer-events-auto surface pop-in flex items-center gap-3 px-4 py-3 mb-2 text-sm ${
-    tone === 'error' ? 'border-[var(--color-accent)]' : ''
-  }`;
+  el.className = 'pointer-events-auto snackbar pop-in flex items-center gap-2 pl-4 pr-2 min-h-12 mb-2 text-sm';
+  el.setAttribute('role', tone === 'error' ? 'alert' : 'status');
   el.innerHTML = `
-    <span class="flex-1">${esc(message)}</span>
-    ${action ? `<button type="button" class="font-medium text-[var(--accent-ink)] shrink-0">${esc(action)}</button>` : ''}`;
+    <span class="flex-1 py-3.5">${esc(message)}</span>
+    ${action ? `<button type="button" class="h-10 px-3 rounded-full font-medium shrink-0">${esc(action)}</button>` : ''}`;
   if (action) {
     el.querySelector('button').addEventListener('click', () => {
       onAction?.();
@@ -301,14 +354,14 @@ export function openSheet({ title, body, onMount, onClose }) {
   wrap.innerHTML = `
     <div data-backdrop class="absolute inset-0 bg-black/35 fade-in"></div>
     <div role="dialog" aria-modal="true" aria-label="${esc(title)}"
-         class="relative w-full md:max-w-lg bg-[var(--paper)] rounded-t-2xl md:rounded-2xl sheet-up
-                max-h-[90dvh] overflow-y-auto"
+         class="relative w-full md:max-w-lg bg-[var(--sheet)] rounded-t-[28px] md:rounded-[28px] sheet-up
+                max-h-[90dvh] overflow-y-auto overscroll-contain shadow-[var(--shadow-sheet)]"
          style="padding-bottom:env(safe-area-inset-bottom)">
-      <div class="sticky top-0 bg-[var(--paper)] px-4 pt-3 pb-2 border-b border-[var(--line)] z-10">
-        <div class="md:hidden mx-auto mb-2 h-1 w-9 rounded-full bg-[var(--line)]"></div>
+      <div class="sticky top-0 bg-[var(--sheet)] px-4 pt-2 pb-1 z-10">
+        <div class="md:hidden mx-auto my-2 h-1 w-8 rounded-full bg-[var(--outline)] opacity-40"></div>
         <div class="flex items-center gap-2">
-          <h2 class="flex-1 font-semibold">${esc(title)}</h2>
-          <button type="button" data-close class="w-11 h-11 grid place-items-center rounded-lg text-[var(--ink-soft)] active:bg-[var(--sunken)]">
+          <h2 class="flex-1 text-[22px] leading-7">${esc(title)}</h2>
+          <button type="button" data-close aria-label="Close" class="topround">
             ${icon('close', 'w-5 h-5')}
           </button>
         </div>
@@ -352,13 +405,14 @@ export function closeAllSheets() {
 
 export const field = (label, inner, hint = '') => `
   <label class="block mb-4">
-    <span class="block text-[13px] font-medium text-[var(--ink-soft)] mb-1.5">${esc(label)}</span>
+    <span class="block text-sm font-medium text-[var(--ink-soft)] mb-1.5">${esc(label)}</span>
     ${inner}
     ${hint ? `<span class="block text-xs text-[var(--ink-faint)] mt-1">${esc(hint)}</span>` : ''}
   </label>`;
 
+// Material's outlined field: 56px, a 1px outline that thickens to the accent.
 export const inputCls =
-  'w-full h-12 px-3.5 rounded-lg bg-[var(--sunken)] border border-transparent outline-none focus:border-[var(--ink)] focus:bg-[var(--paper)] transition-colors';
+  'w-full h-14 px-4 rounded-[6px] bg-transparent border border-[var(--outline)] outline-none focus:border-[var(--accent-ink)] focus:shadow-[inset_0_0_0_1px_var(--accent-ink)] transition-colors';
 
 // ----------------------------------------------------------------- value ----
 
@@ -373,11 +427,13 @@ export function valuePill(item) {
 // One line of the "last put away" feed: what, where it went, and how long ago.
 export const moveRow = (m) => `
   <button type="button" data-move-item="${esc(m.item_id)}"
-     class="row-press w-full text-left flex items-center gap-3 px-4 py-3.5">
-    ${itemAvatar({ icon: m.item_icon })}
+     class="row-press w-full text-left flex items-start gap-3.5 px-2 py-3">
+    ${itemAvatar({ icon: m.item_icon, name: m.item_name, location: { path: m.to_path } })}
     <span class="flex-1 min-w-0">
-      <span class="block font-semibold truncate t-name">${esc(m.item_name)}</span>
-      <span class="block text-[13px] text-[var(--ink-soft)] truncate t-path">${esc(pathText(m.to_path))}</span>
+      <span class="flex items-center gap-2 min-h-6">
+        <span class="text-[16px] leading-6 font-medium truncate t-name">${esc(m.item_name)}</span>
+        <span class="ml-auto text-xs text-[var(--ink-soft)] shrink-0">${ago(m.moved_at)}</span>
+      </span>
+      ${drawerPath(m.to_path)}
     </span>
-    <span class="pill pill-quiet">${ago(m.moved_at)}</span>
   </button>`;

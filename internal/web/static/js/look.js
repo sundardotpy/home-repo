@@ -1,46 +1,7 @@
-// Everything that differs between the two interfaces, and the small formatters
-// shared by both. The interfaces share all their markup; they differ in
-// colours (CSS), in a handful of words, and in how a place is written down.
+// Small formatters shared by every screen.
 
-const KEY = 'hsh.ui';
-
-export const isRepo = () => document.documentElement.classList.contains('ui-repo');
-
-// t('Save', 'Commit'): the Classic wording, then the Repo wording.
-export const t = (classic, repo) => (isRepo() ? repo : classic);
-
-export function currentUI() {
-  try {
-    return localStorage.getItem(KEY) === 'repo' ? 'repo' : 'classic';
-  } catch {
-    return 'classic';
-  }
-}
-
-// Applying is the caller's job (theme.js), because the accent depends on it.
-export function storeUI(mode) {
-  try {
-    if (mode === 'repo') localStorage.setItem(KEY, 'repo');
-    else localStorage.removeItem(KEY);
-  } catch {}
-}
-
-// "Electronics & Gadgets" -> "electronics-and-gadgets"
-export const slug = (s) =>
-  String(s ?? '')
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'untitled';
-
-// A place, written for the current interface:
-//   Classic  Office › Desk › Small container
-//   Repo     office/desk/small-container/
-export function pathText(parts = [], { trailing = true } = {}) {
-  const list = parts.filter(Boolean);
-  if (isRepo()) return list.map(slug).join('/') + (trailing && list.length ? '/' : '');
-  return list.join(' › ');
-}
+// A place as one line of text, for toasts and hints: Office › Desk › Box.
+export const pathText = (parts = []) => parts.filter(Boolean).join(' › ');
 
 // "2d", "3w", "5mo": short enough for a pill. Long form reads "2 days ago".
 export function ago(ts, { long = false } = {}) {
