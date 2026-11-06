@@ -4,7 +4,7 @@ import { api, get, post, qs } from './api.js';
 import { closeAnyPopup, createSelect, wireAccordions } from './components.js';
 import { BRAND_ICONS, BRAND_KEYS } from './brand-icons.js';
 import { MONOGRAMS, MONOGRAM_KEYS } from './brand-monograms.js';
-import { checkSession, lockNow, lockRequired } from './lock.js';
+import { checkSession, lockNow, lockRequired, showLock } from './lock.js';
 import { ICON_GROUPS, ICON_KEYS, ITEM_ICONS, iconLabel, isBrandKey, itemIconSVG, suggestIcon } from './item-icons.js';
 import { barcodeCaptureSheet, labelCard, qrSheet, scanSheet } from './labels.js';
 import { openVoiceSheet } from './voice.js';
@@ -3103,7 +3103,14 @@ document.getElementById('topbar-add').addEventListener('click', () => document.g
 addEventListener('pageshow', () => closeAllSheets());
 
 initTheme();
-checkSession();
-store.load('/rooms').catch(() => {});
-loadShiftState().catch(() => {});
-render();
+// The server marks the shell when a passcode is needed and this visitor has
+// none: go straight to the passcode screen, and ask for no data that would
+// only come back 401.
+if (document.documentElement.hasAttribute('data-locked')) {
+  showLock();
+} else {
+  checkSession();
+  store.load('/rooms').catch(() => {});
+  loadShiftState().catch(() => {});
+  render();
+}

@@ -629,6 +629,16 @@
     outline-offset: -2px;
   }
 
+  /* Locked out: no skeleton promising content that will not come. The
+     passcode screen draws over the ground as soon as the script runs. */
+  html[data-locked] #topbar,
+  html[data-locked] #app-shell,
+  html[data-locked] #app-nav,
+  html[data-locked] #fab,
+  html[data-locked] .skip-link {
+    display: none;
+  }
+
   /* Visible only when a keyboard user tabs to it. */
   .skip-link {
     position: fixed;

@@ -38,3 +38,22 @@ test('a matching ETag answers 304 with no body', async () => {
   assert.equal(again.statusCode, 304);
   assert.equal(again.body, null);
 });
+
+test('a locked-out visitor gets the shell marked locked, with its own ETag', async () => {
+  let authed = false;
+  const web = createWebHandler({ locked: () => !authed });
+
+  const out = await get(web, '/');
+  assert.match(out.body.toString(), /<html lang="en" data-locked>/);
+  assert.match(out.headers.vary, /Cookie/);
+
+  authed = true;
+  const inside = await get(web, '/', { 'if-none-match': out.headers.etag });
+  assert.equal(inside.statusCode, 200, "the locked shell's ETag must not validate the unlocked one");
+  assert.doesNotMatch(inside.body.toString(), /data-locked/);
+});
+
+test('without a passcode the shell is never marked', async () => {
+  const out = await get(createWebHandler(), '/');
+  assert.doesNotMatch(out.body.toString(), /data-locked/);
+});
