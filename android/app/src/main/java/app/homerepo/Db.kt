@@ -392,6 +392,33 @@ object Db {
     }
 
     /**
+     * What a search box query matches, the same as the server's: every word
+     * must turn up somewhere on the item, so "xiaomi tablet" finds a Tablet
+     * whose brand is Xiaomi. Fields: name, description, tags, custom fields
+     * (Brand: Apple), and a picked brand icon ("brand:apple" answers "apple").
+     * A barcode typed whole also matches. Inlined as a literal because
+     * homeFeed is a two-statement batch; quotes are doubled, and brand keys
+     * are letters and digits only.
+     */
+    private fun searchClause(query: String): String {
+        val words = query.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.map { w ->
+            val like = "'%${w.replace("'", "''")}%'"
+            val key = w.lowercase().filter { it in 'a'..'z' || it in '0'..'9' }
+            buildString {
+                append("(i.name ILIKE $like OR i.description ILIKE $like")
+                append(" OR EXISTS (SELECT 1 FROM unnest(i.tags) tg WHERE tg ILIKE $like)")
+                append(" OR EXISTS (SELECT 1 FROM jsonb_each_text(i.properties) pr")
+                append(" WHERE pr.key ILIKE $like OR pr.value ILIKE $like)")
+                // A word with no letters or digits ("&") would match every brand.
+                if (key.isNotEmpty()) append(" OR (i.icon LIKE 'brand:%' AND substr(i.icon, 7) LIKE '%$key%')")
+                append(")")
+            }
+        }
+        val code = query.trim().replace("'", "''")
+        return "(i.barcode = '$code' OR (${words.joinToString(" AND ")}))"
+    }
+
+    /**
      * The two reads the Find screen needs, fetched in one round trip: what you
      * own, plus the ids of things put away since this morning (the "Put away
      * today" shelf). Two prepared queries here are two full waits over the
@@ -404,7 +431,6 @@ object Db {
      * no escaping beyond that). The same invariants hold as in selectItems.
      */
     fun homeFeed(query: String, status: String = "active", limit: Int = 200): HomeFeed = db { c ->
-        val search = query.trim().replace("'", "''")
         // "all" is no status of its own: it means no status filter at all.
         val statusClause = when (status) {
             "decluttered" -> "i.status = 'decluttered'"
@@ -422,7 +448,7 @@ object Db {
               LEFT JOIN storage_unit_paths p ON p.id = i.storage_unit_id
               LEFT JOIN item_paths ip ON ip.id = i.id
              WHERE $statusClause
-               ${if (search.isNotBlank()) "AND i.name ILIKE '%$search%'" else ""}
+               ${if (query.isNotBlank()) "AND ${searchClause(query)}" else ""}
              ORDER BY i.created_at DESC, lower(i.name)
              LIMIT $limit;
              SELECT DISTINCT m.item_id
