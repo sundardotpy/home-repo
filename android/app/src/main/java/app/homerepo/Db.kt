@@ -405,10 +405,11 @@ object Db {
      */
     fun homeFeed(query: String, status: String = "active", limit: Int = 200): HomeFeed = db { c ->
         val search = query.trim().replace("'", "''")
-        val active = when (status) {
-            "decluttered" -> "decluttered"
-            "all" -> "all"
-            else -> "active"
+        // "all" is no status of its own: it means no status filter at all.
+        val statusClause = when (status) {
+            "decluttered" -> "i.status = 'decluttered'"
+            "all" -> "TRUE"
+            else -> "i.status = 'active'"
         }
         val sinceMorning =
             LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -420,7 +421,7 @@ object Db {
               JOIN rooms r ON r.id = i.room_id
               LEFT JOIN storage_unit_paths p ON p.id = i.storage_unit_id
               LEFT JOIN item_paths ip ON ip.id = i.id
-             WHERE i.status = '$active'
+             WHERE $statusClause
                ${if (search.isNotBlank()) "AND i.name ILIKE '%$search%'" else ""}
              ORDER BY i.created_at DESC, lower(i.name)
              LIMIT $limit;
