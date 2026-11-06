@@ -688,7 +688,12 @@ function iconPickerSheet(selected, onPick) {
 
   const content = () => {
     if (tab === 'brands') {
-      const real = BRAND_KEYS.map((k) => `brand:${k}`).filter(matches);
+      // A hundred-odd marks read best alphabetically; the monogram groups come
+      // from the data, in the order brand-monograms.js lists them.
+      const real = [...BRAND_KEYS]
+        .sort((a, b) => BRAND_ICONS[a].localeCompare(BRAND_ICONS[b], 'en', { sensitivity: 'base' }))
+        .map((k) => `brand:${k}`)
+        .filter(matches);
       const note = `<p class="text-xs text-[var(--ink-soft)] mt-5 mb-2">No official mark to ship for these, so each is a badge with the brand's initials, not its logo.</p>`;
       const mono = MONOGRAM_KEYS.filter((k) => !BRAND_ICONS[k]).map((k) => `brand:${k}`).filter(matches);
       if (!real.length && !mono.length) return nothing();
@@ -696,7 +701,7 @@ function iconPickerSheet(selected, onPick) {
         (real.length ? grid(real) : '') +
         (mono.length
           ? note +
-            ['Food & drink', 'Personal care', 'Home care', 'Kitchen & appliances', 'Lifestyle & other']
+            [...new Set(Object.values(MONOGRAMS).map((m) => m.group))]
               .map((g) => {
                 const ks = mono.filter((k) => MONOGRAMS[k.slice(6)].group === g);
                 return ks.length
