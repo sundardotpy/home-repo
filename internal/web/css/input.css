@@ -174,14 +174,85 @@
   .list > * + * {
     margin-top: 0;
   }
-  .room-grid {
+  /* ---------------------------------------------------------- grids ----
+     One system for every grid. Columns come from a minimum track width in
+     rem, not from breakpoints, so a grid reflows with its container and with
+     the user's text size. auto-fill (not auto-fit) keeps tracks the same width
+     when only one or two cells are left, as after filtering. Spacing belongs
+     to the grid: nothing relies on a neighbour's margin, and nothing is pulled
+     up with a negative one.
+
+       .grid-tiles    icon and brand tiles        min 4.75rem, gap 8px
+       .grid-choices  Settings miniature cards    min 6.5rem,  gap 8px
+       .grid-rows     list rows set in columns    min 18rem,   column gap 12px
+       .grid-fields   form fields side by side    min 9rem,    gap 12px
+       .grid-heading  a group title inside a gridded section */
+  .grid-tiles,
+  .grid-choices,
+  .grid-rows,
+  .grid-fields {
     display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(var(--track), 100%), 1fr));
   }
-  @media (min-width: 640px) {
-    .room-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      column-gap: 0.75rem;
+  .grid-tiles {
+    --track: 4.75rem;
+    gap: 0.5rem;
+  }
+  .grid-choices {
+    --track: 6.5rem;
+    gap: 0.5rem;
+  }
+  .grid-rows {
+    --track: 18rem;
+    column-gap: 0.75rem;
+  }
+  /* Fields keep each other's company until one would be too narrow to type in. */
+  .grid-fields {
+    --track: 9rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(var(--track), 100%), 1fr));
+    column-gap: 0.75rem;
+  }
+  .grid-heading {
+    margin: 1.25rem 0 0.5rem;
+  }
+  .grid-heading:first-child {
+    margin-top: 0;
+  }
+
+  /* A tile: an icon over its name. Square at rest, and free to grow taller
+     when text is enlarged (aspect-ratio yields to content). */
+  .tile {
+    aspect-ratio: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.25rem;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    transition: background-color 150ms ease;
+  }
+  .tile > :last-child {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tile:active {
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+  }
+  @media (hover: hover) {
+    .tile:hover {
+      background: color-mix(in srgb, var(--ink) 5%, transparent);
     }
+  }
+  .tile[aria-pressed="true"] {
+    border: 2px solid var(--accent);
+    background: var(--accent-tonal);
+    color: var(--ink);
   }
 
   /* The section title: sentence case, title-small, muted. */
@@ -330,11 +401,6 @@
 
   /* Settings choice cards: a miniature of the app over the choice's name.
      Sized in rem so enlarged text drops the grid to fewer columns. */
-  .choices {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
-    gap: 0.5rem;
-  }
   .choice {
     display: flex;
     flex-direction: column;

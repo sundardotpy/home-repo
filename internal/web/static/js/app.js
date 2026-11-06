@@ -348,7 +348,7 @@ function itemSheet({ item = null, roomId = null, unitId = null, barcode = '', fo
         ${field('Storage unit', `<div data-unit-select></div>`,
           'Leave as "Anywhere in the room" for things that are not in a box.')}
 
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid-fields">
           ${field('Price (₹)', `<input name="price" type="number" inputmode="decimal" min="0" step="any"
               class="${inputCls}" placeholder="1499" value="${esc(item?.purchase_price ?? '')}">`)}
           ${field('Bought on', `<input name="bought" type="date" max="${new Date().toISOString().slice(0, 10)}"
@@ -665,14 +665,9 @@ function iconPickerSheet(selected, onPick) {
   const cell = (key) => {
     const on = key === selected;
     return `
-      <button type="button" data-icon="${esc(key)}" title="${esc(iconLabel(key))}"
-        class="aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 p-1
-               transition-[transform,background-color] active:scale-95
-               ${on
-                 ? 'border-[var(--ink)] bg-[var(--accent-tonal)] text-[var(--ink)]'
-                 : 'border-[var(--line)] text-[var(--ink-soft)] hover:border-[var(--ink-faint)]'}">
+      <button type="button" data-icon="${esc(key)}" title="${esc(iconLabel(key))}" aria-pressed="${on}" class="tile">
         ${itemIconSVG(key, 'w-6 h-6')}
-        <span class="t-label-sm text-center truncate w-full px-0.5">${esc(iconLabel(key))}</span>
+        <span class="t-label-sm">${esc(iconLabel(key))}</span>
       </button>`;
   };
 
@@ -684,7 +679,7 @@ function iconPickerSheet(selected, onPick) {
   };
 
   const grid = (keys) =>
-    `<div class="grid grid-cols-4 sm:grid-cols-5 gap-2">${keys.map(cell).join('')}</div>`;
+    `<div class="grid-tiles">${keys.map(cell).join('')}</div>`;
 
   const content = () => {
     if (tab === 'brands') {
@@ -694,7 +689,7 @@ function iconPickerSheet(selected, onPick) {
         .sort((a, b) => BRAND_ICONS[a].localeCompare(BRAND_ICONS[b], 'en', { sensitivity: 'base' }))
         .map((k) => `brand:${k}`)
         .filter(matches);
-      const note = `<p class="text-xs text-[var(--ink-soft)] mt-5 mb-2">No official mark to ship for these, so each is a badge with the brand's initials, not its logo.</p>`;
+      const note = `<p class="grid-heading text-xs text-[var(--ink-soft)]">No official mark to ship for these, so each is a badge with the brand's initials, not its logo.</p>`;
       const mono = MONOGRAM_KEYS.filter((k) => !BRAND_ICONS[k]).map((k) => `brand:${k}`).filter(matches);
       if (!real.length && !mono.length) return nothing();
       return (
@@ -705,7 +700,7 @@ function iconPickerSheet(selected, onPick) {
               .map((g) => {
                 const ks = mono.filter((k) => MONOGRAMS[k.slice(6)].group === g);
                 return ks.length
-                  ? `<h3 class="section-title mt-4 mb-2">${esc(g)}</h3>${grid(ks)}`
+                  ? `<h3 class="grid-heading section-title">${esc(g)}</h3>${grid(ks)}`
                   : '';
               })
               .join('')
@@ -719,7 +714,7 @@ function iconPickerSheet(selected, onPick) {
     return ICON_GROUPS.map((g) => {
       const keys = ICON_KEYS.filter((k) => ITEM_ICONS[k].group === g);
       return keys.length
-        ? `<h3 class="section-title mt-5 mb-2">${esc(g)}</h3>${grid(keys)}`
+        ? `<h3 class="grid-heading section-title">${esc(g)}</h3>${grid(keys)}`
         : '';
     }).join('');
   };
@@ -731,7 +726,7 @@ function iconPickerSheet(selected, onPick) {
     body: `
       <div class="segmented mb-3" role="radiogroup" aria-label="Icon set" data-tabs></div>
       <input data-filter class="${inputCls}" placeholder="Filter icons" autocomplete="off">
-      <div data-content class="-mt-2"></div>
+      <div data-content class="mt-4"></div>
       <button type="button" data-none class="btn btn-ghost w-full mt-5">No icon</button>`,
     onMount(body, close) {
       const tabsEl = body.querySelector('[data-tabs]');
@@ -1505,7 +1500,7 @@ const placesScreen = {
                     ? `<span class="t-label-sm text-[var(--ink-faint)]">${plural(roomsOnFloor.length, 'room', 'rooms')}</span>`
                     : '',
                 )}
-                <div class="room-grid">
+                <div class="grid-rows">
                   ${roomsOnFloor
                     .map((r) => roomRow(r, store.isTemp(r.id), { showFloor: false }))
                     .join('')}
@@ -2731,7 +2726,7 @@ const shiftRow = (i) => `
         <span class="block text-sm text-[var(--ink-soft)] truncate t-path">${esc(i.location.path_string)}</span>
       </span>
     </div>
-    <div class="mt-2 grid grid-cols-2 gap-2">
+    <div class="mt-2 grid-fields">
       <div data-pack-type></div>
       <div data-pack-room></div>
     </div>

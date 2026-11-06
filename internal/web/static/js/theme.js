@@ -169,11 +169,11 @@ export function appearanceMarkup() {
       : `<span aria-hidden="true">${mini(m, accent)}</span>`;
   return `
     <h3 class="section-title mb-2">Theme</h3>
-    <div class="choices" role="radiogroup" aria-label="Theme">
+    <div class="grid-choices" role="radiogroup" aria-label="Theme">
       ${MODES.map((m) => card(`data-mode="${m.value}"`, m.value === mode, modePicture(m.value), m.label)).join('')}
     </div>
     <h3 class="section-title mt-6 mb-2">Accent</h3>
-    <div class="choices" role="radiogroup" aria-label="Accent">
+    <div class="grid-choices" role="radiogroup" aria-label="Accent">
       ${ACCENTS.map((a) =>
         card(`data-accent="${esc(a.hex)}"`, a.hex === accent, `<span aria-hidden="true">${mini(scheme, a.hex)}</span>`, a.name),
       ).join('')}
