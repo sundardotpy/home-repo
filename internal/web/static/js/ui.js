@@ -397,18 +397,23 @@ export function toast(message, { action, onAction, tone = 'neutral', timeout = 4
 const sheets = [];
 
 // A bottom sheet on phones, a centred dialog from `md` up.
-export function openSheet({ title, body, onMount, onClose }) {
+// `palette` is the search popup: no title row (the body brings its own field
+// and close button), full screen on phones, a wide card near the top from `md`.
+export function openSheet({ title, body, onMount, onClose, palette = false }) {
   const depth = sheets.length;
   const root = document.getElementById('sheet-root');
   const wrap = document.createElement('div');
-  wrap.className = 'fixed inset-0 flex items-end md:items-center md:justify-center';
+  wrap.className = palette
+    ? 'fixed inset-0 flex items-stretch md:items-start md:justify-center md:pt-[12vh] md:px-4'
+    : 'fixed inset-0 flex items-end md:items-center md:justify-center';
   wrap.style.zIndex = String(50 + depth * 2);
   wrap.innerHTML = `
     <div data-backdrop class="absolute inset-0 bg-black/35 fade-in"></div>
     <div role="dialog" aria-modal="true" aria-label="${esc(title)}"
-         class="relative w-full md:max-w-lg bg-[var(--sheet)] rounded-t-[28px] md:rounded-[28px] sheet-up
-                max-h-[90dvh] overflow-y-auto overscroll-contain shadow-[var(--shadow-sheet)]"
+         class="relative w-full bg-[var(--sheet)] overflow-y-auto overscroll-contain shadow-[var(--shadow-sheet)]
+                ${palette ? 'h-dvh md:h-auto md:max-w-2xl md:rounded-[20px] md:max-h-[72dvh] fade-in' : 'md:max-w-lg rounded-t-[28px] md:rounded-[28px] sheet-up max-h-[90dvh]'}"
          style="padding-bottom:env(safe-area-inset-bottom)">
+      ${palette ? `<div data-body>${body}</div>` : `
       <div class="sticky top-0 bg-[var(--sheet)] px-4 pt-2 pb-1 z-10">
         <div class="md:hidden mx-auto my-2 h-1 w-8 rounded-full bg-[var(--outline)] opacity-40"></div>
         <div class="flex items-center gap-2">
@@ -418,7 +423,7 @@ export function openSheet({ title, body, onMount, onClose }) {
           </button>
         </div>
       </div>
-      <div data-body class="p-4">${body}</div>
+      <div data-body class="p-4">${body}</div>`}
     </div>`;
   root.appendChild(wrap);
   document.body.style.overflow = 'hidden';

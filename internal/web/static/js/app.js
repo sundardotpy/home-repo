@@ -1272,7 +1272,7 @@ const NAV = [
     href: '#/',
     label: 'Find',
     icon: 'search',
-    on: (h) => h === '' || h === '#/' || h.startsWith('#/search'),
+    on: (h) => h === '' || h === '#/',
   },
   {
     href: '#/places',
@@ -1473,12 +1473,9 @@ addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1 || !e.key.trim()) return;
   if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
   if (document.querySelector('[role=dialog]')) return;
-  // Keys typed before the search field takes focus still belong to it.
-  if (current === searchScreen) return document.getElementById('search-input')?.focus();
   if (current !== findScreen) return;
   e.preventDefault();
-  searchQuery = e.key;
-  location.hash = `#/search?q=${encodeURIComponent(e.key)}`;
+  searchScreen.open(e.key);
 });
 
 // ---------------------------------------------------------------- places ----
@@ -2317,44 +2314,70 @@ function codeMatchCard(data) {
   return listCard(itemRow(data.item, { showLocation: true }));
 }
 
+// Search is a popup over whatever screen you were on, not a page of its own:
+// closing it puts you back exactly where you were.
 const searchScreen = {
-  staticHeader: true,
+  close: null,
   paths: () => {
     const path = buildSearchPath();
     return path ? [path] : [];
   },
-  header: () => `
-    <div class="flex items-center gap-1 px-2 py-2 md:pt-5">
-      <a href="#/" class="topround shrink-0" aria-label="Back">${icon('back', 'w-6 h-6')}</a>
-      <label class="search-well flex-1 min-w-0 !pl-4">
-        <span class="sr-only">Search</span>
-        <span class="text-[var(--ink-soft)] shrink-0">${icon('search', 'w-6 h-6')}</span>
-        <input id="search-input" type="search" autocomplete="off" enterkeyhint="search"
-          placeholder="Where did I put it?"
-          class="flex-1 min-w-0 h-full bg-transparent outline-none border-0 text-base text-[var(--ink)] placeholder:text-[var(--ink-soft)] pl-3">
-        <button id="search-filters" type="button" aria-label="Filters" class="topround shrink-0">${icon('settings', 'w-6 h-6')}</button>
-      </label>
-    </div>`,
-  mount(el) {
-    el.innerHTML = `<div id="search-body" class="px-4"></div>`;
-    const input = document.getElementById('search-input');
-    const filterBtn = document.getElementById('search-filters');
-    input.value = searchQuery;
-    input.addEventListener('input', () => {
-      searchQuery = input.value.trim();
-      history.replaceState(null, '', `#/search${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`);
-      clearTimeout(searchTimer);
-      this.update();
-      searchTimer = setTimeout(() => {
-        if (!searchQuery) return;
-        store.setActive(this.paths());
-        store.load(this.paths()[0], { maxAge: 10_000 }).catch(() => {});
-        lookupCode(searchQuery, this);
-      }, 180);
+  // The screen underneath keeps revalidating while the popup is up.
+  activate() {
+    store.setActive([...(current?.paths() || []), ...this.paths()]);
+  },
+  open(q = '') {
+    if (this.close) return document.getElementById('search-input')?.focus();
+    searchQuery = q;
+    const unsubscribe = store.subscribe(() => this.update());
+    this.close = openSheet({
+      title: 'Search',
+      palette: true,
+      body: `
+        <div class="sticky top-0 z-10 bg-[var(--sheet)] flex items-center gap-1 px-2 py-2 border-b border-[var(--line)]">
+          <span class="text-[var(--ink-soft)] shrink-0 pl-3">${icon('search', 'w-6 h-6')}</span>
+          <label class="flex-1 min-w-0">
+            <span class="sr-only">Search</span>
+            <input id="search-input" type="search" autocomplete="off" enterkeyhint="search"
+              placeholder="Where did I put it?"
+              class="w-full h-12 bg-transparent outline-none border-0 text-lg text-[var(--ink)] placeholder:text-[var(--ink-soft)] pl-3">
+          </label>
+          <button id="search-filters" type="button" aria-label="Filters" class="topround shrink-0">${icon('settings', 'w-6 h-6')}</button>
+          <button type="button" data-close aria-label="Close search" class="topround shrink-0">${icon('close', 'w-6 h-6')}</button>
+        </div>
+        <div id="search-body" class="p-4"></div>`,
+      onMount: (root) => {
+        const input = root.querySelector('#search-input');
+        input.value = searchQuery;
+        input.addEventListener('input', () => {
+          searchQuery = input.value.trim();
+          clearTimeout(searchTimer);
+          this.update();
+          searchTimer = setTimeout(() => {
+            if (!searchQuery) return;
+            this.activate();
+            store.load(this.paths()[0], { maxAge: 10_000 }).catch(() => {});
+            lookupCode(searchQuery, this);
+          }, 180);
+        });
+        root.querySelector('#search-filters').addEventListener('click', () => searchFilterSheet(this));
+        // A result that links to a room or box navigates; the popup goes with it.
+        root.addEventListener('click', (e) => e.target.closest('a[href^="#/"]') && this.close?.());
+        input.focus();
+        this.update();
+        if (searchQuery) {
+          this.activate();
+          store.load(this.paths()[0], { maxAge: 10_000 }).catch(() => {});
+          lookupCode(searchQuery, this);
+        }
+      },
+      onClose: () => {
+        unsubscribe();
+        clearTimeout(searchTimer);
+        this.close = null;
+        if (current) store.setActive(current.paths());
+      },
     });
-    filterBtn.addEventListener('click', () => searchFilterSheet(this));
-    setTimeout(() => input.focus(), 120);
-    this.update();
   },
   update() {
     const body = document.getElementById('search-body');
@@ -2444,19 +2467,19 @@ function searchFilterSheet(screen) {
     onMount(body) {
       body.querySelector('#filter-room').addEventListener('change', (e) => {
         searchFilters.room_id = e.target.value;
-        store.setActive(screen.paths());
+        screen.activate();
         if (searchQuery) store.load(screen.paths()[0], { maxAge: 10_000 }).catch(() => {});
         screen.update();
       });
       body.querySelector('#filter-tags').addEventListener('change', (e) => {
         searchFilters.tags = e.target.value.trim();
-        store.setActive(screen.paths());
+        screen.activate();
         if (searchQuery) store.load(screen.paths()[0], { maxAge: 10_000 }).catch(() => {});
         screen.update();
       });
       body.querySelector('#filter-barcode').addEventListener('change', (e) => {
         searchFilters.has_barcode = e.target.checked;
-        store.setActive(screen.paths());
+        screen.activate();
         if (searchQuery) store.load(screen.paths()[0], { maxAge: 10_000 }).catch(() => {});
         screen.update();
       });
@@ -2896,11 +2919,11 @@ const routes = [
   { re: /^\/room\/([0-9a-z-]+)$/i, screen: roomScreen, keys: ['id'] },
   { re: /^\/unit\/([0-9a-z-]+)$/i, screen: unitScreen, keys: ['id'] },
   { re: /^\/labels\/([0-9a-z-]+)$/i, screen: labelsScreen, keys: ['id'] },
-  { re: /^\/search$/, screen: searchScreen },
   { re: /^\/settings$/, screen: settingsScreen },
 ];
 
 let current = null;
+let lastHash = '';
 let currentKey = '';
 
 function parseHash() {
@@ -2912,6 +2935,16 @@ function parseHash() {
   const item = /^\/item\/([0-9a-f-]{36})$/i.exec(path);
   if (item) {
     openItemById(item[1]);
+    return null;
+  }
+
+  // #/search?q= (old links, tag chips) opens the search popup over the
+  // screen already showing, or over Find on a fresh load.
+  if (path === '/search') {
+    const q = new URLSearchParams(query || '').get('q') || '';
+    history.replaceState(null, '', lastHash || '#/');
+    if (!current) render();
+    searchScreen.open(q);
     return null;
   }
 
@@ -2950,10 +2983,10 @@ function render() {
   closeAnyPopup(); // a portalled dropdown must not outlive its screen
 
   if (key !== currentKey) {
+    searchScreen.close?.(); // back button or a link away takes the popup with it
     const from = currentKey ? current : null;
     currentKey = key;
     current = route.screen;
-    if (route.screen === searchScreen && query.get('q')) searchQuery = query.get('q');
 
     current.id = params.id || current.id;
     lastHeader = current.header();
@@ -2974,6 +3007,7 @@ function render() {
   } else {
     current.update();
   }
+  lastHash = location.hash;
   syncChrome();
 }
 
@@ -3043,9 +3077,7 @@ addEventListener('resize', pinHeader);
 function rewireHeader() {
   const head = headerEl();
   pinHeader();
-  head.querySelector('[data-go-search]')?.addEventListener('click', () => {
-    location.hash = '#/search';
-  });
+  head.querySelector('[data-go-search]')?.addEventListener('click', () => searchScreen.open());
   head.querySelector('[data-voice]')?.addEventListener('click', () => openVoiceSheet());
   head.querySelector('[data-scan]')?.addEventListener('click', () => scanWithFallback());
   head.querySelector('[data-add-room]')?.addEventListener('click', () => roomSheet());
